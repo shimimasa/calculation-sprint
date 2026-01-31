@@ -9,6 +9,7 @@ const DEFAULT_WRONG_BY_MODE = Object.freeze({
 
 const createEmptyRecord = () => ({
   bestAvgSec: null,
+  bestDistanceM: null,
   attemptTotal: 0,
   wrongTotal: 0,
   wrongByMode: { ...DEFAULT_WRONG_BY_MODE },
@@ -22,6 +23,7 @@ const normalizeRecord = (record) => {
   }
   return {
     bestAvgSec: typeof record.bestAvgSec === 'number' ? record.bestAvgSec : null,
+    bestDistanceM: typeof record.bestDistanceM === 'number' ? record.bestDistanceM : null,
     attemptTotal: Number.isFinite(record.attemptTotal) ? record.attemptTotal : 0,
     wrongTotal: Number.isFinite(record.wrongTotal) ? record.wrongTotal : 0,
     wrongByMode: {
@@ -88,6 +90,14 @@ const dailyStatsStore = {
     if (avgSec > 0) {
       if (updated.bestAvgSec === null || avgSec < updated.bestAvgSec) {
         updated.bestAvgSec = avgSec;
+      }
+    }
+    const distanceM = Number.isFinite(sessionStats?.distanceM)
+      ? sessionStats.distanceM
+      : 0;
+    if (distanceM > 0) {
+      if (updated.bestDistanceM === null || distanceM > updated.bestDistanceM) {
+        updated.bestDistanceM = distanceM;
       }
     }
 
