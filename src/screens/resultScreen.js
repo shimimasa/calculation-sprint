@@ -13,6 +13,7 @@ const resultScreen = {
 
     domRefs.result.correctCount.textContent = String(gameState.correctCount);
     domRefs.result.wrongCount.textContent = String(gameState.wrongCount);
+    domRefs.result.totalAnswered.textContent = String(total);
     domRefs.result.accuracy.textContent = String(accuracy);
 
     this.handleRetry = () => {
