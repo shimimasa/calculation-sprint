@@ -21,15 +21,18 @@ const renderDailyHistory = (records) => {
   if (tbody) {
     tbody.innerHTML = '';
   }
-  const bestRecord = records
-    .filter(({ record }) => typeof record.bestAvgSec === 'number')
-    .reduce((best, current) => {
-      if (!best) {
-        return current;
+  const bestCandidates = records.filter(({ record }) => typeof record.bestAvgSec === 'number');
+  let bestKey = null;
+  if (bestCandidates.length > 0) {
+    let bestRecord = bestCandidates[0];
+    for (let i = 1; i < bestCandidates.length; i += 1) {
+      const current = bestCandidates[i];
+      if (current.record.bestAvgSec < bestRecord.record.bestAvgSec) {
+        bestRecord = current;
       }
-      return current.record.bestAvgSec < best.record.bestAvgSec ? current : best;
-    }, null);
-  const bestKey = bestRecord?.dateKey ?? null;
+    }
+    bestKey = bestRecord.dateKey;
+  }
   let attemptSum = 0;
   let wrongSum = 0;
   records.forEach(({ dateKey, record }) => {
