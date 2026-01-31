@@ -17,6 +17,7 @@ const gameState = {
   reviewSummary: {
     topMode: null,
     message: '',
+    nextAction: null,
   },
   wrongByMode: {
     add: 0,
