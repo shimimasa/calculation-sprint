@@ -50,6 +50,8 @@
           <span>残り時間: <strong id="game-time-left">60</strong>s</span>
           <span>正解数: <strong id="game-correct-count">0</strong></span>
           <span>不正解数: <strong id="game-wrong-count">0</strong></span>
+          <span>距離: <strong id="game-distance">0.0</strong>m</span>
+          <span>速度: <strong id="game-speed">0.0</strong>m/s</span>
           <span id="game-review-progress" hidden>復習: 0/10</span>
         </div>
         <div class="question-area">
@@ -57,6 +59,9 @@
           <input id="game-answer-input" type="number" class="answer-input" autocomplete="off" />
         </div>
         <div id="game-feedback" class="feedback" aria-live="polite"></div>
+        <div class="runner-track" aria-hidden="true">
+          <div id="runner" class="runner"></div>
+        </div>
       </section>
 
       <section id="result-screen" class="screen">
@@ -72,6 +77,7 @@
           <li>総回答数: <strong id="result-total-answered">0</strong></li>
           <li>正答率: <strong id="result-accuracy">0</strong>%</li>
           <li>平均回答時間: <strong id="result-avg-time">0.0</strong> 秒/問</li>
+          <li id="result-distance-row">距離: <strong id="result-distance">0.0</strong> m</li>
           <li>
             モード別正答率:
             加 <span id="result-rate-add">0% (0/0)</span> /
