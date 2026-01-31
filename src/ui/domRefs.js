@@ -28,6 +28,7 @@ const domRefs = {
     wrongCount: document.getElementById('result-wrong-count'),
     totalAnswered: document.getElementById('result-total-answered'),
     accuracy: document.getElementById('result-accuracy'),
+    avgTime: document.getElementById('result-avg-time'),
     retryButton: document.getElementById('result-retry-button'),
     backButton: document.getElementById('result-back-button'),
   },

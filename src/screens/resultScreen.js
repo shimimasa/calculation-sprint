@@ -10,11 +10,15 @@ const resultScreen = {
     const accuracy = total > 0
       ? Math.round((gameState.correctCount / total) * 100)
       : 0;
+    const avgSec = gameState.answeredCountForTiming > 0
+      ? gameState.totalAnswerTimeMs / gameState.answeredCountForTiming / 1000
+      : 0;
 
     domRefs.result.correctCount.textContent = String(gameState.correctCount);
     domRefs.result.wrongCount.textContent = String(gameState.wrongCount);
     domRefs.result.totalAnswered.textContent = String(total);
     domRefs.result.accuracy.textContent = String(accuracy);
+    domRefs.result.avgTime.textContent = avgSec.toFixed(1);
 
     this.handleRetry = () => {
       screenManager.changeScreen('game', { retry: true });
