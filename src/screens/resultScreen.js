@@ -16,6 +16,30 @@ const formatSignedNumber = (value, digits = 1) => {
   return value > 0 ? `+${fixed}` : fixed;
 };
 
+const renderDailyHistory = (records) => {
+  const tbody = domRefs.result.dailyHistoryBody;
+  if (!tbody) {
+    return;
+  }
+  tbody.innerHTML = '';
+  records.forEach(({ dateKey, record }) => {
+    const row = document.createElement('tr');
+    const bestAvg = record.bestAvgSec ?? 0;
+    const cells = [
+      dateKey,
+      bestAvg.toFixed(1),
+      String(record.attemptTotal),
+      String(record.wrongTotal),
+    ];
+    cells.forEach((value) => {
+      const cell = document.createElement('td');
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+    tbody.appendChild(row);
+  });
+};
+
 const resultScreen = {
   enter() {
     uiRenderer.showScreen('result');
@@ -127,6 +151,18 @@ const resultScreen = {
       }
     }
 
+    const recentRecords = [];
+    for (let offset = 0; offset <= 6; offset += 1) {
+      const date = new Date();
+      date.setDate(date.getDate() - offset);
+      const dateKey = formatDateKey(date);
+      const record = dateKey === todayKey ? todayRecord : dailyStatsStore.get(dateKey);
+      if (record) {
+        recentRecords.push({ dateKey, record });
+      }
+    }
+    renderDailyHistory(recentRecords);
+
     this.handleDailyReset = () => {
       if (!domRefs.result.dailyResetButton) {
         return;
@@ -153,6 +189,9 @@ const resultScreen = {
       }
       if (domRefs.result.diffWrong) {
         domRefs.result.diffWrong.textContent = '0';
+      }
+      if (domRefs.result.dailyHistoryBody) {
+        domRefs.result.dailyHistoryBody.innerHTML = '';
       }
     };
 
