@@ -19,6 +19,7 @@ const domRefs = {
     timeLeft: document.getElementById('game-time-left'),
     correctCount: document.getElementById('game-correct-count'),
     wrongCount: document.getElementById('game-wrong-count'),
+    reviewProgress: document.getElementById('game-review-progress'),
     question: document.getElementById('game-question'),
     answerInput: document.getElementById('game-answer-input'),
     feedback: document.getElementById('game-feedback'),

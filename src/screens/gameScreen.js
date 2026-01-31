@@ -21,6 +21,9 @@ const gameScreen = {
     Object.keys(gameState.attemptByMode).forEach((key) => {
       gameState.attemptByMode[key] = 0;
     });
+    if (!gameState.isReviewMode) {
+      gameState.reviewAnsweredCount = 0;
+    }
     uiRenderer.clearFeedback();
     this.feedbackTimeoutId = null;
     this.isLocked = false;
@@ -86,6 +89,9 @@ const gameScreen = {
     gameState.totalAnswerTimeMs += elapsedMs;
     gameState.answeredCountForTiming += 1;
     gameState.totalAnswered += 1;
+    if (gameState.isReviewMode) {
+      gameState.reviewAnsweredCount += 1;
+    }
     if (isCorrect) {
       gameState.correctCount += 1;
       uiRenderer.setFeedback('◯', 'correct');
@@ -95,6 +101,17 @@ const gameScreen = {
         gameState.wrongByMode[mode] += 1;
       }
       uiRenderer.setFeedback(`× 正解: ${gameState.currentQuestion.answer}`, 'wrong');
+    }
+
+    if (gameState.isReviewMode && gameState.reviewAnsweredCount >= gameState.reviewQuestionLimit) {
+      this.isLocked = true;
+      if (this.feedbackTimeoutId) {
+        window.clearTimeout(this.feedbackTimeoutId);
+        this.feedbackTimeoutId = null;
+      }
+      uiRenderer.clearFeedback();
+      screenManager.changeScreen('result');
+      return;
     }
 
     if (this.feedbackTimeoutId) {
@@ -115,6 +132,14 @@ const gameScreen = {
     domRefs.game.timeLeft.textContent = String(gameState.timeLeft);
     domRefs.game.correctCount.textContent = String(gameState.correctCount);
     domRefs.game.wrongCount.textContent = String(gameState.wrongCount);
+    if (domRefs.game.reviewProgress) {
+      if (gameState.isReviewMode) {
+        domRefs.game.reviewProgress.hidden = false;
+        domRefs.game.reviewProgress.textContent = `復習: ${gameState.reviewAnsweredCount}/${gameState.reviewQuestionLimit}`;
+      } else {
+        domRefs.game.reviewProgress.hidden = true;
+      }
+    }
   },
   exit() {
     timer.stop();
