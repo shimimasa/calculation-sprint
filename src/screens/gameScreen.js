@@ -15,6 +15,12 @@ const gameScreen = {
     gameState.totalAnswerTimeMs = 0;
     gameState.questionStartAtMs = 0;
     gameState.answeredCountForTiming = 0;
+    Object.keys(gameState.wrongByMode).forEach((key) => {
+      gameState.wrongByMode[key] = 0;
+    });
+    Object.keys(gameState.attemptByMode).forEach((key) => {
+      gameState.attemptByMode[key] = 0;
+    });
     uiRenderer.clearFeedback();
     this.feedbackTimeoutId = null;
     this.isLocked = false;
@@ -67,6 +73,12 @@ const gameScreen = {
     const isCorrect = Number.isFinite(answerValue)
       && gameState.currentQuestion
       && answerValue === gameState.currentQuestion.answer;
+    const mode = gameState.currentQuestion?.meta?.mode;
+    const isTrackableMode = mode && Object.prototype.hasOwnProperty.call(gameState.wrongByMode, mode);
+
+    if (isTrackableMode) {
+      gameState.attemptByMode[mode] += 1;
+    }
 
     gameState.totalAnswerTimeMs += elapsedMs;
     gameState.answeredCountForTiming += 1;
@@ -76,6 +88,9 @@ const gameScreen = {
       uiRenderer.setFeedback('◯', 'correct');
     } else {
       gameState.wrongCount += 1;
+      if (isTrackableMode) {
+        gameState.wrongByMode[mode] += 1;
+      }
       uiRenderer.setFeedback(`× 正解: ${gameState.currentQuestion.answer}`, 'wrong');
     }
 

@@ -19,6 +19,10 @@ const resultScreen = {
     domRefs.result.totalAnswered.textContent = String(total);
     domRefs.result.accuracy.textContent = String(accuracy);
     domRefs.result.avgTime.textContent = avgSec.toFixed(1);
+    domRefs.result.wrongAdd.textContent = String(gameState.wrongByMode.add);
+    domRefs.result.wrongSub.textContent = String(gameState.wrongByMode.sub);
+    domRefs.result.wrongMul.textContent = String(gameState.wrongByMode.mul);
+    domRefs.result.wrongDiv.textContent = String(gameState.wrongByMode.div);
 
     this.handleRetry = () => {
       screenManager.changeScreen('game', { retry: true });

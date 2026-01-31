@@ -8,6 +8,18 @@ const gameState = {
   totalAnswerTimeMs: 0,
   questionStartAtMs: 0,
   answeredCountForTiming: 0,
+  wrongByMode: {
+    add: 0,
+    sub: 0,
+    mul: 0,
+    div: 0,
+  },
+  attemptByMode: {
+    add: 0,
+    sub: 0,
+    mul: 0,
+    div: 0,
+  },
   settings: {
     mode: 'add',
     digit: 1,
