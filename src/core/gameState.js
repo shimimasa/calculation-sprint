@@ -5,6 +5,9 @@ const gameState = {
   correctCount: 0,
   wrongCount: 0,
   totalAnswered: 0,
+  totalAnswerTimeMs: 0,
+  questionStartAtMs: 0,
+  answeredCountForTiming: 0,
   settings: {
     mode: 'add',
     digit: 1,

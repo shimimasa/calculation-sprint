@@ -12,6 +12,9 @@ const gameScreen = {
     gameState.correctCount = 0;
     gameState.wrongCount = 0;
     gameState.totalAnswered = 0;
+    gameState.totalAnswerTimeMs = 0;
+    gameState.questionStartAtMs = 0;
+    gameState.answeredCountForTiming = 0;
     uiRenderer.clearFeedback();
     this.feedbackTimeoutId = null;
     this.isLocked = false;
@@ -49,6 +52,7 @@ const gameScreen = {
   loadNextQuestion() {
     gameState.currentQuestion = questionGenerator.next(gameState.settings);
     domRefs.game.answerInput.value = '';
+    gameState.questionStartAtMs = performance.now();
   },
   submitAnswer() {
     if (this.isLocked) {
@@ -57,12 +61,15 @@ const gameScreen = {
     if (!gameState.currentQuestion) {
       return;
     }
+    const elapsedMs = performance.now() - gameState.questionStartAtMs;
     const rawValue = domRefs.game.answerInput.value.trim();
     const answerValue = Number(rawValue);
     const isCorrect = Number.isFinite(answerValue)
       && gameState.currentQuestion
       && answerValue === gameState.currentQuestion.answer;
 
+    gameState.totalAnswerTimeMs += elapsedMs;
+    gameState.answeredCountForTiming += 1;
     gameState.totalAnswered += 1;
     if (isCorrect) {
       gameState.correctCount += 1;
