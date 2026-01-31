@@ -42,20 +42,41 @@ const resultScreen = {
     domRefs.result.wrongMul.textContent = String(gameState.wrongByMode.mul);
     domRefs.result.wrongDiv.textContent = String(gameState.wrongByMode.div);
 
+    this.reviewModes = Object.keys(gameState.wrongByMode)
+      .filter((mode) => gameState.wrongByMode[mode] > 0);
+    if (domRefs.result.reviewButton) {
+      domRefs.result.reviewButton.hidden = this.reviewModes.length === 0;
+    }
+
     this.handleRetry = () => {
+      gameState.isReviewMode = false;
+      gameState.reviewModes = [];
       screenManager.changeScreen('game', { retry: true });
     };
+    this.handleReview = () => {
+      gameState.isReviewMode = true;
+      gameState.reviewModes = this.reviewModes;
+      screenManager.changeScreen('game');
+    };
     this.handleBack = () => {
+      gameState.isReviewMode = false;
+      gameState.reviewModes = [];
       screenManager.changeScreen('settings');
     };
 
     domRefs.result.retryButton.addEventListener('click', this.handleRetry);
+    if (domRefs.result.reviewButton) {
+      domRefs.result.reviewButton.addEventListener('click', this.handleReview);
+    }
     domRefs.result.backButton.addEventListener('click', this.handleBack);
   },
   render() {},
   exit() {
     if (this.handleRetry) {
       domRefs.result.retryButton.removeEventListener('click', this.handleRetry);
+    }
+    if (this.handleReview && domRefs.result.reviewButton) {
+      domRefs.result.reviewButton.removeEventListener('click', this.handleReview);
     }
     if (this.handleBack) {
       domRefs.result.backButton.removeEventListener('click', this.handleBack);

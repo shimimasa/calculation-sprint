@@ -39,6 +39,7 @@ const domRefs = {
     wrongMul: document.getElementById('result-wrong-mul'),
     wrongDiv: document.getElementById('result-wrong-div'),
     retryButton: document.getElementById('result-retry-button'),
+    reviewButton: document.getElementById('result-review-button'),
     backButton: document.getElementById('result-back-button'),
   },
 };
