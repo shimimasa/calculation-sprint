@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>計算スプリント</title>
+    <link rel="stylesheet" href="styles/style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section id="title-screen" class="screen is-active">
+        <h1 class="screen__title">計算スプリント</h1>
+        <p class="screen__description">60秒でどれだけ正確に解けるかチャレンジ！</p>
+        <button id="title-start-button" class="primary-button">スタート</button>
+      </section>
+
+      <section id="settings-screen" class="screen">
+        <h2 class="screen__title">設定</h2>
+        <div class="form-group">
+          <p class="form-label">モード</p>
+          <label><input type="radio" name="mode" value="add" checked /> たし算</label>
+          <label><input type="radio" name="mode" value="sub" /> ひき算</label>
+          <label><input type="radio" name="mode" value="mul" /> かけ算</label>
+          <label><input type="radio" name="mode" value="div" /> わり算</label>
+          <label><input type="radio" name="mode" value="mix" /> ミックス</label>
+        </div>
+        <div class="form-group">
+          <p class="form-label">桁数</p>
+          <label><input type="radio" name="digit" value="1" checked /> 1桁</label>
+          <label><input type="radio" name="digit" value="2" /> 2桁</label>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" id="settings-carry" /> 繰り上がり/繰り下がり</label>
+        </div>
+        <button id="settings-play-button" class="primary-button">プレイ</button>
+      </section>
+
+      <section id="game-screen" class="screen">
+        <div class="status-bar">
+          <span>残り時間: <strong id="game-time-left">60</strong>s</span>
+          <span>正解数: <strong id="game-correct-count">0</strong></span>
+          <span>不正解数: <strong id="game-wrong-count">0</strong></span>
+        </div>
+        <div class="question-area">
+          <div id="game-question" class="question-text">1 + 1</div>
+          <input id="game-answer-input" type="number" class="answer-input" autocomplete="off" />
+        </div>
+        <div id="game-feedback" class="feedback" aria-live="polite"></div>
+      </section>
+
+      <section id="result-screen" class="screen">
+        <h2 class="screen__title">結果</h2>
+        <ul class="result-list">
+          <li>正解数: <strong id="result-correct-count">0</strong></li>
+          <li>不正解数: <strong id="result-wrong-count">0</strong></li>
+          <li>総回答数: <strong id="result-total-answered">0</strong></li>
+          <li>正答率: <strong id="result-accuracy">0</strong>%</li>
+        </ul>
+        <div class="button-row">
+          <button id="result-retry-button" class="primary-button">リトライ</button>
+          <button id="result-back-button" class="secondary-button">設定に戻る</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
