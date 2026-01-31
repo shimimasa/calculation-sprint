@@ -46,6 +46,7 @@ const domRefs = {
     dailyAttempt: document.getElementById('daily-attempt'),
     dailyWrong: document.getElementById('daily-wrong'),
     dailyHistoryBody: document.getElementById('daily-history-body'),
+    dailyHistorySum: document.getElementById('daily-history-sum'),
     dailyDiffWrap: document.getElementById('daily-diff'),
     diffBestAvg: document.getElementById('diff-best-avg'),
     diffWrong: document.getElementById('diff-wrong'),

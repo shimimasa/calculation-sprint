@@ -18,12 +18,27 @@ const formatSignedNumber = (value, digits = 1) => {
 
 const renderDailyHistory = (records) => {
   const tbody = domRefs.result.dailyHistoryBody;
-  if (!tbody) {
-    return;
+  if (tbody) {
+    tbody.innerHTML = '';
   }
-  tbody.innerHTML = '';
+  const bestRecord = records
+    .filter(({ record }) => typeof record.bestAvgSec === 'number')
+    .reduce((best, current) => {
+      if (!best) {
+        return current;
+      }
+      return current.record.bestAvgSec < best.record.bestAvgSec ? current : best;
+    }, null);
+  const bestKey = bestRecord?.dateKey ?? null;
+  let attemptSum = 0;
+  let wrongSum = 0;
   records.forEach(({ dateKey, record }) => {
+    attemptSum += record.attemptTotal;
+    wrongSum += record.wrongTotal;
     const row = document.createElement('tr');
+    if (bestKey && bestKey === dateKey) {
+      row.classList.add('is-best');
+    }
     const bestAvg = record.bestAvgSec ?? 0;
     const cells = [
       dateKey,
@@ -36,8 +51,13 @@ const renderDailyHistory = (records) => {
       cell.textContent = value;
       row.appendChild(cell);
     });
-    tbody.appendChild(row);
+    if (tbody) {
+      tbody.appendChild(row);
+    }
   });
+  if (domRefs.result.dailyHistorySum) {
+    domRefs.result.dailyHistorySum.textContent = `直近7日合計：回答 ${attemptSum} / ミス ${wrongSum}`;
+  }
 };
 
 const resultScreen = {
@@ -192,6 +212,9 @@ const resultScreen = {
       }
       if (domRefs.result.dailyHistoryBody) {
         domRefs.result.dailyHistoryBody.innerHTML = '';
+      }
+      if (domRefs.result.dailyHistorySum) {
+        domRefs.result.dailyHistorySum.textContent = '直近7日合計：回答 0 / ミス 0';
       }
     };
 
