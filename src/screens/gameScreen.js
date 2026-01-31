@@ -172,7 +172,8 @@ const gameScreen = {
       domRefs.game.speed.textContent = speedValue.toFixed(1);
     }
     if (domRefs.game.runner) {
-      const trackLength = domRefs.game.runnerTrack?.clientWidth || 520;
+      const rawTrackLength = domRefs.game.runnerTrack?.clientWidth;
+      const trackLength = rawTrackLength && rawTrackLength > 0 ? rawTrackLength : 520;
       const distanceValue = gameState.isReviewMode ? 0 : gameState.distanceM;
       const pxPerMeter = 12;
       const runnerX = (distanceValue * pxPerMeter) % trackLength;
