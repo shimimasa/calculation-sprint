@@ -56,6 +56,7 @@ const resultScreen = {
     this.handleReview = () => {
       gameState.isReviewMode = true;
       gameState.reviewModes = this.reviewModes;
+      gameState.reviewAnsweredCount = 0;
       screenManager.changeScreen('game');
     };
     this.handleBack = () => {

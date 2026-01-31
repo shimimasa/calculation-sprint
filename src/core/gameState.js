@@ -11,6 +11,8 @@ const gameState = {
   bestAvgSecSession: null,
   isReviewMode: false,
   reviewModes: [],
+  reviewQuestionLimit: 10,
+  reviewAnsweredCount: 0,
   wrongByMode: {
     add: 0,
     sub: 0,
