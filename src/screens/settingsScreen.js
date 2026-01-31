@@ -94,6 +94,7 @@ const settingsScreen = {
       });
       domRefs.settings.carryCheckbox.removeEventListener('change', this.handleManualChange);
     }
+    this.isSyncing = false;
   },
 };
 
