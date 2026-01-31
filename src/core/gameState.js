@@ -8,6 +8,7 @@ const gameState = {
   totalAnswerTimeMs: 0,
   questionStartAtMs: 0,
   answeredCountForTiming: 0,
+  bestAvgSecSession: null,
   wrongByMode: {
     add: 0,
     sub: 0,
