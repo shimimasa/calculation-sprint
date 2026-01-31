@@ -3,6 +3,7 @@ import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import dailyStatsStore from '../core/dailyStatsStore.js';
+import todayRankStore from '../core/todayRankStore.js';
 
 const formatDateKey = (date) => {
   const year = date.getFullYear();
@@ -15,6 +16,8 @@ const formatSignedNumber = (value, digits = 1) => {
   const fixed = value.toFixed(digits);
   return value > 0 ? `+${fixed}` : fixed;
 };
+
+const formatRankValue = (value) => (Number.isFinite(value) ? `${value.toFixed(1)}m` : '---');
 
 const renderDailyHistory = (records) => {
   const tbody = domRefs.result.dailyHistoryBody;
@@ -170,6 +173,24 @@ const resultScreen = {
       wrongByMode: { ...gameState.wrongByMode },
     };
     const todayKey = formatDateKey(new Date());
+    let todayRank = todayRankStore.get(todayKey);
+    if (!gameState.isReviewMode && gameState.distanceM > 0) {
+      todayRank = todayRankStore.update(todayKey, gameState.distanceM);
+    }
+    if (domRefs.result.todayRank) {
+      domRefs.result.todayRank.hidden = gameState.isReviewMode;
+    }
+    const rankTargets = [
+      domRefs.result.todayRankFirst,
+      domRefs.result.todayRankSecond,
+      domRefs.result.todayRankThird,
+    ];
+    rankTargets.forEach((target, index) => {
+      if (!target) {
+        return;
+      }
+      target.textContent = formatRankValue(todayRank.top[index]);
+    });
     const todayRecordOld = dailyStatsStore.get(todayKey);
     const todayRecord = dailyStatsStore.upsert(todayKey, sessionStats);
     const yesterday = new Date();
