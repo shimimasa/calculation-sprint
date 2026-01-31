@@ -33,14 +33,33 @@ const renderDailyHistory = (records) => {
     }
     bestKey = bestRecord.dateKey;
   }
+  const bestDistanceCandidates = records.filter(({ record }) => typeof record.bestDistanceM === 'number');
+  let bestDistanceKey = null;
+  if (bestDistanceCandidates.length > 0) {
+    let bestDistanceRecord = bestDistanceCandidates[0];
+    for (let i = 1; i < bestDistanceCandidates.length; i += 1) {
+      const current = bestDistanceCandidates[i];
+      if (current.record.bestDistanceM > bestDistanceRecord.record.bestDistanceM) {
+        bestDistanceRecord = current;
+      }
+    }
+    bestDistanceKey = bestDistanceRecord.dateKey;
+  }
   let attemptSum = 0;
   let wrongSum = 0;
+  let distanceSum = 0;
   records.forEach(({ dateKey, record }) => {
     attemptSum += record.attemptTotal;
     wrongSum += record.wrongTotal;
+    if (typeof record.bestDistanceM === 'number') {
+      distanceSum += record.bestDistanceM;
+    }
     const row = document.createElement('tr');
     if (bestKey && bestKey === dateKey) {
       row.classList.add('is-best');
+    }
+    if (bestDistanceKey && bestDistanceKey === dateKey) {
+      row.classList.add('is-best-distance');
     }
     const bestAvg = record.bestAvgSec ?? 0;
     const bestDistanceM = record.bestDistanceM ?? 0;
@@ -61,7 +80,7 @@ const renderDailyHistory = (records) => {
     }
   });
   if (domRefs.result.dailyHistorySum) {
-    domRefs.result.dailyHistorySum.textContent = `直近7日合計：回答 ${attemptSum} / ミス ${wrongSum}`;
+    domRefs.result.dailyHistorySum.textContent = `直近7日合計：回答 ${attemptSum} / ミス ${wrongSum} / 距離 ${distanceSum.toFixed(1)}m`;
   }
 };
 
@@ -265,7 +284,7 @@ const resultScreen = {
         domRefs.result.dailyHistoryBody.innerHTML = '';
       }
       if (domRefs.result.dailyHistorySum) {
-        domRefs.result.dailyHistorySum.textContent = '直近7日合計：回答 0 / ミス 0';
+        domRefs.result.dailyHistorySum.textContent = '直近7日合計：回答 0 / ミス 0 / 距離 0.0m';
       }
       if (domRefs.result.bestToast) {
         if (this.bestToastTimeout) {
