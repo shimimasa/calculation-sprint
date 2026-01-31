@@ -14,6 +14,7 @@ const gameScreen = {
     gameState.totalAnswered = 0;
     uiRenderer.clearFeedback();
     this.feedbackTimeoutId = null;
+    this.isLocked = false;
 
     this.handleKeyDown = (event) => {
       if (event.key !== 'Enter') {
@@ -41,6 +42,9 @@ const gameScreen = {
     domRefs.game.answerInput.value = '';
   },
   submitAnswer() {
+    if (this.isLocked) {
+      return;
+    }
     const rawValue = domRefs.game.answerInput.value.trim();
     const answerValue = Number(rawValue);
     const isCorrect = Number.isFinite(answerValue)
@@ -61,10 +65,11 @@ const gameScreen = {
     }
     this.feedbackTimeoutId = window.setTimeout(() => {
       uiRenderer.clearFeedback();
+      this.loadNextQuestion();
+      this.isLocked = false;
+      domRefs.game.answerInput.focus();
     }, 500);
-
-    this.loadNextQuestion();
-    domRefs.game.answerInput.focus();
+    this.isLocked = true;
   },
   render() {
     if (gameState.currentQuestion) {
@@ -81,6 +86,8 @@ const gameScreen = {
     if (this.feedbackTimeoutId) {
       window.clearTimeout(this.feedbackTimeoutId);
     }
+    this.feedbackTimeoutId = null;
+    this.isLocked = false;
   },
 };
 
