@@ -75,6 +75,8 @@ body {
 .status-bar {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
   font-weight: 600;
 }
@@ -112,6 +114,26 @@ body {
 
 .feedback.is-wrong {
   color: #e74c3c;
+}
+
+.runner-track {
+  position: relative;
+  height: 26px;
+  background: #eef2fb;
+  border-radius: 999px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+.runner {
+  position: absolute;
+  left: 0;
+  bottom: 3px;
+  width: 20px;
+  height: 20px;
+  background: #3867ff;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(56, 103, 255, 0.35);
 }
 
 .result-list {

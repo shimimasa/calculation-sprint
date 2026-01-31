@@ -24,6 +24,8 @@ const gameScreen = {
     });
     if (!gameState.isReviewMode) {
       gameState.reviewAnsweredCount = 0;
+      gameState.speedMps = 2.0;
+      gameState.distanceM = 0;
     }
     uiRenderer.clearFeedback();
     this.feedbackTimeoutId = null;
@@ -104,6 +106,14 @@ const gameScreen = {
       uiRenderer.setFeedback(`× 正解: ${gameState.currentQuestion.answer}`, 'wrong');
     }
 
+    if (!gameState.isReviewMode) {
+      if (isCorrect) {
+        gameState.speedMps = Math.min(gameState.maxSpeedMps, gameState.speedMps + gameState.speedUp);
+      } else {
+        gameState.speedMps = Math.max(gameState.minSpeedMps, gameState.speedMps - gameState.speedDown);
+      }
+    }
+
     if (gameState.isReviewMode && gameState.reviewAnsweredCount >= gameState.reviewQuestionLimit) {
       this.isLocked = true;
       if (this.feedbackTimeoutId) {
@@ -132,6 +142,20 @@ const gameScreen = {
     }, 500);
     this.isLocked = true;
   },
+  update(dtMs) {
+    if (gameState.isReviewMode) {
+      return;
+    }
+    const dtSec = dtMs / 1000;
+    if (!Number.isFinite(dtSec) || dtSec <= 0) {
+      return;
+    }
+    gameState.speedMps = Math.max(
+      gameState.minSpeedMps,
+      gameState.speedMps - gameState.frictionMpsPerSec * dtSec,
+    );
+    gameState.distanceM += gameState.speedMps * dtSec;
+  },
   render() {
     if (gameState.currentQuestion) {
       domRefs.game.question.textContent = gameState.currentQuestion.text;
@@ -139,6 +163,21 @@ const gameScreen = {
     domRefs.game.timeLeft.textContent = String(gameState.timeLeft);
     domRefs.game.correctCount.textContent = String(gameState.correctCount);
     domRefs.game.wrongCount.textContent = String(gameState.wrongCount);
+    if (domRefs.game.distance) {
+      const distanceValue = gameState.isReviewMode ? 0 : gameState.distanceM;
+      domRefs.game.distance.textContent = distanceValue.toFixed(1);
+    }
+    if (domRefs.game.speed) {
+      const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
+      domRefs.game.speed.textContent = speedValue.toFixed(1);
+    }
+    if (domRefs.game.runner) {
+      const trackLength = domRefs.game.runnerTrack?.clientWidth || 520;
+      const distanceValue = gameState.isReviewMode ? 0 : gameState.distanceM;
+      const pxPerMeter = 12;
+      const runnerX = (distanceValue * pxPerMeter) % trackLength;
+      domRefs.game.runner.style.transform = `translateX(${runnerX}px)`;
+    }
     if (domRefs.game.reviewProgress) {
       if (gameState.isReviewMode) {
         domRefs.game.reviewProgress.hidden = false;

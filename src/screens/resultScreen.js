@@ -86,6 +86,15 @@ const resultScreen = {
     domRefs.result.accuracy.textContent = String(accuracy);
     domRefs.result.avgTime.textContent = avgSec.toFixed(1);
     domRefs.result.bestAvgTime.textContent = bestAvgSecSession.toFixed(1);
+    if (domRefs.result.distance && domRefs.result.distanceRow) {
+      if (gameState.isReviewMode) {
+        domRefs.result.distanceRow.hidden = true;
+        domRefs.result.distance.textContent = '0.0';
+      } else {
+        domRefs.result.distanceRow.hidden = false;
+        domRefs.result.distance.textContent = gameState.distanceM.toFixed(1);
+      }
+    }
     ['add', 'sub', 'mul', 'div'].forEach((mode) => {
       const attempt = gameState.attemptByMode[mode];
       const wrong = gameState.wrongByMode[mode];

@@ -14,6 +14,13 @@ const gameState = {
   reviewQuestionLimit: 10,
   reviewAnsweredCount: 0,
   reviewCompleted: false,
+  speedMps: 2.0,
+  distanceM: 0,
+  maxSpeedMps: 8.0,
+  minSpeedMps: 0.0,
+  speedUp: 0.3,
+  speedDown: 0.6,
+  frictionMpsPerSec: 0.05,
   reviewSummary: {
     topMode: null,
     message: '',
