@@ -126,3 +126,24 @@ body {
   display: flex;
   gap: 12px;
 }
+
+.daily-history table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+
+.daily-history th,
+.daily-history td {
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.daily-history tr.is-best {
+  font-weight: 700;
+}
+
+#daily-history-sum {
+  color: #5a6477;
+  font-weight: 600;
+}
