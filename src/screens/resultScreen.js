@@ -13,12 +13,30 @@ const resultScreen = {
     const avgSec = gameState.answeredCountForTiming > 0
       ? gameState.totalAnswerTimeMs / gameState.answeredCountForTiming / 1000
       : 0;
+    if (avgSec > 0) {
+      if (gameState.bestAvgSecSession === null || avgSec < gameState.bestAvgSecSession) {
+        gameState.bestAvgSecSession = avgSec;
+      }
+    }
+    const bestAvgSecSession = gameState.bestAvgSecSession ?? 0;
 
     domRefs.result.correctCount.textContent = String(gameState.correctCount);
     domRefs.result.wrongCount.textContent = String(gameState.wrongCount);
     domRefs.result.totalAnswered.textContent = String(total);
     domRefs.result.accuracy.textContent = String(accuracy);
     domRefs.result.avgTime.textContent = avgSec.toFixed(1);
+    domRefs.result.bestAvgTime.textContent = bestAvgSecSession.toFixed(1);
+    ['add', 'sub', 'mul', 'div'].forEach((mode) => {
+      const attempt = gameState.attemptByMode[mode];
+      const wrong = gameState.wrongByMode[mode];
+      const correct = Math.max(0, attempt - wrong);
+      const rate = attempt > 0 ? Math.round((correct / attempt) * 100) : 0;
+      const label = `${rate}% (${correct}/${attempt})`;
+      const targetKey = `rate${mode[0].toUpperCase()}${mode.slice(1)}`;
+      if (domRefs.result[targetKey]) {
+        domRefs.result[targetKey].textContent = label;
+      }
+    });
     domRefs.result.wrongAdd.textContent = String(gameState.wrongByMode.add);
     domRefs.result.wrongSub.textContent = String(gameState.wrongByMode.sub);
     domRefs.result.wrongMul.textContent = String(gameState.wrongByMode.mul);
