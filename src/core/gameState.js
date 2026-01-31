@@ -13,6 +13,11 @@ const gameState = {
   reviewModes: [],
   reviewQuestionLimit: 10,
   reviewAnsweredCount: 0,
+  reviewCompleted: false,
+  reviewSummary: {
+    topMode: null,
+    message: '',
+  },
   wrongByMode: {
     add: 0,
     sub: 0,
