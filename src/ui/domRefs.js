@@ -17,6 +17,7 @@ const domRefs = {
   game: {
     timeLeft: document.getElementById('game-time-left'),
     correctCount: document.getElementById('game-correct-count'),
+    wrongCount: document.getElementById('game-wrong-count'),
     question: document.getElementById('game-question'),
     answerInput: document.getElementById('game-answer-input'),
     feedback: document.getElementById('game-feedback'),
@@ -24,6 +25,7 @@ const domRefs = {
   result: {
     correctCount: document.getElementById('result-correct-count'),
     wrongCount: document.getElementById('result-wrong-count'),
+    totalAnswered: document.getElementById('result-total-answered'),
     accuracy: document.getElementById('result-accuracy'),
     retryButton: document.getElementById('result-retry-button'),
     backButton: document.getElementById('result-back-button'),

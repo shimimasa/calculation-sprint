@@ -89,6 +89,7 @@ const gameScreen = {
     }
     domRefs.game.timeLeft.textContent = String(gameState.timeLeft);
     domRefs.game.correctCount.textContent = String(gameState.correctCount);
+    domRefs.game.wrongCount.textContent = String(gameState.wrongCount);
   },
   exit() {
     timer.stop();
