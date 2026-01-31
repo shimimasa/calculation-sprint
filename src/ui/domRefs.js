@@ -49,6 +49,7 @@ const domRefs = {
     wrongMul: document.getElementById('result-wrong-mul'),
     wrongDiv: document.getElementById('result-wrong-div'),
     dailyBestAvg: document.getElementById('daily-best-avg'),
+    dailyBestDistance: document.getElementById('daily-best-distance'),
     dailyAttempt: document.getElementById('daily-attempt'),
     dailyWrong: document.getElementById('daily-wrong'),
     dailyHistoryBody: document.getElementById('daily-history-body'),

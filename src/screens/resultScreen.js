@@ -143,6 +143,7 @@ const resultScreen = {
 
     const sessionStats = {
       avgSec,
+      distanceM: gameState.isReviewMode ? 0 : gameState.distanceM,
       attemptTotal: total,
       wrongTotal: gameState.wrongCount,
       wrongByMode: { ...gameState.wrongByMode },
@@ -156,6 +157,10 @@ const resultScreen = {
     if (domRefs.result.dailyBestAvg) {
       const bestAvg = todayRecord.bestAvgSec ?? 0;
       domRefs.result.dailyBestAvg.textContent = bestAvg.toFixed(1);
+    }
+    if (domRefs.result.dailyBestDistance) {
+      const bestDistanceM = todayRecord.bestDistanceM ?? 0;
+      domRefs.result.dailyBestDistance.textContent = bestDistanceM.toFixed(1);
     }
     if (domRefs.result.dailyAttempt) {
       domRefs.result.dailyAttempt.textContent = String(todayRecord.attemptTotal);
@@ -206,6 +211,9 @@ const resultScreen = {
       dailyStatsStore.reset();
       if (domRefs.result.dailyBestAvg) {
         domRefs.result.dailyBestAvg.textContent = '0.0';
+      }
+      if (domRefs.result.dailyBestDistance) {
+        domRefs.result.dailyBestDistance.textContent = '0.0';
       }
       if (domRefs.result.dailyAttempt) {
         domRefs.result.dailyAttempt.textContent = '0';
