@@ -9,6 +9,7 @@ const domRefs = {
     startButton: document.getElementById('title-start-button'),
   },
   settings: {
+    presetSelect: document.getElementById('settings-preset'),
     modeInputs: document.querySelectorAll('input[name="mode"]'),
     digitInputs: document.querySelectorAll('input[name="digit"]'),
     carryCheckbox: document.getElementById('settings-carry'),
