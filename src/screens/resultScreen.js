@@ -42,6 +42,16 @@ const resultScreen = {
     domRefs.result.wrongMul.textContent = String(gameState.wrongByMode.mul);
     domRefs.result.wrongDiv.textContent = String(gameState.wrongByMode.div);
 
+    if (domRefs.result.reviewBanner && domRefs.result.reviewMessage) {
+      if (gameState.reviewCompleted) {
+        domRefs.result.reviewBanner.hidden = false;
+        domRefs.result.reviewMessage.textContent = gameState.reviewSummary?.message || '';
+      } else {
+        domRefs.result.reviewBanner.hidden = true;
+        domRefs.result.reviewMessage.textContent = '';
+      }
+    }
+
     this.reviewModes = Object.keys(gameState.wrongByMode)
       .filter((mode) => gameState.wrongByMode[mode] > 0);
     if (domRefs.result.reviewButton) {
@@ -51,17 +61,23 @@ const resultScreen = {
     this.handleRetry = () => {
       gameState.isReviewMode = false;
       gameState.reviewModes = [];
+      gameState.reviewCompleted = false;
+      gameState.reviewSummary = { topMode: null, message: '' };
       screenManager.changeScreen('game', { retry: true });
     };
     this.handleReview = () => {
       gameState.isReviewMode = true;
       gameState.reviewModes = this.reviewModes;
       gameState.reviewAnsweredCount = 0;
+      gameState.reviewCompleted = false;
+      gameState.reviewSummary = { topMode: null, message: '' };
       screenManager.changeScreen('game');
     };
     this.handleBack = () => {
       gameState.isReviewMode = false;
       gameState.reviewModes = [];
+      gameState.reviewCompleted = false;
+      gameState.reviewSummary = { topMode: null, message: '' };
       screenManager.changeScreen('settings');
     };
 

@@ -4,6 +4,7 @@ import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import timer from '../core/timer.js';
 import questionGenerator from '../features/questionGenerator.js';
+import buildReviewSummary from '../core/reviewSummary.js';
 
 const gameScreen = {
   enter() {
@@ -110,6 +111,12 @@ const gameScreen = {
         this.feedbackTimeoutId = null;
       }
       uiRenderer.clearFeedback();
+      gameState.reviewCompleted = true;
+      gameState.reviewSummary = buildReviewSummary(
+        gameState.wrongByMode,
+        gameState.attemptByMode,
+        gameState.settings,
+      );
       screenManager.changeScreen('result');
       return;
     }

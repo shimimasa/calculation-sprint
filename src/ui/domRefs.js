@@ -25,6 +25,8 @@ const domRefs = {
     feedback: document.getElementById('game-feedback'),
   },
   result: {
+    reviewBanner: document.getElementById('result-review-banner'),
+    reviewMessage: document.getElementById('result-review-message'),
     correctCount: document.getElementById('result-correct-count'),
     wrongCount: document.getElementById('result-wrong-count'),
     totalAnswered: document.getElementById('result-total-answered'),
