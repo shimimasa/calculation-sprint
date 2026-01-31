@@ -43,9 +43,11 @@ const renderDailyHistory = (records) => {
       row.classList.add('is-best');
     }
     const bestAvg = record.bestAvgSec ?? 0;
+    const bestDistanceM = record.bestDistanceM ?? 0;
     const cells = [
       dateKey,
       bestAvg.toFixed(1),
+      bestDistanceM.toFixed(1),
       String(record.attemptTotal),
       String(record.wrongTotal),
     ];
