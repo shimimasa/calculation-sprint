@@ -29,13 +29,13 @@ const gameScreen = {
     domRefs.game.answerInput.focus();
   },
   startTimer() {
-    timer.start(() => {
-      gameState.timeLeft = Math.max(0, gameState.timeLeft - 1);
-      if (gameState.timeLeft <= 0) {
-        timer.stop();
-        screenManager.changeScreen('result');
-      }
-    });
+    timer.start(
+      gameState.timeLimit,
+      (timeLeft) => {
+        gameState.timeLeft = timeLeft;
+      },
+      () => screenManager.changeScreen('result'),
+    );
   },
   loadNextQuestion() {
     gameState.currentQuestion = questionGenerator.next(gameState.settings);
