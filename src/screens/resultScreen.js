@@ -151,10 +151,39 @@ const resultScreen = {
       wrongByMode: { ...gameState.wrongByMode },
     };
     const todayKey = formatDateKey(new Date());
+    const todayRecordOld = dailyStatsStore.get(todayKey);
     const todayRecord = dailyStatsStore.upsert(todayKey, sessionStats);
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayRecord = dailyStatsStore.get(formatDateKey(yesterday));
+
+    const oldBestAvgSec = todayRecordOld?.bestAvgSec ?? null;
+    const newBestAvgSec = todayRecord.bestAvgSec ?? null;
+    const isBestAvgUpdated = newBestAvgSec !== null
+      && (oldBestAvgSec === null || newBestAvgSec < oldBestAvgSec);
+    const oldBestDistanceM = todayRecordOld?.bestDistanceM ?? null;
+    const newBestDistanceM = todayRecord.bestDistanceM ?? null;
+    const isBestDistanceUpdated = newBestDistanceM !== null
+      && (oldBestDistanceM === null || newBestDistanceM > oldBestDistanceM);
+    const shouldShowBestToast = isBestAvgUpdated || isBestDistanceUpdated;
+
+    if (domRefs.result.bestToast) {
+      if (this.bestToastTimeout) {
+        clearTimeout(this.bestToastTimeout);
+        this.bestToastTimeout = null;
+      }
+      if (shouldShowBestToast) {
+        domRefs.result.bestToast.hidden = false;
+        this.bestToastTimeout = window.setTimeout(() => {
+          if (domRefs.result.bestToast) {
+            domRefs.result.bestToast.hidden = true;
+          }
+          this.bestToastTimeout = null;
+        }, 1500);
+      } else {
+        domRefs.result.bestToast.hidden = true;
+      }
+    }
 
     if (domRefs.result.dailyBestAvg) {
       const bestAvg = todayRecord.bestAvgSec ?? 0;
@@ -238,6 +267,13 @@ const resultScreen = {
       if (domRefs.result.dailyHistorySum) {
         domRefs.result.dailyHistorySum.textContent = '直近7日合計：回答 0 / ミス 0';
       }
+      if (domRefs.result.bestToast) {
+        if (this.bestToastTimeout) {
+          clearTimeout(this.bestToastTimeout);
+          this.bestToastTimeout = null;
+        }
+        domRefs.result.bestToast.hidden = true;
+      }
     };
 
     this.handleRetry = () => {
@@ -303,6 +339,13 @@ const resultScreen = {
     }
     if (this.handleDailyReset && domRefs.result.dailyResetButton) {
       domRefs.result.dailyResetButton.removeEventListener('click', this.handleDailyReset);
+    }
+    if (this.bestToastTimeout) {
+      clearTimeout(this.bestToastTimeout);
+      this.bestToastTimeout = null;
+    }
+    if (domRefs.result.bestToast) {
+      domRefs.result.bestToast.hidden = true;
     }
   },
 };

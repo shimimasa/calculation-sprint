@@ -29,6 +29,7 @@ const domRefs = {
     runnerTrack: document.querySelector('.runner-track'),
   },
   result: {
+    bestToast: document.getElementById('result-best-toast'),
     reviewBanner: document.getElementById('result-review-banner'),
     reviewMessage: document.getElementById('result-review-message'),
     nextActionButton: document.getElementById('result-next-action-button'),
