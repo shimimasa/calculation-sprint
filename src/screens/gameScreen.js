@@ -34,8 +34,17 @@ const gameScreen = {
       (timeLeft) => {
         gameState.timeLeft = timeLeft;
       },
-      () => screenManager.changeScreen('result'),
+      () => this.handleTimeUp(),
     );
+  },
+  handleTimeUp() {
+    this.isLocked = true;
+    if (this.feedbackTimeoutId) {
+      window.clearTimeout(this.feedbackTimeoutId);
+      this.feedbackTimeoutId = null;
+    }
+    uiRenderer.clearFeedback();
+    screenManager.changeScreen('result');
   },
   loadNextQuestion() {
     gameState.currentQuestion = questionGenerator.next(gameState.settings);
@@ -43,6 +52,9 @@ const gameScreen = {
   },
   submitAnswer() {
     if (this.isLocked) {
+      return;
+    }
+    if (!gameState.currentQuestion) {
       return;
     }
     const rawValue = domRefs.game.answerInput.value.trim();

@@ -21,14 +21,19 @@ const nextAddNoCarry = (digit) => {
     const b = randomInt(1, 9 - a);
     return { a, b };
   }
-  const aTens = randomInt(1, 8);
-  const bTens = randomInt(1, 9 - aTens);
-  const aOnes = randomInt(0, 9);
-  const bOnes = randomInt(0, 9 - aOnes);
-  return {
-    a: buildNumberFromDigits(aTens, aOnes),
-    b: buildNumberFromDigits(bTens, bOnes),
-  };
+  const maxAttempts = 50;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const aTens = randomInt(1, 8);
+    const bTens = randomInt(1, 9 - aTens);
+    const aOnes = randomInt(0, 9);
+    const bOnes = randomInt(0, 9 - aOnes);
+    const a = buildNumberFromDigits(aTens, aOnes);
+    const b = buildNumberFromDigits(bTens, bOnes);
+    if (a + b <= 99) {
+      return { a, b };
+    }
+  }
+  return { a: 10, b: 10 };
 };
 
 const nextSubNoBorrow = (digit) => {
