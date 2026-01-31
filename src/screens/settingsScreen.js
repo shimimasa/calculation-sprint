@@ -25,7 +25,9 @@ const readUiToSettings = () => {
 const settingsScreen = {
   enter() {
     uiRenderer.showScreen('settings');
+    this.isSyncing = true;
     applySettingsToUi(gameState.settings);
+    this.isSyncing = false;
 
     this.handlePresetChange = () => {
       const presetKey = domRefs.settings.presetSelect.value;
@@ -36,10 +38,12 @@ const settingsScreen = {
       if (!preset) {
         return;
       }
+      this.isSyncing = true;
       gameState.settings.mode = preset.mode;
       gameState.settings.digit = preset.digit;
       gameState.settings.carry = preset.carry;
       applySettingsToUi(gameState.settings);
+      this.isSyncing = false;
       console.log('Preset applied:', presetKey, {
         mode: gameState.settings.mode,
         digit: gameState.settings.digit,
@@ -48,6 +52,9 @@ const settingsScreen = {
     };
 
     this.handleManualChange = () => {
+      if (this.isSyncing) {
+        return;
+      }
       readUiToSettings();
       if (domRefs.settings.presetSelect.value !== '') {
         domRefs.settings.presetSelect.value = '';
