@@ -175,6 +175,11 @@ body {
   font-weight: 700;
 }
 
+.daily-history tr.is-best-distance {
+  outline: 2px solid rgba(56, 103, 255, 0.35);
+  background: rgba(56, 103, 255, 0.06);
+}
+
 #daily-history-sum {
   color: #5a6477;
   font-weight: 600;
