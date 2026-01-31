@@ -2,6 +2,19 @@ import domRefs from '../ui/domRefs.js';
 import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
+import dailyStatsStore from '../core/dailyStatsStore.js';
+
+const formatDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatSignedNumber = (value, digits = 1) => {
+  const fixed = value.toFixed(digits);
+  return value > 0 ? `+${fixed}` : fixed;
+};
 
 const resultScreen = {
   enter() {
@@ -72,6 +85,77 @@ const resultScreen = {
       domRefs.result.reviewButton.hidden = this.reviewModes.length === 0;
     }
 
+    const sessionStats = {
+      avgSec,
+      attemptTotal: total,
+      wrongTotal: gameState.wrongCount,
+      wrongByMode: { ...gameState.wrongByMode },
+    };
+    const todayKey = formatDateKey(new Date());
+    const todayRecord = dailyStatsStore.upsert(todayKey, sessionStats);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayRecord = dailyStatsStore.get(formatDateKey(yesterday));
+
+    if (domRefs.result.dailyBestAvg) {
+      const bestAvg = todayRecord.bestAvgSec ?? 0;
+      domRefs.result.dailyBestAvg.textContent = bestAvg.toFixed(1);
+    }
+    if (domRefs.result.dailyAttempt) {
+      domRefs.result.dailyAttempt.textContent = String(todayRecord.attemptTotal);
+    }
+    if (domRefs.result.dailyWrong) {
+      domRefs.result.dailyWrong.textContent = String(todayRecord.wrongTotal);
+    }
+    if (domRefs.result.dailyDiffWrap) {
+      if (yesterdayRecord) {
+        domRefs.result.dailyDiffWrap.hidden = false;
+        if (domRefs.result.diffBestAvg) {
+          if (todayRecord.bestAvgSec !== null && yesterdayRecord.bestAvgSec !== null) {
+            const diffBestAvg = todayRecord.bestAvgSec - yesterdayRecord.bestAvgSec;
+            domRefs.result.diffBestAvg.textContent = formatSignedNumber(diffBestAvg, 1);
+          } else {
+            domRefs.result.diffBestAvg.textContent = '0.0';
+          }
+        }
+        if (domRefs.result.diffWrong) {
+          const diffWrong = todayRecord.wrongTotal - yesterdayRecord.wrongTotal;
+          domRefs.result.diffWrong.textContent = formatSignedNumber(diffWrong, 0);
+        }
+      } else {
+        domRefs.result.dailyDiffWrap.hidden = true;
+      }
+    }
+
+    this.handleDailyReset = () => {
+      if (!domRefs.result.dailyResetButton) {
+        return;
+      }
+      const shouldReset = window.confirm('記録をリセットしますか？');
+      if (!shouldReset) {
+        return;
+      }
+      dailyStatsStore.reset();
+      if (domRefs.result.dailyBestAvg) {
+        domRefs.result.dailyBestAvg.textContent = '0.0';
+      }
+      if (domRefs.result.dailyAttempt) {
+        domRefs.result.dailyAttempt.textContent = '0';
+      }
+      if (domRefs.result.dailyWrong) {
+        domRefs.result.dailyWrong.textContent = '0';
+      }
+      if (domRefs.result.dailyDiffWrap) {
+        domRefs.result.dailyDiffWrap.hidden = true;
+      }
+      if (domRefs.result.diffBestAvg) {
+        domRefs.result.diffBestAvg.textContent = '0.0';
+      }
+      if (domRefs.result.diffWrong) {
+        domRefs.result.diffWrong.textContent = '0';
+      }
+    };
+
     this.handleRetry = () => {
       gameState.isReviewMode = false;
       gameState.reviewModes = [];
@@ -115,6 +199,9 @@ const resultScreen = {
     if (domRefs.result.nextActionButton) {
       domRefs.result.nextActionButton.addEventListener('click', this.handleNextAction);
     }
+    if (domRefs.result.dailyResetButton) {
+      domRefs.result.dailyResetButton.addEventListener('click', this.handleDailyReset);
+    }
   },
   render() {},
   exit() {
@@ -129,6 +216,9 @@ const resultScreen = {
     }
     if (this.handleNextAction && domRefs.result.nextActionButton) {
       domRefs.result.nextActionButton.removeEventListener('click', this.handleNextAction);
+    }
+    if (this.handleDailyReset && domRefs.result.dailyResetButton) {
+      domRefs.result.dailyResetButton.removeEventListener('click', this.handleDailyReset);
     }
   },
 };

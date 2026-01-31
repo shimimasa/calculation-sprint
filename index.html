@@ -88,6 +88,19 @@
             除 <strong id="result-wrong-div">0</strong>
           </li>
         </ul>
+        <div class="daily-stats">
+          <h3>今日の記録</h3>
+          <p>ベスト平均: <strong id="daily-best-avg">0.0</strong> 秒/問</p>
+          <p>回答: <strong id="daily-attempt">0</strong> / ミス: <strong id="daily-wrong">0</strong></p>
+
+          <div id="daily-diff" hidden>
+            <h4>昨日との差</h4>
+            <p>ベスト平均: <strong id="diff-best-avg">0.0</strong> 秒</p>
+            <p>ミス: <strong id="diff-wrong">0</strong></p>
+          </div>
+
+          <button id="daily-reset-button" class="secondary-button">記録をリセット</button>
+        </div>
         <div class="button-row">
           <button id="result-retry-button" class="primary-button">リトライ</button>
           <button id="result-review-button" class="secondary-button" hidden>復習モードで再挑戦</button>
