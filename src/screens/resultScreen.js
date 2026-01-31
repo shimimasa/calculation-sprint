@@ -46,9 +46,23 @@ const resultScreen = {
       if (gameState.reviewCompleted) {
         domRefs.result.reviewBanner.hidden = false;
         domRefs.result.reviewMessage.textContent = gameState.reviewSummary?.message || '';
+        if (domRefs.result.nextActionButton) {
+          const nextAction = gameState.reviewSummary?.nextAction || null;
+          if (nextAction) {
+            domRefs.result.nextActionButton.hidden = false;
+            domRefs.result.nextActionButton.textContent = nextAction.label;
+          } else {
+            domRefs.result.nextActionButton.hidden = true;
+            domRefs.result.nextActionButton.textContent = '';
+          }
+        }
       } else {
         domRefs.result.reviewBanner.hidden = true;
         domRefs.result.reviewMessage.textContent = '';
+        if (domRefs.result.nextActionButton) {
+          domRefs.result.nextActionButton.hidden = true;
+          domRefs.result.nextActionButton.textContent = '';
+        }
       }
     }
 
@@ -62,7 +76,7 @@ const resultScreen = {
       gameState.isReviewMode = false;
       gameState.reviewModes = [];
       gameState.reviewCompleted = false;
-      gameState.reviewSummary = { topMode: null, message: '' };
+      gameState.reviewSummary = { topMode: null, message: '', nextAction: null };
       screenManager.changeScreen('game', { retry: true });
     };
     this.handleReview = () => {
@@ -70,14 +84,26 @@ const resultScreen = {
       gameState.reviewModes = this.reviewModes;
       gameState.reviewAnsweredCount = 0;
       gameState.reviewCompleted = false;
-      gameState.reviewSummary = { topMode: null, message: '' };
+      gameState.reviewSummary = { topMode: null, message: '', nextAction: null };
       screenManager.changeScreen('game');
     };
     this.handleBack = () => {
       gameState.isReviewMode = false;
       gameState.reviewModes = [];
       gameState.reviewCompleted = false;
-      gameState.reviewSummary = { topMode: null, message: '' };
+      gameState.reviewSummary = { topMode: null, message: '', nextAction: null };
+      screenManager.changeScreen('settings');
+    };
+    this.handleNextAction = () => {
+      const nextAction = gameState.reviewSummary?.nextAction;
+      if (!nextAction) {
+        return;
+      }
+      Object.assign(gameState.settings, nextAction.presetPatch);
+      gameState.isReviewMode = false;
+      gameState.reviewModes = [];
+      gameState.reviewCompleted = false;
+      gameState.reviewSummary = { topMode: null, message: '', nextAction: null };
       screenManager.changeScreen('settings');
     };
 
@@ -86,6 +112,9 @@ const resultScreen = {
       domRefs.result.reviewButton.addEventListener('click', this.handleReview);
     }
     domRefs.result.backButton.addEventListener('click', this.handleBack);
+    if (domRefs.result.nextActionButton) {
+      domRefs.result.nextActionButton.addEventListener('click', this.handleNextAction);
+    }
   },
   render() {},
   exit() {
@@ -97,6 +126,9 @@ const resultScreen = {
     }
     if (this.handleBack) {
       domRefs.result.backButton.removeEventListener('click', this.handleBack);
+    }
+    if (this.handleNextAction && domRefs.result.nextActionButton) {
+      domRefs.result.nextActionButton.removeEventListener('click', this.handleNextAction);
     }
   },
 };

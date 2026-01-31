@@ -27,6 +27,7 @@ const domRefs = {
   result: {
     reviewBanner: document.getElementById('result-review-banner'),
     reviewMessage: document.getElementById('result-review-message'),
+    nextActionButton: document.getElementById('result-next-action-button'),
     correctCount: document.getElementById('result-correct-count'),
     wrongCount: document.getElementById('result-wrong-count'),
     totalAnswered: document.getElementById('result-total-answered'),
