@@ -17,6 +17,16 @@
       <section id="settings-screen" class="screen">
         <h2 class="screen__title">設定</h2>
         <div class="form-group">
+          <label class="form-label" for="settings-preset">難易度プリセット</label>
+          <select id="settings-preset">
+            <option value="">プリセットなし（手動設定）</option>
+            <option value="p3-basic">小3 基本</option>
+            <option value="p4-nocarry">小4 繰上がりなし</option>
+            <option value="p4-carry">小4 繰上がりあり</option>
+            <option value="p5-mul">小5 九九</option>
+          </select>
+        </div>
+        <div class="form-group">
           <p class="form-label">モード</p>
           <label><input type="radio" name="mode" value="add" checked /> たし算</label>
           <label><input type="radio" name="mode" value="sub" /> ひき算</label>
