@@ -9,6 +9,8 @@ const gameState = {
   questionStartAtMs: 0,
   answeredCountForTiming: 0,
   bestAvgSecSession: null,
+  isReviewMode: false,
+  reviewModes: [],
   wrongByMode: {
     add: 0,
     sub: 0,

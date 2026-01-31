@@ -56,7 +56,10 @@ const gameScreen = {
     screenManager.changeScreen('result');
   },
   loadNextQuestion() {
-    gameState.currentQuestion = questionGenerator.next(gameState.settings);
+    gameState.currentQuestion = questionGenerator.next({
+      ...gameState.settings,
+      reviewModes: gameState.isReviewMode ? gameState.reviewModes : [],
+    });
     domRefs.game.answerInput.value = '';
     gameState.questionStartAtMs = performance.now();
   },
