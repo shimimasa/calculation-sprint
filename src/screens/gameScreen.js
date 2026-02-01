@@ -56,10 +56,15 @@ const gameScreen = {
     this.effectTimeoutIds = [];
   },
   clearStumbleTimeout() {
-    if (this.stumbleTimeoutId) {
-      window.clearTimeout(this.stumbleTimeoutId);
-      this.stumbleTimeoutId = null;
+    if (!this.stumbleTimeoutId) {
+      return;
     }
+    if (Array.isArray(this.stumbleTimeoutId)) {
+      this.stumbleTimeoutId.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    } else {
+      window.clearTimeout(this.stumbleTimeoutId);
+    }
+    this.stumbleTimeoutId = null;
   },
   resetEffects() {
     domRefs.game.runner?.classList.remove(
@@ -73,10 +78,12 @@ const gameScreen = {
     domRefs.game.speedLines?.classList.remove('boost-lines');
     domRefs.game.speed?.classList.remove('glow');
     domRefs.game.runWorld?.classList.remove('miss-flash');
+    domRefs.game.runWorld?.classList.remove('stumble-freeze');
     domRefs.game.runWorld?.classList.remove('is-fast', 'is-rapid');
     domRefs.game.speedLines?.classList.remove('is-fast', 'is-rapid');
     domRefs.game.runner?.classList.remove('speed-glow');
     domRefs.game.runnerWrap?.classList.remove('is-fast', 'is-rapid');
+    domRefs.game.runBg?.style.removeProperty('--stumble-freeze-x');
     this.runnerSpeedTier = null;
   },
   queueEffectReset(callback, delayMs) {
@@ -121,11 +128,27 @@ const gameScreen = {
     }
     this.clearStumbleTimeout();
     domRefs.game.runner.classList.remove('hit', 'boost');
+    domRefs.game.speedLines?.classList.remove('boost-lines');
+    domRefs.game.speed?.classList.remove('glow');
     domRefs.game.runner.classList.add('stumble');
-    this.stumbleTimeoutId = window.setTimeout(() => {
+    const timeoutIds = [];
+    if (!gameState.isReviewMode) {
+      domRefs.game.runWorld?.classList.add('stumble-freeze');
+      domRefs.game.runBg?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetPx}px`);
+      timeoutIds.push(
+        window.setTimeout(() => {
+          domRefs.game.runWorld?.classList.remove('stumble-freeze');
+          domRefs.game.runBg?.style.removeProperty('--stumble-freeze-x');
+        }, 120),
+      );
+    }
+    timeoutIds.push(window.setTimeout(() => {
       domRefs.game.runner?.classList.remove('stumble');
+      domRefs.game.runWorld?.classList.remove('stumble-freeze');
+      domRefs.game.runBg?.style.removeProperty('--stumble-freeze-x');
       this.stumbleTimeoutId = null;
-    }, 320);
+    }, 320));
+    this.stumbleTimeoutId = timeoutIds;
   },
   startTimer() {
     timer.start(
@@ -246,9 +269,12 @@ const gameScreen = {
     gameState.distanceM += gameState.speedMps * dtSec;
     const bgFactor = 42;
     const loopWidthPx = 1200;
-    this.bgOffsetPx -= gameState.speedMps * dtSec * bgFactor;
-    if (this.bgOffsetPx <= -loopWidthPx) {
-      this.bgOffsetPx += loopWidthPx;
+    const isBgFrozen = domRefs.game.runWorld?.classList.contains('stumble-freeze');
+    if (!isBgFrozen) {
+      this.bgOffsetPx -= gameState.speedMps * dtSec * bgFactor;
+      if (this.bgOffsetPx <= -loopWidthPx) {
+        this.bgOffsetPx += loopWidthPx;
+      }
     }
   },
   render() {

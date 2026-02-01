@@ -234,6 +234,11 @@ body {
   transition: filter 0.2s ease;
 }
 
+.run-world.stumble-freeze .run-bg {
+  background-position-x: var(--stumble-freeze-x, 0px);
+  transition: none;
+}
+
 .run-world.is-fast .run-bg {
   filter: saturate(1.1) brightness(1.05);
 }
