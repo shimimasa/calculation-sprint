@@ -45,6 +45,8 @@ const gameScreen = {
     this.loadNextQuestion();
     this.startTimer();
     domRefs.game.answerInput.focus();
+    this.stumbleTimeoutId = null;
+    this.runnerSpeedTier = null;
   },
   clearEffectTimeouts() {
     if (!this.effectTimeoutIds) {
@@ -53,8 +55,21 @@ const gameScreen = {
     this.effectTimeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
     this.effectTimeoutIds = [];
   },
+  clearStumbleTimeout() {
+    if (this.stumbleTimeoutId) {
+      window.clearTimeout(this.stumbleTimeoutId);
+      this.stumbleTimeoutId = null;
+    }
+  },
   resetEffects() {
-    domRefs.game.runner?.classList.remove('boost', 'hit');
+    domRefs.game.runner?.classList.remove(
+      'boost',
+      'hit',
+      'stumble',
+      'runner-speed-low',
+      'runner-speed-mid',
+      'runner-speed-high',
+    );
     domRefs.game.speedLines?.classList.remove('boost-lines');
     domRefs.game.speed?.classList.remove('glow');
     domRefs.game.runWorld?.classList.remove('miss-flash');
@@ -62,6 +77,7 @@ const gameScreen = {
     domRefs.game.speedLines?.classList.remove('is-fast', 'is-rapid');
     domRefs.game.runner?.classList.remove('speed-glow');
     domRefs.game.runnerWrap?.classList.remove('is-fast', 'is-rapid');
+    this.runnerSpeedTier = null;
   },
   queueEffectReset(callback, delayMs) {
     const timeoutId = window.setTimeout(() => {
@@ -88,6 +104,9 @@ const gameScreen = {
     if (!domRefs.game.runner) {
       return;
     }
+    if (domRefs.game.runner.classList.contains('stumble')) {
+      return;
+    }
     domRefs.game.runner.classList.remove('boost');
     domRefs.game.runner.classList.add('hit');
     domRefs.game.runWorld?.classList.add('miss-flash');
@@ -95,6 +114,18 @@ const gameScreen = {
       domRefs.game.runner?.classList.remove('hit');
       domRefs.game.runWorld?.classList.remove('miss-flash');
     }, 200);
+  },
+  triggerStumbleEffect() {
+    if (!domRefs.game.runner) {
+      return;
+    }
+    this.clearStumbleTimeout();
+    domRefs.game.runner.classList.remove('hit', 'boost');
+    domRefs.game.runner.classList.add('stumble');
+    this.stumbleTimeoutId = window.setTimeout(() => {
+      domRefs.game.runner?.classList.remove('stumble');
+      this.stumbleTimeoutId = null;
+    }, 320);
   },
   startTimer() {
     timer.start(
@@ -112,6 +143,7 @@ const gameScreen = {
       this.feedbackTimeoutId = null;
     }
     this.clearEffectTimeouts();
+    this.clearStumbleTimeout();
     this.resetEffects();
     uiRenderer.clearFeedback();
     screenManager.changeScreen('result');
@@ -167,7 +199,7 @@ const gameScreen = {
         this.triggerBoostEffect();
       } else {
         gameState.speedMps = Math.max(gameState.minSpeedMps, gameState.speedMps - gameState.speedDown);
-        this.triggerHitEffect();
+        this.triggerStumbleEffect();
       }
     }
 
@@ -281,6 +313,33 @@ const gameScreen = {
         domRefs.game.reviewProgress.hidden = true;
       }
     }
+    if (domRefs.game.runner) {
+      if (gameState.isReviewMode) {
+        domRefs.game.runner.classList.remove(
+          'runner-speed-low',
+          'runner-speed-mid',
+          'runner-speed-high',
+        );
+        this.runnerSpeedTier = null;
+      } else {
+        const speedValue = gameState.speedMps;
+        let nextTier = 'runner-speed-high';
+        if (speedValue < 3.0) {
+          nextTier = 'runner-speed-low';
+        } else if (speedValue < 6.0) {
+          nextTier = 'runner-speed-mid';
+        }
+        if (this.runnerSpeedTier !== nextTier) {
+          domRefs.game.runner.classList.remove(
+            'runner-speed-low',
+            'runner-speed-mid',
+            'runner-speed-high',
+          );
+          domRefs.game.runner.classList.add(nextTier);
+          this.runnerSpeedTier = nextTier;
+        }
+      }
+    }
   },
   exit() {
     timer.stop();
@@ -292,6 +351,7 @@ const gameScreen = {
     }
     this.feedbackTimeoutId = null;
     this.clearEffectTimeouts();
+    this.clearStumbleTimeout();
     this.resetEffects();
     this.isLocked = false;
   },
