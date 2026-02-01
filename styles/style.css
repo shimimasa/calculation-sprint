@@ -284,6 +284,22 @@ body {
   background-size: 12px 12px;
 }
 
+@property --runner-bob-offset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+@keyframes runner-bob {
+  0%,
+  100% {
+    --runner-bob-offset: 0px;
+  }
+  50% {
+    --runner-bob-offset: -3px;
+  }
+}
+
 .runner-wrap {
   position: absolute;
   left: 64px;
@@ -321,15 +337,19 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: translateY(0);
+  transform: translateY(var(--runner-bob-offset, 0px));
   transition: transform 0.2s ease, filter 0.2s ease;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
   position: relative;
   z-index: 1;
 }
 
+.run-layer #runner-sprite.runner-bob {
+  animation: runner-bob 0.4s ease-in-out infinite;
+}
+
 #runner-sprite.boost {
-  transform: translateY(-2px) scale(1.06);
+  transform: translateY(calc(var(--runner-bob-offset, 0px) - 2px)) scale(1.06);
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)) brightness(1.1);
 }
 
@@ -343,7 +363,13 @@ body {
 }
 
 #runner-sprite.hit {
-  transform: translateY(4px);
+  transform: translateY(calc(var(--runner-bob-offset, 0px) + 4px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .run-layer #runner-sprite.runner-bob {
+    animation: none;
+  }
 }
 
 #game-speed.glow {
