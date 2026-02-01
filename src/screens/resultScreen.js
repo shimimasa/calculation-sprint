@@ -191,6 +191,29 @@ const resultScreen = {
       }
       target.textContent = formatRankValue(todayRank.top[index]);
     });
+    if (domRefs.result.top3Message) {
+      if (gameState.isReviewMode || gameState.distanceM <= 0) {
+        domRefs.result.top3Message.hidden = true;
+      } else {
+        const topValues = todayRank.top
+          .filter((value) => Number.isFinite(value))
+          .sort((a, b) => b - a);
+        let message = 'TOP3を狙おう！';
+        if (topValues.length === 0) {
+          message = '今日の1位に！';
+        } else {
+          const rank = topValues.findIndex((value) => gameState.distanceM >= value - 0.0001) + 1;
+          if (rank > 0 && rank <= 3) {
+            message = `今日の${rank}位にランクイン！`;
+          } else if (topValues.length >= 3) {
+            const diff = Math.max(0, topValues[2] - gameState.distanceM);
+            message = `TOP3まであと${diff.toFixed(1)}m`;
+          }
+        }
+        domRefs.result.top3Message.textContent = message;
+        domRefs.result.top3Message.hidden = false;
+      }
+    }
     const todayRecordOld = dailyStatsStore.get(todayKey);
     const todayRecord = dailyStatsStore.upsert(todayKey, sessionStats);
     const yesterday = new Date();
@@ -214,6 +237,18 @@ const resultScreen = {
       }
       if (shouldShowBestToast) {
         domRefs.result.bestToast.hidden = false;
+        if (domRefs.screens.result) {
+          domRefs.screens.result.classList.add('is-confetti');
+          if (this.confettiTimeout) {
+            clearTimeout(this.confettiTimeout);
+          }
+          this.confettiTimeout = window.setTimeout(() => {
+            if (domRefs.screens.result) {
+              domRefs.screens.result.classList.remove('is-confetti');
+            }
+            this.confettiTimeout = null;
+          }, 1200);
+        }
         this.bestToastTimeout = window.setTimeout(() => {
           if (domRefs.result.bestToast) {
             domRefs.result.bestToast.hidden = true;
@@ -222,6 +257,9 @@ const resultScreen = {
         }, 1500);
       } else {
         domRefs.result.bestToast.hidden = true;
+        if (domRefs.screens.result) {
+          domRefs.screens.result.classList.remove('is-confetti');
+        }
       }
     }
 
@@ -384,8 +422,15 @@ const resultScreen = {
       clearTimeout(this.bestToastTimeout);
       this.bestToastTimeout = null;
     }
+    if (this.confettiTimeout) {
+      clearTimeout(this.confettiTimeout);
+      this.confettiTimeout = null;
+    }
     if (domRefs.result.bestToast) {
       domRefs.result.bestToast.hidden = true;
+    }
+    if (domRefs.screens.result) {
+      domRefs.screens.result.classList.remove('is-confetti');
     }
   },
 };
