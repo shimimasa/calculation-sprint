@@ -215,6 +215,16 @@ body {
   z-index: 4;
 }
 
+.runner-missing .runner-wrap::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #0b0f18;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.35);
+}
+
 #runner-sprite {
   width: 100%;
   height: 100%;
