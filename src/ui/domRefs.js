@@ -26,6 +26,7 @@ const domRefs = {
     answerInput: document.getElementById('game-answer-input'),
     feedback: document.getElementById('game-feedback'),
     runner: document.getElementById('runner'),
+    runLayer: document.querySelector('.run-layer'),
     runnerWorld: document.querySelector('.runner-world'),
     runnerBg: document.querySelector('.runner-bg'),
     speedLines: document.querySelector('.speed-lines'),
