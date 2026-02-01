@@ -13,8 +13,8 @@ body {
 }
 
 :root {
-  --run-bg-image: url("/assets/bg-sky.png");
-  --run-ground-image: url("/assets/ground.png");
+  --run-bg-image: url("/assets/bg/bg-sky.png");
+  --run-ground-image: url("/assets/bg/ground.png");
 }
 
 .app {
