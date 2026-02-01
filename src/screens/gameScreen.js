@@ -55,8 +55,9 @@ const gameScreen = {
   },
   resetEffects() {
     domRefs.game.runner?.classList.remove('boost', 'hit');
+    domRefs.game.speedLines?.classList.remove('boost-lines');
     domRefs.game.speed?.classList.remove('glow');
-    domRefs.game.runnerWorld?.classList.remove('is-hit');
+    domRefs.game.runWorld?.classList.remove('miss-flash');
   },
   queueEffectReset(callback, delayMs) {
     const timeoutId = window.setTimeout(() => {
@@ -71,9 +72,11 @@ const gameScreen = {
     }
     domRefs.game.runner.classList.remove('hit');
     domRefs.game.runner.classList.add('boost');
+    domRefs.game.speedLines?.classList.add('boost-lines');
     domRefs.game.speed?.classList.add('glow');
     this.queueEffectReset(() => {
       domRefs.game.runner?.classList.remove('boost');
+      domRefs.game.speedLines?.classList.remove('boost-lines');
       domRefs.game.speed?.classList.remove('glow');
     }, 250);
   },
@@ -83,10 +86,10 @@ const gameScreen = {
     }
     domRefs.game.runner.classList.remove('boost');
     domRefs.game.runner.classList.add('hit');
-    domRefs.game.runnerWorld?.classList.add('is-hit');
+    domRefs.game.runWorld?.classList.add('miss-flash');
     this.queueEffectReset(() => {
       domRefs.game.runner?.classList.remove('hit');
-      domRefs.game.runnerWorld?.classList.remove('is-hit');
+      domRefs.game.runWorld?.classList.remove('miss-flash');
     }, 200);
   },
   startTimer() {
@@ -205,10 +208,12 @@ const gameScreen = {
       gameState.speedMps - gameState.frictionMpsPerSec * dtSec,
     );
     gameState.distanceM += gameState.speedMps * dtSec;
-    const pxPerMeter = 12;
-    const offsetDelta = gameState.speedMps * dtSec * (pxPerMeter * 0.9);
+    const bgFactor = 30;
     const loopWidthPx = 1200;
-    this.bgOffsetPx = (this.bgOffsetPx + offsetDelta) % loopWidthPx;
+    this.bgOffsetPx -= gameState.speedMps * dtSec * bgFactor;
+    if (this.bgOffsetPx <= -loopWidthPx) {
+      this.bgOffsetPx += loopWidthPx;
+    }
   },
   render() {
     if (gameState.currentQuestion) {
@@ -225,15 +230,21 @@ const gameScreen = {
       const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
       domRefs.game.speed.textContent = speedValue.toFixed(1);
     }
-    if (domRefs.game.runnerBg) {
+    if (domRefs.game.runBg) {
       const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetPx;
-      domRefs.game.runnerBg.style.backgroundPositionX = `${-bgOffset}px`;
+      domRefs.game.runBg.style.backgroundPositionX = `${bgOffset}px`;
     }
     if (domRefs.game.speedLines) {
       const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
       const maxSpeed = gameState.maxSpeedMps || 1;
       const speedRatio = Math.max(0, Math.min(speedValue / maxSpeed, 1));
-      const lineOpacity = gameState.isReviewMode ? 0 : 0.15 + speedRatio * 0.75;
+      let lineOpacity = Math.max(0.05, Math.min(speedRatio, 0.65));
+      if (gameState.isReviewMode) {
+        lineOpacity = 0;
+      }
+      if (domRefs.game.speedLines.classList.contains('boost-lines')) {
+        lineOpacity = Math.min(1, lineOpacity + 0.25);
+      }
       domRefs.game.speedLines.style.opacity = lineOpacity.toFixed(2);
     }
     if (domRefs.game.runLayer) {

@@ -25,10 +25,10 @@ const domRefs = {
     question: document.getElementById('game-question'),
     answerInput: document.getElementById('game-answer-input'),
     feedback: document.getElementById('game-feedback'),
-    runner: document.getElementById('runner'),
+    runner: document.getElementById('runner-sprite'),
     runLayer: document.querySelector('.run-layer'),
-    runnerWorld: document.querySelector('.runner-world'),
-    runnerBg: document.querySelector('.runner-bg'),
+    runWorld: document.querySelector('.run-world'),
+    runBg: document.querySelector('.run-bg'),
     speedLines: document.querySelector('.speed-lines'),
   },
   result: {
