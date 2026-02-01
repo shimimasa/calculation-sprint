@@ -69,6 +69,7 @@ const domRefs = {
     todayRankFirst: document.getElementById('rank-1'),
     todayRankSecond: document.getElementById('rank-2'),
     todayRankThird: document.getElementById('rank-3'),
+    top3Message: document.getElementById('result-top3-message'),
     retryButton: document.getElementById('result-retry-button'),
     reviewButton: document.getElementById('result-review-button'),
     backButton: document.getElementById('result-back-button'),
