@@ -45,29 +45,111 @@
         <button id="settings-play-button" class="primary-button">プレイ</button>
       </section>
 
-      <section id="game-screen" class="screen">
-        <div class="status-bar">
-          <span>残り時間: <strong id="game-time-left">60</strong>s</span>
-          <span>正解数: <strong id="game-correct-count">0</strong></span>
-          <span>不正解数: <strong id="game-wrong-count">0</strong></span>
+      <section id="game-screen" class="screen game-screen">
+        <div class="game-top">
+          <div class="status-bar">
+            <span>残り時間: <strong id="game-time-left">60</strong>s</span>
+            <span>正解数: <strong id="game-correct-count">0</strong></span>
+            <span>不正解数: <strong id="game-wrong-count">0</strong></span>
+            <span>距離: <strong id="game-distance">0.0</strong>m</span>
+            <span>速度: <strong id="game-speed">0.0</strong>m/s</span>
+            <span id="game-review-progress" hidden>復習: 0/10</span>
+          </div>
+          <div class="question-area">
+            <div id="game-question" class="question-text">1 + 1</div>
+            <input id="game-answer-input" type="number" class="answer-input" autocomplete="off" />
+          </div>
+          <div id="game-feedback" class="feedback" aria-live="polite"></div>
         </div>
-        <div class="question-area">
-          <div id="game-question" class="question-text">1 + 1</div>
-          <input id="game-answer-input" type="number" class="answer-input" autocomplete="off" />
+        <div class="run-layer" aria-hidden="true">
+          <div class="run-world">
+            <div class="run-bg"></div>
+            <div class="run-ground"></div>
+            <div class="speed-lines"></div>
+            <div class="runner-wrap">
+              <img
+                id="runner-sprite"
+                src="/assets/runner/runner.png"
+                alt="runner"
+                onerror="this.style.display='none'; document.documentElement.classList.add('runner-missing');"
+              />
+            </div>
+          </div>
         </div>
-        <div id="game-feedback" class="feedback" aria-live="polite"></div>
       </section>
 
       <section id="result-screen" class="screen">
         <h2 class="screen__title">結果</h2>
+        <div id="result-best-toast" class="best-toast" hidden>自己ベスト更新！</div>
+        <div id="result-review-banner" class="review-banner" hidden>
+          <h3>おつかれ！</h3>
+          <p id="result-review-message"></p>
+          <button id="result-next-action-button" class="primary-button" hidden></button>
+        </div>
         <ul class="result-list">
           <li>正解数: <strong id="result-correct-count">0</strong></li>
           <li>不正解数: <strong id="result-wrong-count">0</strong></li>
           <li>総回答数: <strong id="result-total-answered">0</strong></li>
           <li>正答率: <strong id="result-accuracy">0</strong>%</li>
+          <li>平均回答時間: <strong id="result-avg-time">0.0</strong> 秒/問</li>
+          <li id="result-distance-row">距離: <strong id="result-distance">0.0</strong> m</li>
+          <li>
+            モード別正答率:
+            加 <span id="result-rate-add">0% (0/0)</span> /
+            減 <span id="result-rate-sub">0% (0/0)</span> /
+            乗 <span id="result-rate-mul">0% (0/0)</span> /
+            除 <span id="result-rate-div">0% (0/0)</span>
+          </li>
+          <li>ベスト平均: <strong id="result-best-avg">0.0</strong> 秒/問</li>
+          <li>
+            ミス内訳:
+            加 <strong id="result-wrong-add">0</strong> /
+            減 <strong id="result-wrong-sub">0</strong> /
+            乗 <strong id="result-wrong-mul">0</strong> /
+            除 <strong id="result-wrong-div">0</strong>
+          </li>
         </ul>
+        <div class="daily-stats">
+          <h3>今日の記録</h3>
+          <p>ベスト平均: <strong id="daily-best-avg">0.0</strong> 秒/問</p>
+          <p>ベスト距離: <strong id="daily-best-distance">0.0</strong> m</p>
+          <p>回答: <strong id="daily-attempt">0</strong> / ミス: <strong id="daily-wrong">0</strong></p>
+
+          <div id="daily-diff" hidden>
+            <h4>昨日との差</h4>
+            <p>ベスト平均: <strong id="diff-best-avg">0.0</strong> 秒</p>
+            <p>ミス: <strong id="diff-wrong">0</strong></p>
+          </div>
+
+          <button id="daily-reset-button" class="secondary-button">記録をリセット</button>
+        </div>
+        <div id="today-rank" class="daily-rank">
+          <h3>今日の距離TOP3</h3>
+          <ol>
+            <li><span id="rank-1">---</span></li>
+            <li><span id="rank-2">---</span></li>
+            <li><span id="rank-3">---</span></li>
+          </ol>
+        </div>
+        <div class="daily-history">
+          <h3>直近7日</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>日付</th>
+                <th>ベスト平均</th>
+                <th>ベスト距離</th>
+                <th>回答</th>
+                <th>ミス</th>
+              </tr>
+            </thead>
+            <tbody id="daily-history-body"></tbody>
+          </table>
+          <p id="daily-history-sum">直近7日合計：回答 0 / ミス 0 / 距離 0.0m</p>
+        </div>
         <div class="button-row">
           <button id="result-retry-button" class="primary-button">リトライ</button>
+          <button id="result-review-button" class="secondary-button" hidden>復習モードで再挑戦</button>
           <button id="result-back-button" class="secondary-button">設定に戻る</button>
         </div>
       </section>

@@ -54,9 +54,14 @@ const nextSubNoBorrow = (digit) => {
 
 const questionGenerator = {
   next(settings) {
-    const mode = settings.mode === 'mix'
-      ? modes[randomInt(0, modes.length - 1)]
-      : settings.mode;
+    const reviewModes = Array.isArray(settings.reviewModes)
+      ? settings.reviewModes.filter((mode) => modes.includes(mode))
+      : [];
+    const mode = reviewModes.length > 0
+      ? reviewModes[randomInt(0, reviewModes.length - 1)]
+      : (settings.mode === 'mix'
+        ? modes[randomInt(0, modes.length - 1)]
+        : settings.mode);
     const operator = operators[mode];
     if (!operator) {
       return { text: '1 + 1', answer: 2, meta: { mode: 'add', a: 1, b: 1 } };
