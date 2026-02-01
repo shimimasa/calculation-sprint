@@ -290,13 +290,21 @@ body {
   initial-value: 0px;
 }
 
+@property --runner-bob-x {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
 @keyframes runner-bob {
   0%,
   100% {
     --runner-bob-offset: 0px;
+    --runner-bob-x: 0px;
   }
   50% {
-    --runner-bob-offset: -3px;
+    --runner-bob-offset: -4px;
+    --runner-bob-x: 1px;
   }
 }
 
@@ -337,7 +345,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: translateY(var(--runner-bob-offset, 0px));
+  transform: translate(var(--runner-bob-x, 0px), var(--runner-bob-offset, 0px));
   transition: transform 0.2s ease, filter 0.2s ease;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
   position: relative;
@@ -345,11 +353,11 @@ body {
 }
 
 .run-layer #runner-sprite.runner-bob {
-  animation: runner-bob 0.4s ease-in-out infinite;
+  animation: runner-bob 0.32s ease-in-out infinite;
 }
 
 #runner-sprite.boost {
-  transform: translateY(calc(var(--runner-bob-offset, 0px) - 2px)) scale(1.06);
+  transform: translate(var(--runner-bob-x, 0px), calc(var(--runner-bob-offset, 0px) - 2px)) scale(1.06);
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)) brightness(1.1);
 }
 
@@ -363,7 +371,7 @@ body {
 }
 
 #runner-sprite.hit {
-  transform: translateY(calc(var(--runner-bob-offset, 0px) + 4px));
+  transform: translate(var(--runner-bob-x, 0px), calc(var(--runner-bob-offset, 0px) + 4px));
 }
 
 @media (prefers-reduced-motion: reduce) {
