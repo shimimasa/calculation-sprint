@@ -8,17 +8,20 @@ body {
   font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
   background: #f4f6fb;
   color: #1d2433;
+  margin: 0;
   min-height: 100vh;
 }
 
 :root {
   --run-bg-image: url("/assets/bg-sky.png");
+  --run-ground-image: url("/assets/ground.png");
 }
 
 .app {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 48px 20px;
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -39,6 +42,9 @@ body {
 .game-screen {
   padding: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: min(92vh, 860px);
 }
 
 .game-top {
@@ -47,7 +53,7 @@ body {
 
 .run-layer {
   padding: 0 16px 16px;
-  height: 160px;
+  height: 280px;
   overflow: hidden;
 }
 
@@ -172,9 +178,12 @@ body {
   left: 0;
   right: 0;
   height: 28px;
-  background: linear-gradient(180deg, #3f4655, #171c26);
+  background-image: var(--run-ground-image), linear-gradient(180deg, #3f4655, #171c26);
+  background-repeat: repeat-x, no-repeat;
+  background-size: auto 100%, cover;
+  background-position: center bottom;
   box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.18), 0 -1px 6px rgba(0, 0, 0, 0.25);
-  z-index: 3;
+  z-index: 2;
 }
 
 .speed-lines {
@@ -190,7 +199,7 @@ body {
   opacity: 0;
   transition: opacity 0.1s ease;
   pointer-events: none;
-  z-index: 4;
+  z-index: 3;
 }
 
 .speed-lines.boost-lines {
@@ -201,9 +210,9 @@ body {
   position: absolute;
   left: 64px;
   bottom: 12px;
-  width: clamp(48px, 6vw, 64px);
-  height: clamp(48px, 6vw, 64px);
-  z-index: 5;
+  width: 64px;
+  height: 64px;
+  z-index: 4;
 }
 
 #runner-sprite {
