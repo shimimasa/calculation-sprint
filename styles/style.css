@@ -41,6 +41,10 @@ body {
   padding: 28px 28px 18px;
 }
 
+.run-layer {
+  padding: 0 16px 16px;
+}
+
 .screen__title {
   font-size: 28px;
   margin-bottom: 16px;
@@ -127,9 +131,9 @@ body {
 
 .runner-world {
   position: relative;
-  height: 130px;
+  height: 150px;
   overflow: hidden;
-  border-radius: 0 0 16px 16px;
+  border-radius: 16px;
   background: #e9eef8;
 }
 
@@ -150,9 +154,9 @@ body {
 .runner-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, #cfe3ff 0%, #e9f2ff 48%, #f7fbff 100%);
-  background-size: 220px 100%;
-  background-repeat: repeat-x;
+  background: url("/assets/bg-sky.png") repeat-x center bottom;
+  background-size: auto 100%;
+  will-change: background-position;
 }
 
 .runner-ground {
@@ -180,52 +184,25 @@ body {
   pointer-events: none;
 }
 
-.speed-lines.is-active {
-  opacity: 0.9;
-}
-
 .runner {
   position: absolute;
-  left: 50px;
-  bottom: 16px;
-  width: 22px;
-  height: 30px;
-  background: #11141c;
-  border-radius: 6px 6px 4px 4px;
-  box-shadow: 0 6px 12px rgba(17, 20, 28, 0.3);
-  transform: translateX(var(--runner-x, 0px));
+  left: 36px;
+  bottom: 20px;
+  width: 64px;
+  height: 64px;
+  background: url("/assets/runner.png") no-repeat center bottom;
+  background-size: contain;
+  transform: translateY(0);
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 
-.runner::before {
-  content: "";
-  position: absolute;
-  top: -8px;
-  left: 4px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #11141c;
-}
-
-.runner::after {
-  content: "";
-  position: absolute;
-  right: -6px;
-  bottom: 8px;
-  width: 10px;
-  height: 4px;
-  background: #11141c;
-  border-radius: 999px;
-}
-
 .runner.boost {
-  transform: translateX(var(--runner-x, 0px)) translateY(-2px) scale(1.05) skewX(-6deg);
-  filter: blur(0.6px);
+  transform: translateY(-2px) scale(1.06);
+  filter: blur(0.8px);
 }
 
 .runner.hit {
-  transform: translateX(var(--runner-x, 0px)) translateY(4px);
+  transform: translateY(4px);
 }
 
 #game-speed.glow {

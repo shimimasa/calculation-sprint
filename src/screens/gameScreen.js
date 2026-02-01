@@ -56,7 +56,6 @@ const gameScreen = {
   resetEffects() {
     domRefs.game.runner?.classList.remove('boost', 'hit');
     domRefs.game.speed?.classList.remove('glow');
-    domRefs.game.speedLines?.classList.remove('is-active');
     domRefs.game.runnerWorld?.classList.remove('is-hit');
   },
   queueEffectReset(callback, delayMs) {
@@ -73,11 +72,9 @@ const gameScreen = {
     domRefs.game.runner.classList.remove('hit');
     domRefs.game.runner.classList.add('boost');
     domRefs.game.speed?.classList.add('glow');
-    domRefs.game.speedLines?.classList.add('is-active');
     this.queueEffectReset(() => {
       domRefs.game.runner?.classList.remove('boost');
       domRefs.game.speed?.classList.remove('glow');
-      domRefs.game.speedLines?.classList.remove('is-active');
     }, 250);
   },
   triggerHitEffect() {
@@ -209,7 +206,9 @@ const gameScreen = {
     );
     gameState.distanceM += gameState.speedMps * dtSec;
     const pxPerMeter = 12;
-    this.bgOffsetPx += gameState.speedMps * dtSec * (pxPerMeter * 0.8);
+    const offsetDelta = gameState.speedMps * dtSec * (pxPerMeter * 0.9);
+    const loopWidthPx = 1200;
+    this.bgOffsetPx = (this.bgOffsetPx + offsetDelta) % loopWidthPx;
   },
   render() {
     if (gameState.currentQuestion) {
@@ -230,13 +229,15 @@ const gameScreen = {
       const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetPx;
       domRefs.game.runnerBg.style.backgroundPositionX = `${-bgOffset}px`;
     }
-    if (domRefs.game.runner) {
-      const rawTrackLength = domRefs.game.runnerWorld?.clientWidth;
-      const trackLength = rawTrackLength && rawTrackLength > 0 ? rawTrackLength : 520;
-      const distanceValue = gameState.isReviewMode ? 0 : gameState.distanceM;
-      const pxPerMeter = 12;
-      const runnerX = (distanceValue * pxPerMeter) % trackLength;
-      domRefs.game.runner.style.setProperty('--runner-x', `${runnerX}px`);
+    if (domRefs.game.speedLines) {
+      const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
+      const maxSpeed = gameState.maxSpeedMps || 1;
+      const speedRatio = Math.max(0, Math.min(speedValue / maxSpeed, 1));
+      const lineOpacity = gameState.isReviewMode ? 0 : 0.15 + speedRatio * 0.75;
+      domRefs.game.speedLines.style.opacity = lineOpacity.toFixed(2);
+    }
+    if (domRefs.game.runLayer) {
+      domRefs.game.runLayer.hidden = gameState.isReviewMode;
     }
     if (domRefs.game.reviewProgress) {
       if (gameState.isReviewMode) {
