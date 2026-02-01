@@ -208,7 +208,7 @@ const gameScreen = {
       gameState.speedMps - gameState.frictionMpsPerSec * dtSec,
     );
     gameState.distanceM += gameState.speedMps * dtSec;
-    const bgFactor = 30;
+    const bgFactor = 42;
     const loopWidthPx = 1200;
     this.bgOffsetPx -= gameState.speedMps * dtSec * bgFactor;
     if (this.bgOffsetPx <= -loopWidthPx) {
