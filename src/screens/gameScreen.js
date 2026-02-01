@@ -29,7 +29,10 @@ const gameScreen = {
     }
     uiRenderer.clearFeedback();
     this.feedbackTimeoutId = null;
+    this.effectTimeoutIds = [];
     this.isLocked = false;
+    this.bgOffsetPx = 0;
+    this.resetEffects();
 
     this.handleKeyDown = (event) => {
       if (event.key !== 'Enter') {
@@ -42,6 +45,52 @@ const gameScreen = {
     this.loadNextQuestion();
     this.startTimer();
     domRefs.game.answerInput.focus();
+  },
+  clearEffectTimeouts() {
+    if (!this.effectTimeoutIds) {
+      return;
+    }
+    this.effectTimeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    this.effectTimeoutIds = [];
+  },
+  resetEffects() {
+    domRefs.game.runner?.classList.remove('boost', 'hit');
+    domRefs.game.speed?.classList.remove('glow');
+    domRefs.game.speedLines?.classList.remove('is-active');
+    domRefs.game.runnerWorld?.classList.remove('is-hit');
+  },
+  queueEffectReset(callback, delayMs) {
+    const timeoutId = window.setTimeout(() => {
+      callback();
+      this.effectTimeoutIds = this.effectTimeoutIds.filter((id) => id !== timeoutId);
+    }, delayMs);
+    this.effectTimeoutIds.push(timeoutId);
+  },
+  triggerBoostEffect() {
+    if (!domRefs.game.runner) {
+      return;
+    }
+    domRefs.game.runner.classList.remove('hit');
+    domRefs.game.runner.classList.add('boost');
+    domRefs.game.speed?.classList.add('glow');
+    domRefs.game.speedLines?.classList.add('is-active');
+    this.queueEffectReset(() => {
+      domRefs.game.runner?.classList.remove('boost');
+      domRefs.game.speed?.classList.remove('glow');
+      domRefs.game.speedLines?.classList.remove('is-active');
+    }, 250);
+  },
+  triggerHitEffect() {
+    if (!domRefs.game.runner) {
+      return;
+    }
+    domRefs.game.runner.classList.remove('boost');
+    domRefs.game.runner.classList.add('hit');
+    domRefs.game.runnerWorld?.classList.add('is-hit');
+    this.queueEffectReset(() => {
+      domRefs.game.runner?.classList.remove('hit');
+      domRefs.game.runnerWorld?.classList.remove('is-hit');
+    }, 200);
   },
   startTimer() {
     timer.start(
@@ -58,6 +107,8 @@ const gameScreen = {
       window.clearTimeout(this.feedbackTimeoutId);
       this.feedbackTimeoutId = null;
     }
+    this.clearEffectTimeouts();
+    this.resetEffects();
     uiRenderer.clearFeedback();
     screenManager.changeScreen('result');
   },
@@ -109,8 +160,10 @@ const gameScreen = {
     if (!gameState.isReviewMode) {
       if (isCorrect) {
         gameState.speedMps = Math.min(gameState.maxSpeedMps, gameState.speedMps + gameState.speedUp);
+        this.triggerBoostEffect();
       } else {
         gameState.speedMps = Math.max(gameState.minSpeedMps, gameState.speedMps - gameState.speedDown);
+        this.triggerHitEffect();
       }
     }
 
@@ -155,6 +208,8 @@ const gameScreen = {
       gameState.speedMps - gameState.frictionMpsPerSec * dtSec,
     );
     gameState.distanceM += gameState.speedMps * dtSec;
+    const pxPerMeter = 12;
+    this.bgOffsetPx += gameState.speedMps * dtSec * (pxPerMeter * 0.8);
   },
   render() {
     if (gameState.currentQuestion) {
@@ -171,13 +226,17 @@ const gameScreen = {
       const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
       domRefs.game.speed.textContent = speedValue.toFixed(1);
     }
+    if (domRefs.game.runnerBg) {
+      const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetPx;
+      domRefs.game.runnerBg.style.backgroundPositionX = `${-bgOffset}px`;
+    }
     if (domRefs.game.runner) {
-      const rawTrackLength = domRefs.game.runnerTrack?.clientWidth;
+      const rawTrackLength = domRefs.game.runnerWorld?.clientWidth;
       const trackLength = rawTrackLength && rawTrackLength > 0 ? rawTrackLength : 520;
       const distanceValue = gameState.isReviewMode ? 0 : gameState.distanceM;
       const pxPerMeter = 12;
       const runnerX = (distanceValue * pxPerMeter) % trackLength;
-      domRefs.game.runner.style.transform = `translateX(${runnerX}px)`;
+      domRefs.game.runner.style.setProperty('--runner-x', `${runnerX}px`);
     }
     if (domRefs.game.reviewProgress) {
       if (gameState.isReviewMode) {
@@ -197,6 +256,8 @@ const gameScreen = {
       window.clearTimeout(this.feedbackTimeoutId);
     }
     this.feedbackTimeoutId = null;
+    this.clearEffectTimeouts();
+    this.resetEffects();
     this.isLocked = false;
   },
 };
