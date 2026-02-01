@@ -308,6 +308,29 @@ body {
   }
 }
 
+@keyframes runner-stumble {
+  0% {
+    transform: translate(var(--runner-bob-x, 0px), var(--runner-bob-offset, 0px)) rotate(0deg);
+  }
+  30% {
+    transform: translate(
+        var(--runner-bob-x, 0px),
+        calc(var(--runner-bob-offset, 0px) + 2px)
+      )
+      rotate(-10deg);
+  }
+  60% {
+    transform: translate(
+        var(--runner-bob-x, 0px),
+        calc(var(--runner-bob-offset, 0px) - 1px)
+      )
+      rotate(6deg);
+  }
+  100% {
+    transform: translate(var(--runner-bob-x, 0px), var(--runner-bob-offset, 0px)) rotate(0deg);
+  }
+}
+
 .runner-wrap {
   position: absolute;
   left: 64px;
@@ -353,7 +376,25 @@ body {
 }
 
 .run-layer #runner-sprite.runner-bob {
-  animation: runner-bob 0.32s ease-in-out infinite;
+  animation: runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite;
+}
+
+#runner-sprite.runner-speed-low {
+  --runner-bob-duration: 0.42s;
+}
+
+#runner-sprite.runner-speed-mid {
+  --runner-bob-duration: 0.34s;
+}
+
+#runner-sprite.runner-speed-high {
+  --runner-bob-duration: 0.26s;
+}
+
+.run-layer #runner-sprite.runner-bob.stumble {
+  animation:
+    runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite,
+    runner-stumble 0.32s ease-out 1;
 }
 
 #runner-sprite.boost {
@@ -376,6 +417,10 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .run-layer #runner-sprite.runner-bob {
+    animation: none;
+  }
+
+  .run-layer #runner-sprite.runner-bob.stumble {
     animation: none;
   }
 }
