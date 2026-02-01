@@ -58,6 +58,10 @@ const gameScreen = {
     domRefs.game.speedLines?.classList.remove('boost-lines');
     domRefs.game.speed?.classList.remove('glow');
     domRefs.game.runWorld?.classList.remove('miss-flash');
+    domRefs.game.runWorld?.classList.remove('is-fast', 'is-rapid');
+    domRefs.game.speedLines?.classList.remove('is-fast', 'is-rapid');
+    domRefs.game.runner?.classList.remove('speed-glow');
+    domRefs.game.runnerWrap?.classList.remove('is-fast', 'is-rapid');
   },
   queueEffectReset(callback, delayMs) {
     const timeoutId = window.setTimeout(() => {
@@ -246,6 +250,25 @@ const gameScreen = {
         lineOpacity = Math.min(1, lineOpacity + 0.25);
       }
       domRefs.game.speedLines.style.opacity = lineOpacity.toFixed(2);
+      domRefs.game.speedLines.classList.toggle('is-fast', speedRatio > 0.45);
+      domRefs.game.speedLines.classList.toggle('is-rapid', speedRatio > 0.75);
+      domRefs.game.runWorld?.classList.toggle('is-fast', speedRatio > 0.6);
+      domRefs.game.runWorld?.classList.toggle('is-rapid', speedRatio > 0.85);
+      domRefs.game.runner?.classList.toggle('speed-glow', speedRatio > 0.7);
+      domRefs.game.runnerWrap?.classList.toggle('is-fast', speedRatio > 0.7);
+      domRefs.game.runnerWrap?.classList.toggle('is-rapid', speedRatio > 0.85);
+    }
+    if (domRefs.game.runProgressBar && domRefs.game.runProgressLabel) {
+      if (gameState.isReviewMode) {
+        domRefs.game.runProgressBar.style.width = '0%';
+        domRefs.game.runProgressLabel.textContent = '0m';
+      } else {
+        const segment = 100;
+        const distanceValue = Math.max(0, gameState.distanceM);
+        const progress = ((distanceValue % segment) / segment) * 100;
+        domRefs.game.runProgressBar.style.width = `${progress.toFixed(1)}%`;
+        domRefs.game.runProgressLabel.textContent = `${Math.floor(distanceValue / segment) * segment}m`;
+      }
     }
     if (domRefs.game.runLayer) {
       domRefs.game.runLayer.hidden = gameState.isReviewMode;

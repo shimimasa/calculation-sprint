@@ -30,6 +30,9 @@ const domRefs = {
     runWorld: document.querySelector('.run-world'),
     runBg: document.querySelector('.run-bg'),
     speedLines: document.querySelector('.speed-lines'),
+    runnerWrap: document.querySelector('.runner-wrap'),
+    runProgressBar: document.getElementById('run-progress-bar'),
+    runProgressLabel: document.getElementById('run-progress-label'),
   },
   result: {
     bestToast: document.getElementById('result-best-toast'),
