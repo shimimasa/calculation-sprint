@@ -89,6 +89,17 @@ const renderDailyHistory = (records) => {
 
 const resultScreen = {
   enter() {
+    if (this.bestToastTimeout) {
+      clearTimeout(this.bestToastTimeout);
+      this.bestToastTimeout = null;
+    }
+    if (this.confettiTimeout) {
+      clearTimeout(this.confettiTimeout);
+      this.confettiTimeout = null;
+    }
+    if (domRefs.screens.result) {
+      domRefs.screens.result.classList.remove('is-confetti');
+    }
     uiRenderer.showScreen('result');
     const total = gameState.totalAnswered || 0;
     const accuracy = total > 0
@@ -194,6 +205,7 @@ const resultScreen = {
     if (domRefs.result.top3Message) {
       if (gameState.isReviewMode || gameState.distanceM <= 0) {
         domRefs.result.top3Message.hidden = true;
+        domRefs.result.top3Message.textContent = '';
       } else {
         const topValues = todayRank.top
           .filter((value) => Number.isFinite(value))
