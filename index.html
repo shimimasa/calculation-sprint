@@ -67,7 +67,12 @@
             <div class="run-ground"></div>
             <div class="speed-lines"></div>
             <div class="runner-wrap">
-              <img id="runner-sprite" src="/assets/runner.png" alt="runner" />
+              <img
+                id="runner-sprite"
+                src="/assets/runner.png"
+                alt="runner"
+                onerror="this.style.display='none'; document.documentElement.classList.add('runner-missing');"
+              />
             </div>
           </div>
         </div>
