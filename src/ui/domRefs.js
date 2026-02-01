@@ -26,7 +26,9 @@ const domRefs = {
     answerInput: document.getElementById('game-answer-input'),
     feedback: document.getElementById('game-feedback'),
     runner: document.getElementById('runner'),
-    runnerTrack: document.querySelector('.runner-track'),
+    runnerWorld: document.querySelector('.runner-world'),
+    runnerBg: document.querySelector('.runner-bg'),
+    speedLines: document.querySelector('.speed-lines'),
   },
   result: {
     bestToast: document.getElementById('result-best-toast'),
