@@ -10,6 +10,8 @@ const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
 const RUNNER_X_FOLLOW_RATE = 0.12;
 const RUNNER_BASE_LEFT_PX = 64;
+const BG_FAR_SPEED_FACTOR = 0.65;
+const BG_NEAR_SPEED_FACTOR = 1.1;
 
 const gameScreen = {
   enter() {
@@ -36,7 +38,8 @@ const gameScreen = {
     this.feedbackTimeoutId = null;
     this.effectTimeoutIds = [];
     this.isLocked = false;
-    this.bgOffsetPx = 0;
+    this.bgOffsetFarPx = 0;
+    this.bgOffsetNearPx = 0;
     this.runnerX = 0;
     this.runnerXTarget = 0;
     this.resetEffects();
@@ -90,7 +93,8 @@ const gameScreen = {
     domRefs.game.speedLines?.classList.remove('is-fast', 'is-rapid');
     domRefs.game.runner?.classList.remove('speed-glow');
     domRefs.game.runnerWrap?.classList.remove('is-fast', 'is-rapid');
-    domRefs.game.runBg?.style.removeProperty('--stumble-freeze-x');
+    domRefs.game.runBgFar?.style.removeProperty('--stumble-freeze-x');
+    domRefs.game.runBgNear?.style.removeProperty('--stumble-freeze-x');
     this.runnerSpeedTier = null;
   },
   queueEffectReset(callback, delayMs) {
@@ -141,18 +145,21 @@ const gameScreen = {
     const timeoutIds = [];
     if (!gameState.isReviewMode) {
       domRefs.game.runWorld?.classList.add('stumble-freeze');
-      domRefs.game.runBg?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetPx}px`);
+      domRefs.game.runBgFar?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetFarPx}px`);
+      domRefs.game.runBgNear?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetNearPx}px`);
       timeoutIds.push(
         window.setTimeout(() => {
           domRefs.game.runWorld?.classList.remove('stumble-freeze');
-          domRefs.game.runBg?.style.removeProperty('--stumble-freeze-x');
+          domRefs.game.runBgFar?.style.removeProperty('--stumble-freeze-x');
+          domRefs.game.runBgNear?.style.removeProperty('--stumble-freeze-x');
         }, 120),
       );
     }
     timeoutIds.push(window.setTimeout(() => {
       domRefs.game.runner?.classList.remove('stumble');
       domRefs.game.runWorld?.classList.remove('stumble-freeze');
-      domRefs.game.runBg?.style.removeProperty('--stumble-freeze-x');
+      domRefs.game.runBgFar?.style.removeProperty('--stumble-freeze-x');
+      domRefs.game.runBgNear?.style.removeProperty('--stumble-freeze-x');
       this.stumbleTimeoutId = null;
     }, 320));
     this.stumbleTimeoutId = timeoutIds;
@@ -278,9 +285,32 @@ const gameScreen = {
     const loopWidthPx = 1200;
     const isBgFrozen = domRefs.game.runWorld?.classList.contains('stumble-freeze');
     if (!isBgFrozen) {
-      this.bgOffsetPx -= gameState.speedMps * dtSec * bgFactor;
-      if (this.bgOffsetPx <= -loopWidthPx) {
-        this.bgOffsetPx += loopWidthPx;
+      const baseOffset = gameState.speedMps * dtSec * bgFactor;
+      this.bgOffsetFarPx -= baseOffset * BG_FAR_SPEED_FACTOR;
+      this.bgOffsetNearPx -= baseOffset * BG_NEAR_SPEED_FACTOR;
+      if (this.bgOffsetFarPx <= -loopWidthPx) {
+        this.bgOffsetFarPx += loopWidthPx;
+      }
+      if (this.bgOffsetNearPx <= -loopWidthPx) {
+        this.bgOffsetNearPx += loopWidthPx;
+      }
+    }
+
+    if (domRefs.game.runWorld && domRefs.game.runnerWrap) {
+      const worldWidth = domRefs.game.runWorld.clientWidth;
+      if (Number.isFinite(worldWidth) && worldWidth > 0) {
+        const minSpeed = gameState.minSpeedMps || 0;
+        const maxSpeed = gameState.maxSpeedMps || minSpeed + 1;
+        const speedRatio = Math.max(
+          0,
+          Math.min((gameState.speedMps - minSpeed) / (maxSpeed - minSpeed), 1),
+        );
+        const targetX = worldWidth * (
+          RUNNER_X_MIN_RATIO + (RUNNER_X_MAX_RATIO - RUNNER_X_MIN_RATIO) * speedRatio
+        );
+        this.runnerXTarget = targetX - RUNNER_BASE_LEFT_PX;
+        const followRate = 1 - Math.pow(1 - RUNNER_X_FOLLOW_RATE, dtSec * 60);
+        this.runnerX += (this.runnerXTarget - this.runnerX) * followRate;
       }
     }
 
@@ -317,9 +347,13 @@ const gameScreen = {
       const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
       domRefs.game.speed.textContent = speedValue.toFixed(1);
     }
-    if (domRefs.game.runBg) {
-      const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetPx;
-      domRefs.game.runBg.style.backgroundPositionX = `${bgOffset}px`;
+    if (domRefs.game.runBgFar) {
+      const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetFarPx;
+      domRefs.game.runBgFar.style.backgroundPositionX = `${bgOffset}px`;
+    }
+    if (domRefs.game.runBgNear) {
+      const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetNearPx;
+      domRefs.game.runBgNear.style.backgroundPositionX = `${bgOffset}px`;
     }
     if (domRefs.game.speedLines) {
       const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
