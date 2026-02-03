@@ -316,17 +316,14 @@ const gameScreen = {
       domRefs.game.runnerWrap?.classList.toggle('is-fast', speedRatio > 0.7);
       domRefs.game.runnerWrap?.classList.toggle('is-rapid', speedRatio > 0.85);
     }
-    if (domRefs.game.runProgressBar && domRefs.game.runProgressLabel) {
-      if (gameState.isReviewMode) {
-        domRefs.game.runProgressBar.style.width = '0%';
-        domRefs.game.runProgressLabel.textContent = '0m';
-      } else {
-        const segment = 100;
-        const distanceValue = Math.max(0, gameState.distanceM);
-        const progress = ((distanceValue % segment) / segment) * 100;
-        domRefs.game.runProgressBar.style.width = `${progress.toFixed(1)}%`;
-        domRefs.game.runProgressLabel.textContent = `${Math.floor(distanceValue / segment) * segment}m`;
-      }
+    if (domRefs.game.timeProgressBar && domRefs.game.timeProgressRunner) {
+      const totalTime = gameState.timeLimit || 60;
+      const timeLeft = gameState.isReviewMode ? totalTime : gameState.timeLeft;
+      const elapsedSec = Math.max(0, totalTime - timeLeft);
+      const progressRatio = Math.max(0, Math.min(elapsedSec / totalTime, 1));
+      domRefs.game.timeProgressBar.style.width = `${(progressRatio * 100).toFixed(1)}%`;
+      domRefs.game.timeProgressRunner.style.left = `${(progressRatio * 100).toFixed(1)}%`;
+      domRefs.game.hud?.classList.toggle('final-phase', !gameState.isReviewMode && timeLeft <= 10);
     }
     if (domRefs.game.runLayer) {
       domRefs.game.runLayer.hidden = gameState.isReviewMode;
