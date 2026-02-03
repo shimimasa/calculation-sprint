@@ -14,7 +14,7 @@
         <button id="title-start-button" class="primary-button">スタート</button>
       </section>
 
-      <section id="settings-screen" class="screen">
+      <section id="settings-screen" class="screen" hidden>
         <h2 class="screen__title">設定</h2>
         <div class="form-group">
           <label class="form-label" for="settings-preset">難易度プリセット</label>
@@ -45,8 +45,16 @@
         <button id="settings-play-button" class="primary-button">プレイ</button>
       </section>
 
-      <section id="game-screen" class="screen game-screen">
+      <section id="game-screen" class="screen game-screen" hidden>
         <div class="game-hud">
+          <div class="time-progress" aria-label="経過時間の進捗">
+            <span id="time-progress-start" class="time-progress__marker">スタート</span>
+            <div class="time-progress__track" aria-hidden="true">
+              <div id="time-progress-bar" class="time-progress__bar"></div>
+              <span id="time-progress-runner" class="time-progress__runner" aria-hidden="true">🏃</span>
+            </div>
+            <span id="time-progress-goal" class="time-progress__marker">ゴール</span>
+          </div>
           <div class="status-grid">
             <div class="status-card">
               <span class="status-label">残り時間</span>
@@ -83,11 +91,8 @@
         </div>
         <div class="run-layer" aria-hidden="true">
           <div class="run-world">
-            <div class="run-progress">
-              <div id="run-progress-bar" class="run-progress__bar"></div>
-              <div id="run-progress-label" class="run-progress__label">0m</div>
-            </div>
-            <div class="run-bg"></div>
+            <div class="run-bg run-bg--far"></div>
+            <div class="run-bg run-bg--near"></div>
             <div class="run-ground"></div>
             <div class="speed-lines"></div>
             <div class="runner-wrap">
@@ -104,7 +109,7 @@
         </div>
       </section>
 
-      <section id="result-screen" class="screen result-screen">
+      <section id="result-screen" class="screen result-screen" hidden>
         <h2 class="screen__title">結果発表</h2>
         <div class="result-hero">
           <div id="result-best-toast" class="best-toast best-toast--hero" hidden>自己ベスト更新！</div>
