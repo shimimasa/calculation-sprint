@@ -289,7 +289,8 @@ body {
 
 .run-bg--far {
   z-index: 1;
-  opacity: 0.8;
+  opacity: 0.78;
+  filter: blur(0.3px);
 }
 
 .run-bg--near {
