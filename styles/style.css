@@ -397,6 +397,8 @@ body {
   width: 64px;
   height: 64px;
   z-index: 4;
+  transform: translateX(0);
+  will-change: transform;
 }
 
 .runner-shadow {

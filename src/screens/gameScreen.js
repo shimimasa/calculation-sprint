@@ -6,6 +6,11 @@ import timer from '../core/timer.js';
 import questionGenerator from '../features/questionGenerator.js';
 import buildReviewSummary from '../core/reviewSummary.js';
 
+const RUNNER_X_MIN_RATIO = 0.08;
+const RUNNER_X_MAX_RATIO = 0.3;
+const RUNNER_X_FOLLOW_RATE = 0.12;
+const RUNNER_BASE_LEFT_PX = 64;
+
 const gameScreen = {
   enter() {
     uiRenderer.showScreen('game');
@@ -32,6 +37,8 @@ const gameScreen = {
     this.effectTimeoutIds = [];
     this.isLocked = false;
     this.bgOffsetPx = 0;
+    this.runnerX = 0;
+    this.runnerXTarget = 0;
     this.resetEffects();
 
     this.handleKeyDown = (event) => {
@@ -276,6 +283,24 @@ const gameScreen = {
         this.bgOffsetPx += loopWidthPx;
       }
     }
+
+    if (domRefs.game.runWorld && domRefs.game.runnerWrap) {
+      const worldWidth = domRefs.game.runWorld.clientWidth;
+      if (Number.isFinite(worldWidth) && worldWidth > 0) {
+        const minSpeed = gameState.minSpeedMps || 0;
+        const maxSpeed = gameState.maxSpeedMps || minSpeed + 1;
+        const speedRatio = Math.max(
+          0,
+          Math.min((gameState.speedMps - minSpeed) / (maxSpeed - minSpeed), 1),
+        );
+        const targetX = worldWidth * (
+          RUNNER_X_MIN_RATIO + (RUNNER_X_MAX_RATIO - RUNNER_X_MIN_RATIO) * speedRatio
+        );
+        this.runnerXTarget = targetX - RUNNER_BASE_LEFT_PX;
+        const followRate = 1 - Math.pow(1 - RUNNER_X_FOLLOW_RATE, dtSec * 60);
+        this.runnerX += (this.runnerXTarget - this.runnerX) * followRate;
+      }
+    }
   },
   render() {
     if (gameState.currentQuestion) {
@@ -362,6 +387,10 @@ const gameScreen = {
           this.runnerSpeedTier = nextTier;
         }
       }
+    }
+    if (domRefs.game.runnerWrap) {
+      const translateX = gameState.isReviewMode ? 0 : this.runnerX;
+      domRefs.game.runnerWrap.style.transform = `translateX(${translateX.toFixed(2)}px)`;
     }
   },
   exit() {
