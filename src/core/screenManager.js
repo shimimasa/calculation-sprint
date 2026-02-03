@@ -3,6 +3,16 @@ let currentName = null;
 const screens = {};
 let isTransitioning = false;
 
+const setScreenVisibility = (nextName) => {
+  const targetId = `${nextName}-screen`;
+  document.querySelectorAll('.screen').forEach((screen) => {
+    const isActive = screen.id === targetId;
+    screen.classList.toggle('is-active', isActive);
+    screen.toggleAttribute('hidden', !isActive);
+    screen.setAttribute('aria-hidden', String(!isActive));
+  });
+};
+
 const screenManager = {
   registerScreens(map) {
     Object.entries(map).forEach(([name, screen]) => {
@@ -20,6 +30,7 @@ const screenManager = {
     }
     currentScreen = screens[nextName];
     currentName = nextName;
+    setScreenVisibility(nextName);
     if (currentScreen && typeof currentScreen.enter === 'function') {
       currentScreen.enter(prevName, params);
     }
