@@ -8,41 +8,80 @@
   </head>
   <body>
     <main class="app">
-      <section id="title-screen" class="screen is-active">
-        <h1 class="screen__title">計算スプリント</h1>
-        <p class="screen__description">60秒でどれだけ正確に解けるかチャレンジ！</p>
-        <button id="title-start-button" class="primary-button">スタート</button>
+      <section id="title-screen" class="screen screen-title is-active">
+        <header class="screen-header">
+          <p class="screen-kicker">STAGE 01</p>
+          <h1 class="screen__title">計算スプリント</h1>
+          <p class="screen__description">ミッションに挑戦してスピードを上げよう！</p>
+        </header>
+        <div class="screen-main stage-card">
+          <div class="mission-card">
+            <p class="mission-label">MISSION</p>
+            <p class="mission-text">60秒でできるだけ多く正解しよう</p>
+          </div>
+          <button id="title-start-button" class="primary-button primary-button--xl">スタート</button>
+          <div class="how-to">
+            <p class="how-to__title">遊び方</p>
+            <ol class="how-to__list">
+              <li>問題に答える</li>
+              <li>正解でスピードアップ</li>
+              <li>60秒でゴールを目指そう</li>
+            </ol>
+          </div>
+        </div>
+        <footer class="screen-footer">
+          <p class="screen-hint">設定は次の画面で選べるよ</p>
+        </footer>
       </section>
 
-      <section id="settings-screen" class="screen" hidden>
-        <h2 class="screen__title">設定</h2>
-        <div class="form-group">
-          <label class="form-label" for="settings-preset">難易度プリセット</label>
-          <select id="settings-preset">
-            <option value="">プリセットなし（手動設定）</option>
-            <option value="p3-basic">小3 基本</option>
-            <option value="p4-nocarry">小4 繰上がりなし</option>
-            <option value="p4-carry">小4 繰上がりあり</option>
-            <option value="p5-mul">小5 九九</option>
-          </select>
+      <section id="settings-screen" class="screen screen-settings" hidden>
+        <header class="screen-header">
+          <p class="screen-kicker">STAGE 02</p>
+          <h2 class="screen__title">設定</h2>
+          <p class="screen__description">ミッションに合わせてルールをえらぼう</p>
+        </header>
+        <div class="screen-main stage-card">
+          <div class="settings-section settings-section--preset">
+            <p class="section-title">🎯 プリセット</p>
+            <div class="form-group">
+              <label class="form-label" for="settings-preset">難易度プリセット</label>
+              <select id="settings-preset">
+                <option value="">プリセットなし（手動設定）</option>
+                <option value="p3-basic">小3 基本</option>
+                <option value="p4-nocarry">小4 繰上がりなし</option>
+                <option value="p4-carry">小4 繰上がりあり</option>
+                <option value="p5-mul">小5 九九</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-section">
+            <p class="section-title">🧮 モード</p>
+            <div class="pill-group">
+              <label class="pill-option"><input type="radio" name="mode" value="add" checked /><span>たし算</span></label>
+              <label class="pill-option"><input type="radio" name="mode" value="sub" /><span>ひき算</span></label>
+              <label class="pill-option"><input type="radio" name="mode" value="mul" /><span>かけ算</span></label>
+              <label class="pill-option"><input type="radio" name="mode" value="div" /><span>わり算</span></label>
+              <label class="pill-option"><input type="radio" name="mode" value="mix" /><span>ミックス</span></label>
+            </div>
+          </div>
+          <div class="settings-section">
+            <p class="section-title">🔢 桁数</p>
+            <div class="pill-group">
+              <label class="pill-option"><input type="radio" name="digit" value="1" checked /><span>1桁</span></label>
+              <label class="pill-option"><input type="radio" name="digit" value="2" /><span>2桁</span></label>
+            </div>
+          </div>
+          <div class="settings-section">
+            <p class="section-title">⚙️ オプション</p>
+            <label class="toggle-option">
+              <input type="checkbox" id="settings-carry" />
+              <span>繰り上がり/繰り下がり</span>
+            </label>
+          </div>
         </div>
-        <div class="form-group">
-          <p class="form-label">モード</p>
-          <label><input type="radio" name="mode" value="add" checked /> たし算</label>
-          <label><input type="radio" name="mode" value="sub" /> ひき算</label>
-          <label><input type="radio" name="mode" value="mul" /> かけ算</label>
-          <label><input type="radio" name="mode" value="div" /> わり算</label>
-          <label><input type="radio" name="mode" value="mix" /> ミックス</label>
-        </div>
-        <div class="form-group">
-          <p class="form-label">桁数</p>
-          <label><input type="radio" name="digit" value="1" checked /> 1桁</label>
-          <label><input type="radio" name="digit" value="2" /> 2桁</label>
-        </div>
-        <div class="form-group">
-          <label><input type="checkbox" id="settings-carry" /> 繰り上がり/繰り下がり</label>
-        </div>
-        <button id="settings-play-button" class="primary-button">プレイ</button>
+        <footer class="screen-footer">
+          <button id="settings-play-button" class="primary-button primary-button--xl">プレイ</button>
+        </footer>
       </section>
 
       <section id="game-screen" class="screen game-screen" hidden>
@@ -109,109 +148,117 @@
         </div>
       </section>
 
-      <section id="result-screen" class="screen result-screen" hidden>
-        <h2 class="screen__title">結果発表</h2>
-        <div class="result-hero">
-          <div id="result-best-toast" class="best-toast best-toast--hero" hidden>自己ベスト更新！</div>
-          <div class="result-confetti" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span><span></span><span></span>
-          </div>
-        </div>
-        <div id="result-review-banner" class="review-banner" hidden>
-          <h3>おつかれ！</h3>
-          <p id="result-review-message"></p>
-          <button id="result-next-action-button" class="primary-button" hidden></button>
-        </div>
-        <div class="result-firstview">
-          <div id="result-distance-row" class="result-metric result-metric--distance">
-            <p class="metric-label">今回の距離</p>
-            <p class="metric-value">
-              <span id="result-distance">0.0</span>
-              <span class="metric-unit">m</span>
-            </p>
-            <p class="metric-sub">全力で走り切った距離です。</p>
-          </div>
-          <div class="result-metric">
-            <p class="metric-label">正答率</p>
-            <p class="metric-value">
-              <span id="result-accuracy">0</span>
-              <span class="metric-unit">%</span>
-            </p>
-            <p class="metric-sub">ミス <span id="result-wrong-count">0</span> 問</p>
-          </div>
-          <div id="today-rank" class="result-metric result-metric--rank">
-            <div class="rank-header">
-              <h3>今日の距離TOP3</h3>
-              <p id="result-top3-message" class="rank-message">---</p>
+      <section id="result-screen" class="screen screen-result result-screen" hidden>
+        <header class="screen-header">
+          <p class="screen-kicker">RESULT</p>
+          <h2 class="screen__title">結果発表</h2>
+          <p class="screen__description">今回の走りをチェックしよう</p>
+        </header>
+        <div class="screen-main stage-card">
+          <div class="result-hero">
+            <div id="result-best-toast" class="best-toast best-toast--hero" hidden>自己ベスト更新！</div>
+            <div class="result-confetti" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
             </div>
-            <ol class="rank-list">
-              <li><span id="rank-1">---</span></li>
-              <li><span id="rank-2">---</span></li>
-              <li><span id="rank-3">---</span></li>
-            </ol>
           </div>
-        </div>
-        <details class="result-details">
-          <summary>詳細を見る</summary>
-          <div class="result-details__content">
-            <ul class="result-list">
-              <li>正解数: <strong id="result-correct-count">0</strong></li>
-              <li>総回答数: <strong id="result-total-answered">0</strong></li>
-              <li>平均回答時間: <strong id="result-avg-time">0.0</strong> 秒/問</li>
-              <li>ベスト平均: <strong id="result-best-avg">0.0</strong> 秒/問</li>
-              <li>
-                モード別正答率:
-                加 <span id="result-rate-add">0% (0/0)</span> /
-                減 <span id="result-rate-sub">0% (0/0)</span> /
-                乗 <span id="result-rate-mul">0% (0/0)</span> /
-                除 <span id="result-rate-div">0% (0/0)</span>
-              </li>
-              <li>
-                ミス内訳:
-                加 <strong id="result-wrong-add">0</strong> /
-                減 <strong id="result-wrong-sub">0</strong> /
-                乗 <strong id="result-wrong-mul">0</strong> /
-                除 <strong id="result-wrong-div">0</strong>
-              </li>
-            </ul>
-            <div class="daily-stats">
-              <h3>今日の記録</h3>
-              <p>ベスト平均: <strong id="daily-best-avg">0.0</strong> 秒/問</p>
-              <p>ベスト距離: <strong id="daily-best-distance">0.0</strong> m</p>
-              <p>回答: <strong id="daily-attempt">0</strong> / ミス: <strong id="daily-wrong">0</strong></p>
-
-              <div id="daily-diff" hidden>
-                <h4>昨日との差</h4>
-                <p>ベスト平均: <strong id="diff-best-avg">0.0</strong> 秒</p>
-                <p>ミス: <strong id="diff-wrong">0</strong></p>
+          <div id="result-review-banner" class="review-banner" hidden>
+            <h3>おつかれ！</h3>
+            <p id="result-review-message"></p>
+            <button id="result-next-action-button" class="primary-button" hidden></button>
+          </div>
+          <div class="result-firstview">
+            <div id="result-distance-row" class="result-metric result-metric--distance">
+              <p class="metric-label">今回の距離</p>
+              <p class="metric-value">
+                <span id="result-distance">0.0</span>
+                <span class="metric-unit">m</span>
+              </p>
+              <p class="metric-sub">全力で走り切った距離です。</p>
+            </div>
+            <div class="result-metric">
+              <p class="metric-label">正答率</p>
+              <p class="metric-value">
+                <span id="result-accuracy">0</span>
+                <span class="metric-unit">%</span>
+              </p>
+              <p class="metric-sub">ミス <span id="result-wrong-count">0</span> 問</p>
+            </div>
+            <div id="today-rank" class="result-metric result-metric--rank">
+              <div class="rank-header">
+                <h3>今日の距離TOP3</h3>
+                <p id="result-top3-message" class="rank-message">---</p>
               </div>
-
-              <button id="daily-reset-button" class="secondary-button">記録をリセット</button>
-            </div>
-            <div class="daily-history">
-              <h3>直近7日</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>日付</th>
-                    <th>ベスト平均</th>
-                    <th>ベスト距離</th>
-                    <th>回答</th>
-                    <th>ミス</th>
-                  </tr>
-                </thead>
-                <tbody id="daily-history-body"></tbody>
-              </table>
-              <p id="daily-history-sum">直近7日合計：回答 0 / ミス 0 / 距離 0.0m</p>
+              <ol class="rank-list">
+                <li><span id="rank-1">---</span></li>
+                <li><span id="rank-2">---</span></li>
+                <li><span id="rank-3">---</span></li>
+              </ol>
             </div>
           </div>
-        </details>
-        <div class="button-row">
-          <button id="result-retry-button" class="primary-button">リトライ</button>
-          <button id="result-review-button" class="secondary-button" hidden>復習モードで再挑戦</button>
-          <button id="result-back-button" class="secondary-button">設定に戻る</button>
+          <details class="result-details">
+            <summary>詳細を見る</summary>
+            <div class="result-details__content">
+              <ul class="result-list">
+                <li>正解数: <strong id="result-correct-count">0</strong></li>
+                <li>総回答数: <strong id="result-total-answered">0</strong></li>
+                <li>平均回答時間: <strong id="result-avg-time">0.0</strong> 秒/問</li>
+                <li>ベスト平均: <strong id="result-best-avg">0.0</strong> 秒/問</li>
+                <li>
+                  モード別正答率:
+                  加 <span id="result-rate-add">0% (0/0)</span> /
+                  減 <span id="result-rate-sub">0% (0/0)</span> /
+                  乗 <span id="result-rate-mul">0% (0/0)</span> /
+                  除 <span id="result-rate-div">0% (0/0)</span>
+                </li>
+                <li>
+                  ミス内訳:
+                  加 <strong id="result-wrong-add">0</strong> /
+                  減 <strong id="result-wrong-sub">0</strong> /
+                  乗 <strong id="result-wrong-mul">0</strong> /
+                  除 <strong id="result-wrong-div">0</strong>
+                </li>
+              </ul>
+              <div class="daily-stats">
+                <h3>今日の記録</h3>
+                <p>ベスト平均: <strong id="daily-best-avg">0.0</strong> 秒/問</p>
+                <p>ベスト距離: <strong id="daily-best-distance">0.0</strong> m</p>
+                <p>回答: <strong id="daily-attempt">0</strong> / ミス: <strong id="daily-wrong">0</strong></p>
+
+                <div id="daily-diff" hidden>
+                  <h4>昨日との差</h4>
+                  <p>ベスト平均: <strong id="diff-best-avg">0.0</strong> 秒</p>
+                  <p>ミス: <strong id="diff-wrong">0</strong></p>
+                </div>
+
+                <button id="daily-reset-button" class="secondary-button">記録をリセット</button>
+              </div>
+              <div class="daily-history">
+                <h3>直近7日</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>日付</th>
+                      <th>ベスト平均</th>
+                      <th>ベスト距離</th>
+                      <th>回答</th>
+                      <th>ミス</th>
+                    </tr>
+                  </thead>
+                  <tbody id="daily-history-body"></tbody>
+                </table>
+                <p id="daily-history-sum">直近7日合計：回答 0 / ミス 0 / 距離 0.0m</p>
+              </div>
+            </div>
+          </details>
         </div>
+        <footer class="screen-footer">
+          <div class="button-row button-row--menu">
+            <button id="result-retry-button" class="primary-button">リトライ</button>
+            <button id="result-review-button" class="secondary-button" hidden>復習モードで再挑戦</button>
+            <button id="result-back-button" class="secondary-button">設定に戻る</button>
+          </div>
+        </footer>
       </section>
     </main>
 
