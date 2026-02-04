@@ -11,9 +11,11 @@ const SFX_URLS = {
   sfx_wrong: '/assets/audio/sfx/wrong.mp3',
 };
 
+const SILENT_WAV_DATA_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const fadeAudio = (audio, from, to, durationMs, onComplete) => {
+const fadeAudio = (audio, from, to, durationMs, onComplete, shouldContinue) => {
   if (!audio) {
     if (onComplete) {
       onComplete();
@@ -30,6 +32,9 @@ const fadeAudio = (audio, from, to, durationMs, onComplete) => {
   const startAt = performance.now();
   const delta = to - from;
   const step = (now) => {
+    if (shouldContinue && !shouldContinue()) {
+      return;
+    }
     const progress = clamp((now - startAt) / durationMs, 0, 1);
     audio.volume = from + delta * progress;
     if (progress < 1) {
@@ -49,6 +54,9 @@ class AudioManager {
     this.muted = false;
     this.bgmVolume = 1;
     this.fadeToken = 0;
+    this.unlocked = false;
+    this.unlockPromise = null;
+    this.pendingBgmId = null;
   }
 
   setMuted(muted) {
@@ -62,8 +70,48 @@ class AudioManager {
     return this.muted;
   }
 
+  isUnlocked() {
+    return this.unlocked;
+  }
+
+  unlock() {
+    if (this.unlocked) {
+      return Promise.resolve();
+    }
+    if (this.unlockPromise) {
+      return this.unlockPromise;
+    }
+    this.unlockPromise = this.performUnlock().finally(() => {
+      this.unlockPromise = null;
+    });
+    return this.unlockPromise;
+  }
+
+  async performUnlock() {
+    const audio = new Audio(SILENT_WAV_DATA_URI);
+    audio.loop = false;
+    audio.preload = 'auto';
+    audio.volume = 0;
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      await playPromise.catch(() => null);
+    }
+    audio.pause();
+    audio.currentTime = 0;
+    this.unlocked = true;
+    if (this.pendingBgmId) {
+      const pendingId = this.pendingBgmId;
+      this.pendingBgmId = null;
+      this.setBgm(pendingId);
+    }
+  }
+
   setBgm(id, opts = {}) {
     if (id === this.currentBgmId) {
+      return;
+    }
+    if (!this.unlocked) {
+      this.pendingBgmId = id ?? null;
       return;
     }
     if (!id) {
@@ -73,6 +121,7 @@ class AudioManager {
     const url = BGM_URLS[id];
     const fadeMs = opts.fadeMs ?? 0;
     const token = ++this.fadeToken;
+    const fadeGuard = () => token === this.fadeToken;
 
     if (!url) {
       this.stopCurrentBgm(fadeMs, token);
@@ -102,7 +151,7 @@ class AudioManager {
       }
       if (fadeMs > 0 && !this.muted) {
         nextAudio.volume = 0;
-        fadeAudio(nextAudio, 0, this.bgmVolume, fadeMs, null);
+        fadeAudio(nextAudio, 0, this.bgmVolume, fadeMs, null, fadeGuard);
       }
     };
 
@@ -117,7 +166,7 @@ class AudioManager {
           currentAudio.pause();
           this.currentBgm = null;
           startNext();
-        });
+        }, fadeGuard);
       } else {
         this.currentBgm.pause();
         this.currentBgm = null;
@@ -134,12 +183,13 @@ class AudioManager {
     }
     const currentAudio = this.currentBgm;
     if (fadeMs > 0) {
+      const fadeGuard = token ? () => token === this.fadeToken : null;
       fadeAudio(currentAudio, currentAudio.volume, 0, fadeMs, () => {
         if (token && token !== this.fadeToken) {
           return;
         }
         currentAudio.pause();
-      });
+      }, fadeGuard);
     } else {
       currentAudio.pause();
     }
