@@ -36,6 +36,7 @@ const domRefs = {
     digitInputs: qsa('input[name="digit"]'),
     carryCheckbox: byId('settings-carry'),
     playButton: byId('settings-play-button'),
+    profileButton: byId('settings-profile-button'),
   },
   game: {
     hud: qs('.game-hud'),
