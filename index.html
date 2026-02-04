@@ -88,7 +88,7 @@
       <section id="settings-screen" class="screen screen-settings" hidden>
         <header class="screen-header">
           <p class="screen-kicker">STAGE 02</p>
-          <h2 class="screen__title">設定</h2>
+          <h2 class="screen__title" id="settings-title">設定</h2>
           <p class="screen__description">ミッションに合わせてルールをえらぼう</p>
         </header>
         <div class="screen-main stage-card">
@@ -137,6 +137,15 @@
                 <input type="checkbox" id="settings-carry" />
                 <span>繰り上がり/繰り下がり</span>
               </label>
+            </div>
+            <div class="settings-section">
+              <p class="section-title">🧹 リセット</p>
+              <p class="settings-note">選択中プロファイルの記録を消去します。</p>
+              <button id="settings-profile-reset" class="secondary-button">このプロファイルをリセット</button>
+              <div id="settings-admin-reset" hidden>
+                <p class="settings-note">管理者用: すべての記録を消去します。</p>
+                <button id="settings-admin-reset-button" class="secondary-button">全データ消去</button>
+              </div>
             </div>
           </details>
         </div>
@@ -329,7 +338,7 @@
                   <p>ミス: <strong id="diff-wrong">0</strong></p>
                 </div>
 
-                <button id="daily-reset-button" class="secondary-button">記録をリセット</button>
+                <button id="daily-reset-button" class="secondary-button">今日の記録をリセット</button>
               </div>
               <div class="daily-history">
                 <h3>直近7日</h3>

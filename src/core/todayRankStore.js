@@ -73,6 +73,14 @@ const todayRankStore = {
     writeToStorage(storageKey, next);
     return next;
   },
+  reset(profileId = DEFAULT_PROFILE_ID) {
+    const resolvedProfileId = resolveProfileId(profileId);
+    try {
+      localStorage.removeItem(makeKey(STORE_NAMES.todayRankDistance, resolvedProfileId));
+    } catch (error) {
+      // ignore storage failures
+    }
+  },
 };
 
 export default todayRankStore;
