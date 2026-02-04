@@ -1,4 +1,11 @@
-const STORAGE_KEY = 'calcSprint.daily.v1';
+// ADR-004, ADR-002: Use an app-specific, profile-ready storage namespace (subpath/portal safe).
+// - New key includes a stable prefix + schema version + profileId.
+// - Legacy key is migrated on first read when safe to do so.
+const STORAGE_PREFIX = 'portal.calcSprint';
+const SCHEMA_VERSION = 'v1';
+const DEFAULT_PROFILE_ID = 'default';
+const buildStorageKey = (profileId = DEFAULT_PROFILE_ID) => `${STORAGE_PREFIX}.daily.${SCHEMA_VERSION}.${profileId}`;
+const LEGACY_STORAGE_KEY = 'calcSprint.daily.v1';
 
 const DEFAULT_WRONG_BY_MODE = Object.freeze({
   add: 0,
@@ -34,39 +41,55 @@ const normalizeRecord = (record) => {
   };
 };
 
-const readAll = () => {
+const readFromStorage = (storageKey) => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) {
-      return {};
+      return null;
     }
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') {
-      return {};
+      return null;
     }
     return parsed;
   } catch (error) {
-    return {};
+    return null;
   }
 };
 
-const writeAll = (data) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+const writeToStorage = (storageKey, data) => {
+  localStorage.setItem(storageKey, JSON.stringify(data));
+};
+
+const readAll = (profileId = DEFAULT_PROFILE_ID) => {
+  const storageKey = buildStorageKey(profileId);
+  const current = readFromStorage(storageKey);
+  if (current) {
+    return current;
+  }
+  const legacy = readFromStorage(LEGACY_STORAGE_KEY);
+  if (legacy) {
+    // ADR-004: Best-effort, non-destructive migration (copy only).
+    writeToStorage(storageKey, legacy);
+    return legacy;
+  }
+  return {};
 };
 
 const dailyStatsStore = {
-  getAll() {
-    return readAll();
+  getAll(profileId = DEFAULT_PROFILE_ID) {
+    return readAll(profileId);
   },
-  get(dateKey) {
-    const all = readAll();
+  get(dateKey, profileId = DEFAULT_PROFILE_ID) {
+    const all = readAll(profileId);
     if (!all[dateKey]) {
       return null;
     }
     return normalizeRecord(all[dateKey]);
   },
-  upsert(dateKey, sessionStats) {
-    const all = readAll();
+  upsert(dateKey, sessionStats, profileId = DEFAULT_PROFILE_ID) {
+    const storageKey = buildStorageKey(profileId);
+    const all = readAll(profileId);
     const current = normalizeRecord(all[dateKey]);
     const wrongByMode = {
       ...DEFAULT_WRONG_BY_MODE,
@@ -102,11 +125,13 @@ const dailyStatsStore = {
     }
 
     all[dateKey] = updated;
-    writeAll(all);
+    writeToStorage(storageKey, all);
     return updated;
   },
-  reset() {
-    localStorage.removeItem(STORAGE_KEY);
+  reset(profileId = DEFAULT_PROFILE_ID) {
+    // ADR-004: Remove both new + legacy keys so reset can't be undone by auto-migration.
+    localStorage.removeItem(buildStorageKey(profileId));
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
   },
 };
 

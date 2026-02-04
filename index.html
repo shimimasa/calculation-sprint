@@ -4,10 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>計算スプリント</title>
-    <link rel="stylesheet" href="styles/style.css" />
+    <!-- ADR-004: Use scoped CSS and keep asset paths relative so subpath hosting works. -->
+    <link rel="stylesheet" href="styles/style.scoped.css" />
   </head>
   <body>
-    <main class="app">
+    <!-- ADR-004: Scope styles under a dedicated app root to avoid collisions when embedded in a portal. -->
+    <main class="calc-sprint">
+      <div class="app">
       <section id="title-screen" class="screen screen-title is-active">
         <header class="screen-header">
           <p class="screen-kicker">STAGE 01</p>
@@ -170,10 +173,11 @@
             <div class="speed-lines"></div>
             <div class="runner-wrap">
               <span class="runner-shadow"></span>
+              <!-- ADR-004: Use relative asset paths so subpath hosting works. -->
               <img
                 id="runner-sprite"
                 class="runner-bob"
-                src="/assets/runner/runner.png"
+                src="assets/runner/runner.png"
                 alt="runner"
                 onerror="this.style.display='none'; document.documentElement.classList.add('runner-missing');"
               />
@@ -332,6 +336,7 @@
           </div>
         </footer>
       </section>
+      </div>
     </main>
 
     <script type="module" src="src/main.js"></script>

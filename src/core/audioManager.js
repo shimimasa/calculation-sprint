@@ -1,14 +1,16 @@
+// ADR-004: Use relative asset paths so subpath hosting works (avoid absolute `/assets/...`).
 const BGM_URLS = {
-  bgm_title: '/assets/audio/bgm/title.mp3',
-  bgm_free: '/assets/audio/bgm/free.mp3',
-  bgm_result: '/assets/audio/bgm/result.mp3',
-  bgm_clear: '/assets/audio/bgm/clear.mp3',
+  bgm_title: 'assets/audio/bgm/title.mp3',
+  bgm_free: 'assets/audio/bgm/free.mp3',
+  bgm_result: 'assets/audio/bgm/result.mp3',
+  bgm_clear: 'assets/audio/bgm/clear.mp3',
 };
 
+// ADR-004: Use relative asset paths so subpath hosting works (avoid absolute `/assets/...`).
 const SFX_URLS = {
-  sfx_click: '/assets/audio/sfx/click.mp3',
-  sfx_correct: '/assets/audio/sfx/correct.mp3',
-  sfx_wrong: '/assets/audio/sfx/wrong.mp3',
+  sfx_click: 'assets/audio/sfx/click.mp3',
+  sfx_correct: 'assets/audio/sfx/correct.mp3',
+  sfx_wrong: 'assets/audio/sfx/wrong.mp3',
 };
 
 const SILENT_WAV_DATA_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';

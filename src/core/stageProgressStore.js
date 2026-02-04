@@ -1,4 +1,11 @@
-const STORAGE_KEY = 'calcSprint.stageProgress.v1';
+// ADR-004, ADR-002: Use an app-specific, profile-ready storage namespace (subpath/portal safe).
+// - New key includes a stable prefix + schema version + profileId.
+// - Legacy key is migrated on first read when safe to do so.
+const STORAGE_PREFIX = 'portal.calcSprint';
+const SCHEMA_VERSION = 'v1';
+const DEFAULT_PROFILE_ID = 'default';
+const buildStorageKey = (profileId = DEFAULT_PROFILE_ID) => `${STORAGE_PREFIX}.stageProgress.${SCHEMA_VERSION}.${profileId}`;
+const LEGACY_STORAGE_KEY = 'calcSprint.stageProgress.v1';
 
 const buildDefaultProgress = () => ({
   clearedStageIds: [],
@@ -27,28 +34,39 @@ const parseProgress = (raw) => {
   }
 };
 
-const saveProgress = (progress) => {
+const saveProgress = (storageKey, progress) => {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    window.localStorage.setItem(storageKey, JSON.stringify(progress));
   } catch (error) {
     // ignore storage failures
   }
 };
 
 const stageProgressStore = {
-  getProgress() {
+  getProgress(profileId = DEFAULT_PROFILE_ID) {
+    const storageKey = buildStorageKey(profileId);
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      return parseProgress(raw);
+      const raw = window.localStorage.getItem(storageKey);
+      const parsed = parseProgress(raw);
+      // ADR-004: Best-effort migration if new key is empty but legacy exists.
+      if (!raw) {
+        const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacyRaw) {
+          saveProgress(storageKey, parseProgress(legacyRaw));
+          return parseProgress(legacyRaw);
+        }
+      }
+      return parsed;
     } catch (error) {
       return buildDefaultProgress();
     }
   },
-  markCleared(stageId) {
+  markCleared(stageId, profileId = DEFAULT_PROFILE_ID) {
     if (!stageId) {
       return;
     }
-    const progress = this.getProgress();
+    const storageKey = buildStorageKey(profileId);
+    const progress = this.getProgress(profileId);
     const clearedStageIds = progress.clearedStageIds.includes(stageId)
       ? progress.clearedStageIds
       : [...progress.clearedStageIds, stageId];
@@ -57,30 +75,33 @@ const stageProgressStore = {
       lastPlayedStageId: stageId,
       updatedAt: new Date().toISOString(),
     };
-    saveProgress(updated);
+    saveProgress(storageKey, updated);
   },
-  setLastPlayed(stageId) {
+  setLastPlayed(stageId, profileId = DEFAULT_PROFILE_ID) {
     if (!stageId) {
       return;
     }
-    const progress = this.getProgress();
+    const storageKey = buildStorageKey(profileId);
+    const progress = this.getProgress(profileId);
     const updated = {
       ...progress,
       lastPlayedStageId: stageId,
       updatedAt: new Date().toISOString(),
     };
-    saveProgress(updated);
+    saveProgress(storageKey, updated);
   },
-  isCleared(stageId) {
+  isCleared(stageId, profileId = DEFAULT_PROFILE_ID) {
     if (!stageId) {
       return false;
     }
-    const progress = this.getProgress();
+    const progress = this.getProgress(profileId);
     return progress.clearedStageIds.includes(stageId);
   },
-  reset() {
+  reset(profileId = DEFAULT_PROFILE_ID) {
     try {
-      window.localStorage.removeItem(STORAGE_KEY);
+      // ADR-004: Remove both new + legacy keys so reset can't be undone by auto-migration.
+      window.localStorage.removeItem(buildStorageKey(profileId));
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch (error) {
       // ignore storage failures
     }
