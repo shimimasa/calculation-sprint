@@ -117,6 +117,29 @@ body {
   z-index: 2;
 }
 
+.game-hud.scale-lv-0 {
+  box-shadow: none;
+}
+
+.game-hud.scale-lv-1 {
+  border-bottom-color: rgba(56, 103, 255, 0.18);
+  box-shadow: 0 8px 18px rgba(56, 103, 255, 0.12);
+}
+
+.game-hud.scale-lv-2 {
+  border-bottom-color: rgba(56, 103, 255, 0.28);
+  background: linear-gradient(180deg, rgba(220, 233, 255, 0.95), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 10px 22px rgba(56, 103, 255, 0.18);
+}
+
+.game-hud.scale-lv-3 {
+  border-bottom-color: rgba(56, 103, 255, 0.38);
+  background: linear-gradient(180deg, rgba(206, 226, 255, 0.98), rgba(255, 255, 255, 0.08));
+  box-shadow:
+    0 12px 28px rgba(56, 103, 255, 0.22),
+    0 0 22px rgba(120, 162, 255, 0.28);
+}
+
 .time-progress {
   display: grid;
   grid-template-columns: auto 1fr auto;

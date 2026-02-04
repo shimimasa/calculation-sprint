@@ -23,6 +23,7 @@ const gameState = {
   speedUp: 0.3,
   speedDown: 0.6,
   frictionMpsPerSec: 0.05,
+  scalingLevel: 0,
   reviewSummary: {
     topMode: null,
     message: '',
