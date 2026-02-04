@@ -1,4 +1,6 @@
 const gameState = {
+  playMode: 'free',
+  selectedStageId: null,
   timeLimit: 60,
   timeLeft: 60,
   currentQuestion: null,

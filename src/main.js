@@ -7,7 +7,7 @@ import resultScreen from './screens/resultScreen.js';
 
 const screens = {
   title: titleScreen,
-  stage: stageSelectScreen,
+  'stage-select': stageSelectScreen,
   settings: settingsScreen,
   game: gameScreen,
   result: resultScreen,

@@ -1,13 +1,19 @@
 const domRefs = {
   screens: {
     title: document.getElementById('title-screen'),
-    stage: document.getElementById('stage-screen'),
+    'stage-select': document.getElementById('stage-select-screen'),
     settings: document.getElementById('settings-screen'),
     game: document.getElementById('game-screen'),
     result: document.getElementById('result-screen'),
   },
   title: {
     startButton: document.getElementById('title-start-button'),
+    freeButton: document.getElementById('title-free-button'),
+  },
+  stageSelect: {
+    list: document.getElementById('stage-select-list'),
+    backButton: document.getElementById('stage-select-back-button'),
+    freeButton: document.getElementById('stage-select-free-button'),
   },
   stage: {
     worlds: document.getElementById('stage-worlds'),

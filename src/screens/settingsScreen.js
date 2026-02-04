@@ -36,6 +36,8 @@ const updatePresetDescription = (presetKey) => {
 const settingsScreen = {
   enter() {
     uiRenderer.showScreen('settings');
+    gameState.playMode = 'free';
+    gameState.selectedStageId = null;
     this.isSyncing = true;
     applySettingsToUi(gameState.settings);
     this.isSyncing = false;
@@ -83,7 +85,8 @@ const settingsScreen = {
 
     this.handlePlay = () => {
       readUiToSettings();
-      gameState.selectedStage = null;
+      gameState.playMode = 'free';
+      gameState.selectedStageId = null;
       screenManager.changeScreen('game');
     };
 

@@ -19,7 +19,10 @@
             <p class="mission-label">MISSION</p>
             <p class="mission-text">60秒でできるだけ多く正解しよう</p>
           </div>
-          <button id="title-start-button" class="primary-button primary-button--xl">スタート</button>
+          <div class="title-actions">
+            <button id="title-start-button" class="primary-button primary-button--xl">ステージであそぶ</button>
+            <button id="title-free-button" class="secondary-button primary-button--xl">じゆうにあそぶ</button>
+          </div>
           <div class="how-to">
             <p class="how-to__title">遊び方</p>
             <ol class="how-to__list">
@@ -34,17 +37,18 @@
         </footer>
       </section>
 
-      <section id="stage-screen" class="screen screen-stage" hidden>
+      <section id="stage-select-screen" class="screen screen-stage-select" hidden>
         <header class="screen-header">
           <p class="screen-kicker">STAGE SELECT</p>
-          <h2 class="screen__title">ステージ選択</h2>
-          <p class="screen__description">好きなステージをえらんでスタートしよう</p>
+          <h2 class="screen__title">ステージであそぶ</h2>
+          <p class="screen__description">ミッションをえらんで挑戦しよう</p>
         </header>
         <div class="screen-main stage-card">
-          <div id="stage-worlds" class="stage-worlds"></div>
+          <div id="stage-select-list" class="stage-select-list"></div>
         </div>
-        <footer class="screen-footer">
-          <button id="stage-freeplay-button" class="secondary-button">フリープレイ（設定から遊ぶ）</button>
+        <footer class="screen-footer stage-select-footer">
+          <button id="stage-select-free-button" class="secondary-button">じゆうにあそぶ</button>
+          <button id="stage-select-back-button" class="secondary-button">タイトルにもどる</button>
         </footer>
       </section>
 

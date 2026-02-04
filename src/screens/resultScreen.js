@@ -510,6 +510,8 @@ const resultScreen = {
       gameState.reviewModes = [];
       gameState.reviewCompleted = false;
       gameState.reviewSummary = { topMode: null, message: '', nextAction: null };
+      gameState.playMode = 'free';
+      gameState.selectedStageId = null;
       screenManager.changeScreen('settings');
     };
     this.handleNextAction = () => {
