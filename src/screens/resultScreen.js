@@ -45,23 +45,49 @@ const calculateDistanceMultiplier = (settings) => {
 // A: 連続正解王（最大連続正解>=10）
 // B: 挑戦者（かけ算/わり算/ミックス）
 // B: 安定走（正答率>=90%）
+// ヒント対応表:
+// ノーミスランナー -> 次は かけ算 でノーミスを狙ってみよう
+// スピードスター -> 次は ひき算 でもスピードスターを狙えるよ
+// 連続正解王 -> 次は ミックス で連続正解に挑戦しよう
+// 挑戦者 -> 次は わり算 で安定走を目指そう
+// 安定走 -> 次は スピードスター を狙ってみよう
 const selectSessionTitle = (stats) => {
   if (stats.wrongCount === 0 && stats.total > 0) {
-    return { title: 'ノーミスランナー', message: 'ノーミスで走り切った！' };
+    return {
+      title: 'ノーミスランナー',
+      message: 'ノーミスで走り切った！',
+      nextHint: '次は かけ算 でノーミスを狙ってみよう',
+    };
   }
   if (stats.avgSec > 0 && stats.avgSec <= 1.5) {
-    return { title: 'スピードスター', message: '速さで走り切った！' };
+    return {
+      title: 'スピードスター',
+      message: '速さで走り切った！',
+      nextHint: '次は ひき算 でもスピードスターを狙えるよ',
+    };
   }
   if (stats.maxStreak >= 10) {
-    return { title: '連続正解王', message: '連続正解の勢いが光った！' };
+    return {
+      title: '連続正解王',
+      message: '連続正解の勢いが光った！',
+      nextHint: '次は ミックス で連続正解に挑戦しよう',
+    };
   }
   if (['mul', 'div', 'mix'].includes(stats.mode)) {
-    return { title: '挑戦者', message: '難しい演算に挑戦した！' };
+    return {
+      title: '挑戦者',
+      message: '難しい演算に挑戦した！',
+      nextHint: '次は わり算 で安定走を目指そう',
+    };
   }
   if (stats.accuracy >= 90 && stats.total > 0) {
-    return { title: '安定走', message: '安定した走りだった！' };
+    return {
+      title: '安定走',
+      message: '安定した走りだった！',
+      nextHint: '次は スピードスター を狙ってみよう',
+    };
   }
-  return { title: '称号なし', message: '次は称号を狙ってみよう！' };
+  return { title: '称号なし', message: '次は称号を狙ってみよう！', nextHint: null };
 };
 
 const renderDailyHistory = (records) => {
@@ -187,6 +213,30 @@ const resultScreen = {
       } else {
         domRefs.result.distanceRow.hidden = false;
         domRefs.result.distance.textContent = bonusDistanceM.toFixed(1);
+      }
+    }
+    if (domRefs.result.rawDistance) {
+      domRefs.result.rawDistance.textContent = rawDistanceM.toFixed(1);
+    }
+    if (domRefs.result.bonusDistance) {
+      domRefs.result.bonusDistance.textContent = formatSignedNumber(bonusDeltaM, 1);
+    }
+    if (domRefs.result.distanceMultiplier) {
+      domRefs.result.distanceMultiplier.textContent = distanceMultiplier.toFixed(2);
+    }
+    if (domRefs.result.title) {
+      domRefs.result.title.textContent = sessionTitle.title;
+    }
+    if (domRefs.result.titleMessage) {
+      domRefs.result.titleMessage.textContent = sessionTitle.message;
+    }
+    if (domRefs.result.titleHint) {
+      if (sessionTitle.nextHint) {
+        domRefs.result.titleHint.textContent = sessionTitle.nextHint;
+        domRefs.result.titleHint.hidden = false;
+      } else {
+        domRefs.result.titleHint.textContent = '';
+        domRefs.result.titleHint.hidden = true;
       }
     }
     if (domRefs.result.rawDistance) {

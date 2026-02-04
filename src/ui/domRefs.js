@@ -53,6 +53,7 @@ const domRefs = {
     distanceMultiplier: document.getElementById('result-distance-multiplier'),
     title: document.getElementById('result-title'),
     titleMessage: document.getElementById('result-title-message'),
+    titleHint: document.getElementById('result-title-hint'),
     rateAdd: document.getElementById('result-rate-add'),
     rateSub: document.getElementById('result-rate-sub'),
     rateMul: document.getElementById('result-rate-mul'),

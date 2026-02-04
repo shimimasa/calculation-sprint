@@ -416,6 +416,12 @@ body {
   margin-right: 6px;
 }
 
+.title-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #7c879b;
+}
+
 .screen-result .metric-label {
   font-size: 14px;
   color: #5a6477;
