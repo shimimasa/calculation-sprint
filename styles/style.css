@@ -202,6 +202,10 @@ body {
   z-index: 0;
 }
 
+.game-screen[data-bg-theme="w1"]::before {
+  background: linear-gradient(180deg, rgba(214, 235, 255, 0.7), rgba(244, 246, 251, 0));
+}
+
 .game-hud {
   padding: 28px 28px 12px;
   background: linear-gradient(180deg, rgba(236, 241, 255, 0.88), rgba(255, 255, 255, 0));
@@ -1000,6 +1004,10 @@ body {
   --world-contrast: 1;
   --world-brightness: 1;
   --world-clarity: 1;
+}
+
+.run-world[data-bg-theme="w1"] {
+  background: #e2ecff;
 }
 
 .run-world::after {

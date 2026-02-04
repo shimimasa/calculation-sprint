@@ -78,14 +78,14 @@ const gameScreen = {
         dataset.stageId = stage.id;
         dataset.stageTheme = stage.themeId ?? '';
         dataset.worldId = stage.worldId ?? '';
-        dataset.bgThemeId = stage.theme?.bgThemeId ?? '';
+        dataset.bgTheme = stage.theme?.bgThemeId ?? '';
         dataset.bgmId = stage.theme?.bgmId ?? '';
         return;
       }
       delete dataset.stageId;
       delete dataset.stageTheme;
       delete dataset.worldId;
-      delete dataset.bgThemeId;
+      delete dataset.bgTheme;
       delete dataset.bgmId;
     });
   },
