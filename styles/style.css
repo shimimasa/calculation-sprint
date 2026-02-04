@@ -97,6 +97,9 @@ body {
   min-height: min(92vh, 860px);
   gap: 12px;
   position: relative;
+  --boost-glow: 1;
+  --boost-line: 1;
+  --boost-bright: 1;
 }
 
 .game-screen::before {
@@ -779,7 +782,7 @@ body {
 }
 
 .speed-lines.boost-lines {
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+  filter: drop-shadow(0 0 calc(6px * var(--boost-line)) rgba(255, 255, 255, 0.6));
 }
 
 .speed-lines.is-fast {
@@ -907,7 +910,7 @@ body {
 
 #runner-sprite.boost {
   transform: translate(var(--runner-bob-x, 0px), calc(var(--runner-bob-offset, 0px) - 2px)) scale(1.06);
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)) brightness(1.1);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)) brightness(calc(1.1 * var(--boost-bright)));
 }
 
 #runner-sprite.speed-glow {
@@ -934,7 +937,9 @@ body {
 }
 
 #game-speed.glow {
-  text-shadow: 0 0 10px rgba(56, 103, 255, 0.75), 0 0 18px rgba(56, 103, 255, 0.55);
+  text-shadow:
+    0 0 calc(10px * var(--boost-glow)) rgba(56, 103, 255, calc(0.75 * var(--boost-glow))),
+    0 0 calc(18px * var(--boost-glow)) rgba(56, 103, 255, calc(0.55 * var(--boost-glow)));
 }
 
 @media (prefers-reduced-motion: reduce) {

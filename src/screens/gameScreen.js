@@ -15,6 +15,12 @@ const BG_NEAR_SPEED_FACTOR = 1.1;
 const BG_BOOST_DURATION_MS = 400; // 300-500ms window for noticeable boost without overstaying.
 const BG_BOOST_NEAR_DELTA = 0.3; // Near layer needs stronger bump to feel acceleration.
 const BG_BOOST_FAR_DELTA = 0.25; // Far layer bump kept subtle to avoid seam emphasis.
+const EFFECT_BY_LEVEL = {
+  0: { glow: 0.8, line: 0.9, boost: 0.95 },
+  1: { glow: 1.0, line: 1.0, boost: 1.0 },
+  2: { glow: 1.15, line: 1.1, boost: 1.05 },
+  3: { glow: 1.3, line: 1.2, boost: 1.1 },
+};
 const getScalingLevelFromStreak = (streak) => {
   if (streak >= 10) {
     return 3;
@@ -136,10 +142,17 @@ const gameScreen = {
     }, delayMs);
     this.effectTimeoutIds.push(timeoutId);
   },
+  applyBoostIntensity() {
+    const effect = EFFECT_BY_LEVEL[gameState.scalingLevel] || EFFECT_BY_LEVEL[0];
+    domRefs.screens.game?.style.setProperty('--boost-glow', effect.glow);
+    domRefs.screens.game?.style.setProperty('--boost-line', effect.line);
+    domRefs.screens.game?.style.setProperty('--boost-bright', effect.boost);
+  },
   triggerBoostEffect() {
     if (!domRefs.game.runner) {
       return;
     }
+    this.applyBoostIntensity();
     domRefs.game.runner.classList.remove('hit');
     domRefs.game.runner.classList.add('boost');
     domRefs.game.speedLines?.classList.add('boost-lines');
