@@ -1,4 +1,5 @@
 const gameState = {
+  profileId: null,
   playMode: 'free',
   selectedStageId: null,
   timeLimit: 60,
