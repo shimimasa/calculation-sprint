@@ -85,6 +85,7 @@ const settingsScreen = {
     };
 
     this.handlePlay = () => {
+      audioManager.unlock();
       audioManager.playSfx('sfx_click');
       readUiToSettings();
       gameState.playMode = 'free';

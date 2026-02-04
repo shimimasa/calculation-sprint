@@ -8,10 +8,12 @@ const titleScreen = {
   enter() {
     uiRenderer.showScreen('title');
     this.handleStageStart = () => {
+      audioManager.unlock();
       audioManager.playSfx('sfx_click');
       screenManager.changeScreen('stage-select');
     };
     this.handleFreePlay = () => {
+      audioManager.unlock();
       audioManager.playSfx('sfx_click');
       gameState.playMode = 'free';
       gameState.selectedStageId = null;
