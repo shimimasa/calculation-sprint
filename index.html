@@ -54,30 +54,34 @@
               </select>
             </div>
           </div>
-          <div class="settings-section">
-            <p class="section-title">🧮 モード</p>
-            <div class="pill-group">
-              <label class="pill-option"><input type="radio" name="mode" value="add" checked /><span>たし算</span></label>
-              <label class="pill-option"><input type="radio" name="mode" value="sub" /><span>ひき算</span></label>
-              <label class="pill-option"><input type="radio" name="mode" value="mul" /><span>かけ算</span></label>
-              <label class="pill-option"><input type="radio" name="mode" value="div" /><span>わり算</span></label>
-              <label class="pill-option"><input type="radio" name="mode" value="mix" /><span>ミックス</span></label>
+          <p class="settings-guide">まずはプリセットをえらぼう！こまかく変えたいときは下をひらくよ</p>
+          <details class="settings-details">
+            <summary class="settings-details__summary">こまかく設定</summary>
+            <div class="settings-section">
+              <p class="section-title">🧮 モード</p>
+              <div class="pill-group">
+                <label class="pill-option"><input type="radio" name="mode" value="add" checked /><span>たし算</span></label>
+                <label class="pill-option"><input type="radio" name="mode" value="sub" /><span>ひき算</span></label>
+                <label class="pill-option"><input type="radio" name="mode" value="mul" /><span>かけ算</span></label>
+                <label class="pill-option"><input type="radio" name="mode" value="div" /><span>わり算</span></label>
+                <label class="pill-option"><input type="radio" name="mode" value="mix" /><span>ミックス</span></label>
+              </div>
             </div>
-          </div>
-          <div class="settings-section">
-            <p class="section-title">🔢 桁数</p>
-            <div class="pill-group">
-              <label class="pill-option"><input type="radio" name="digit" value="1" checked /><span>1桁</span></label>
-              <label class="pill-option"><input type="radio" name="digit" value="2" /><span>2桁</span></label>
+            <div class="settings-section">
+              <p class="section-title">🔢 桁数</p>
+              <div class="pill-group">
+                <label class="pill-option"><input type="radio" name="digit" value="1" checked /><span>1桁</span></label>
+                <label class="pill-option"><input type="radio" name="digit" value="2" /><span>2桁</span></label>
+              </div>
             </div>
-          </div>
-          <div class="settings-section">
-            <p class="section-title">⚙️ オプション</p>
-            <label class="toggle-option">
-              <input type="checkbox" id="settings-carry" />
-              <span>繰り上がり/繰り下がり</span>
-            </label>
-          </div>
+            <div class="settings-section">
+              <p class="section-title">⚙️ オプション</p>
+              <label class="toggle-option">
+                <input type="checkbox" id="settings-carry" />
+                <span>繰り上がり/繰り下がり</span>
+              </label>
+            </div>
+          </details>
         </div>
         <footer class="screen-footer">
           <button id="settings-play-button" class="primary-button primary-button--xl">プレイ</button>
