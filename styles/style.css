@@ -100,8 +100,9 @@ body {
 
 .game-hud {
   padding: 28px 28px 12px;
-  background: linear-gradient(180deg, rgba(243, 246, 255, 0.95), rgba(255, 255, 255, 0.85));
-  border-bottom: 1px solid rgba(56, 103, 255, 0.08);
+  background: linear-gradient(180deg, rgba(236, 241, 255, 0.88), rgba(255, 255, 255, 0));
+  border-bottom: 1px solid rgba(56, 103, 255, 0.04);
+  backdrop-filter: blur(4px);
 }
 
 .time-progress {
@@ -166,14 +167,14 @@ body {
 }
 
 .status-card {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 12px;
   padding: 10px 12px;
   display: flex;
   align-items: baseline;
   gap: 6px;
-  box-shadow: 0 6px 16px rgba(29, 36, 51, 0.08);
-  border: 1px solid rgba(56, 103, 255, 0.08);
+  box-shadow: 0 8px 18px rgba(29, 36, 51, 0.08);
+  border: 1px solid rgba(56, 103, 255, 0.05);
 }
 
 .status-label {
@@ -209,12 +210,17 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  margin-bottom: -16px;
+  position: relative;
+  z-index: 3;
 }
 
 .run-layer {
   padding: 0 16px 18px;
   height: min(48vh, 420px);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .screen__title {
@@ -493,11 +499,13 @@ body {
   flex-direction: column;
   gap: 16px;
   align-items: center;
-  margin-bottom: 8px;
-  background: #fff;
-  padding: 18px 24px;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 18px 26px;
   border-radius: 16px;
-  box-shadow: 0 10px 24px rgba(29, 36, 51, 0.08);
+  box-shadow: 0 18px 26px rgba(29, 36, 51, 0.16), 0 4px 0 rgba(29, 36, 51, 0.04);
+  border: 1px solid rgba(56, 103, 255, 0.08);
+  transform: translateY(12px);
 }
 
 .question-text {
@@ -1038,6 +1046,7 @@ body {
 
   .game-focus {
     padding: 0 20px;
+    margin-bottom: -8px;
   }
 
   .status-grid {
@@ -1046,6 +1055,11 @@ body {
 
   .question-text {
     font-size: 28px;
+  }
+
+  .question-area {
+    transform: translateY(6px);
+    padding: 16px 20px;
   }
 
   .answer-input {
