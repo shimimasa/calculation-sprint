@@ -7,6 +7,7 @@ import questionGenerator from '../features/questionGenerator.js';
 import buildReviewSummary from '../core/reviewSummary.js';
 import stageProgressStore from '../core/stageProgressStore.js';
 import { applyStageSettings, findStageById } from '../features/stages.js';
+import audioManager from '../core/audioManager.js';
 
 const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
@@ -135,6 +136,14 @@ const gameScreen = {
       gameState.selectedStage = null;
     }
     this.applyStageThemeHooks();
+    if (gameState.playMode === 'stage' && gameState.selectedStage) {
+      const stageBgmId = gameState.selectedStage.theme?.bgmId
+        ?? domRefs.screens.game?.dataset?.bgmId
+        ?? null;
+      audioManager.setBgm(stageBgmId);
+    } else {
+      audioManager.setBgm('bgm_free');
+    }
     gameState.timeLeft = gameState.timeLimit;
     gameState.correctCount = 0;
     gameState.wrongCount = 0;
@@ -362,6 +371,7 @@ const gameScreen = {
       if (gameState.currentStreak > gameState.maxStreak) {
         gameState.maxStreak = gameState.currentStreak;
       }
+      audioManager.playSfx('sfx_correct');
       uiRenderer.setFeedback('◯', 'correct');
     } else {
       gameState.wrongCount += 1;
@@ -370,6 +380,7 @@ const gameScreen = {
       if (isTrackableMode) {
         gameState.wrongByMode[mode] += 1;
       }
+      audioManager.playSfx('sfx_wrong');
       uiRenderer.setFeedback(`× 正解: ${gameState.currentQuestion.answer}`, 'wrong');
     }
     this.updateScalingHud();
