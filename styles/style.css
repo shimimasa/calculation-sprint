@@ -311,6 +311,106 @@ body {
   box-shadow: none;
 }
 
+.title-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.title-actions .primary-button,
+.title-actions .secondary-button {
+  width: 100%;
+}
+
+.stage-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.stage-select-button {
+  width: 100%;
+  text-align: left;
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stage-select-button.is-locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stage-select-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3867ff;
+  letter-spacing: 0.08em;
+}
+
+.stage-select-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1d2433;
+}
+
+.stage-select-description {
+  font-size: 14px;
+  color: #5a6477;
+  line-height: 1.4;
+}
+
+.stage-select-lock {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7a8396;
+}
+
+.stage-select-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stage-select-footer .secondary-button {
+  width: 100%;
+}
+
+.result-stage {
+  width: 100%;
+  background: rgba(56, 103, 255, 0.08);
+  border-radius: 16px;
+  padding: 14px 18px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-stage__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3867ff;
+  letter-spacing: 0.08em;
+}
+
+.result-stage__name {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.result-stage__status {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1d2433;
+  margin: 0;
+}
+
 .mission-card {
   text-align: center;
   background: #fff;

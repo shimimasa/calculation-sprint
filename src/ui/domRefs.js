@@ -1,12 +1,19 @@
 const domRefs = {
   screens: {
     title: document.getElementById('title-screen'),
+    'stage-select': document.getElementById('stage-select-screen'),
     settings: document.getElementById('settings-screen'),
     game: document.getElementById('game-screen'),
     result: document.getElementById('result-screen'),
   },
   title: {
     startButton: document.getElementById('title-start-button'),
+    freeButton: document.getElementById('title-free-button'),
+  },
+  stageSelect: {
+    list: document.getElementById('stage-select-list'),
+    backButton: document.getElementById('stage-select-back-button'),
+    freeButton: document.getElementById('stage-select-free-button'),
   },
   settings: {
     presetSelect: document.getElementById('settings-preset'),
@@ -41,6 +48,14 @@ const domRefs = {
   },
   result: {
     bestToast: document.getElementById('result-best-toast'),
+    defaultActions: document.getElementById('result-default-actions'),
+    stagePanel: document.getElementById('result-stage-panel'),
+    stageName: document.getElementById('result-stage-name'),
+    stageStatus: document.getElementById('result-stage-status'),
+    stageActions: document.getElementById('result-stage-actions'),
+    stageRetryButton: document.getElementById('result-stage-retry-button'),
+    stageNextButton: document.getElementById('result-stage-next-button'),
+    stageSelectButton: document.getElementById('result-stage-select-button'),
     reviewBanner: document.getElementById('result-review-banner'),
     reviewMessage: document.getElementById('result-review-message'),
     nextActionButton: document.getElementById('result-next-action-button'),

@@ -5,6 +5,7 @@ import gameState from '../core/gameState.js';
 import timer from '../core/timer.js';
 import questionGenerator from '../features/questionGenerator.js';
 import buildReviewSummary from '../core/reviewSummary.js';
+import { applyStageSettings, findStageById } from '../features/stages.js';
 
 const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
@@ -91,6 +92,17 @@ const gameScreen = {
   },
   enter() {
     uiRenderer.showScreen('game');
+    if (gameState.playMode === 'stage') {
+      const stage = findStageById(gameState.selectedStageId);
+      if (stage) {
+        applyStageSettings(stage, gameState);
+      } else {
+        gameState.playMode = 'free';
+        gameState.selectedStageId = null;
+      }
+    } else {
+      gameState.selectedStageId = null;
+    }
     gameState.timeLeft = gameState.timeLimit;
     gameState.correctCount = 0;
     gameState.wrongCount = 0;

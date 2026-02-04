@@ -19,7 +19,10 @@
             <p class="mission-label">MISSION</p>
             <p class="mission-text">60秒でできるだけ多く正解しよう</p>
           </div>
-          <button id="title-start-button" class="primary-button primary-button--xl">スタート</button>
+          <div class="title-actions">
+            <button id="title-start-button" class="primary-button primary-button--xl">ステージであそぶ</button>
+            <button id="title-free-button" class="secondary-button primary-button--xl">じゆうにあそぶ</button>
+          </div>
           <div class="how-to">
             <p class="how-to__title">遊び方</p>
             <ol class="how-to__list">
@@ -31,6 +34,21 @@
         </div>
         <footer class="screen-footer">
           <p class="screen-hint">設定は次の画面で選べるよ</p>
+        </footer>
+      </section>
+
+      <section id="stage-select-screen" class="screen screen-stage-select" hidden>
+        <header class="screen-header">
+          <p class="screen-kicker">STAGE SELECT</p>
+          <h2 class="screen__title">ステージであそぶ</h2>
+          <p class="screen__description">ミッションをえらんで挑戦しよう</p>
+        </header>
+        <div class="screen-main stage-card">
+          <div id="stage-select-list" class="stage-select-list"></div>
+        </div>
+        <footer class="screen-footer stage-select-footer">
+          <button id="stage-select-free-button" class="secondary-button">じゆうにあそぶ</button>
+          <button id="stage-select-back-button" class="secondary-button">タイトルにもどる</button>
         </footer>
       </section>
 
@@ -172,6 +190,11 @@
               <span></span><span></span><span></span><span></span><span></span><span></span>
             </div>
           </div>
+          <div id="result-stage-panel" class="result-stage" hidden>
+            <p class="result-stage__label">ステージ</p>
+            <p id="result-stage-name" class="result-stage__name">---</p>
+            <p id="result-stage-status" class="result-stage__status">クリア！</p>
+          </div>
           <div id="result-review-banner" class="review-banner" hidden>
             <h3>おつかれ！</h3>
             <p id="result-review-message"></p>
@@ -280,10 +303,15 @@
           </details>
         </div>
         <footer class="screen-footer">
-          <div class="button-row button-row--menu">
+          <div id="result-default-actions" class="button-row button-row--menu">
             <button id="result-retry-button" class="primary-button">リトライ</button>
             <button id="result-review-button" class="secondary-button" hidden>復習モードで再挑戦</button>
             <button id="result-back-button" class="secondary-button">設定に戻る</button>
+          </div>
+          <div id="result-stage-actions" class="button-row button-row--menu" hidden>
+            <button id="result-stage-retry-button" class="primary-button">もう一回</button>
+            <button id="result-stage-next-button" class="primary-button">次のステージ</button>
+            <button id="result-stage-select-button" class="secondary-button">ステージえらぶ</button>
           </div>
         </footer>
       </section>
