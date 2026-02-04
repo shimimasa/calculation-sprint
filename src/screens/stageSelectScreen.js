@@ -20,20 +20,21 @@ const formatWorldLabel = (worldId) => {
 
 const formatStageLabel = (stageId) => stageId.replace(/^w/i, '').toUpperCase();
 
-const buildStageMarkup = (stage, { unlocked, cleared }) => {
+const buildStageMarkup = (stage, { unlocked, cleared, current }) => {
   const stageLabel = formatStageLabel(stage.id);
   const isNext = unlocked && !cleared;
   return `
-    <div class="stage-map-node${cleared ? ' is-cleared' : ''}${isNext ? ' is-next' : ''}">
+    <div class="stage-map-node${cleared ? ' is-cleared' : ''}${isNext ? ' is-next' : ''}${current ? ' is-current' : ''}">
       <button
-        class="stage-select-button secondary-button${unlocked ? '' : ' is-locked'}${cleared ? ' is-cleared' : ''}${isNext ? ' is-next' : ''}"
+        class="stage-select-button secondary-button${unlocked ? '' : ' is-locked'}${cleared ? ' is-cleared' : ''}${isNext ? ' is-next' : ''}${current ? ' is-current' : ''}"
         data-stage-id="${stage.id}"
         ${unlocked ? '' : 'disabled aria-disabled="true"'}
       >
         <span class="stage-select-label">STAGE ${stageLabel}</span>
+        ${current ? '<span class="stage-select-current">▶ いまここ</span>' : ''}
         <span class="stage-select-title">${stage.label}</span>
         <span class="stage-select-description">${stage.description}</span>
-        ${cleared ? '<span class="stage-select-clear">✔ クリア</span>' : ''}
+        ${cleared ? '<span class="stage-select-clear">✔ クリア <span class="stage-select-star">★</span></span>' : ''}
         ${unlocked ? '' : '<span class="stage-select-lock">🔒 クリアで開放</span>'}
       </button>
     </div>
@@ -53,7 +54,8 @@ const buildWorldMarkup = (world, progress) => {
           .map((stage) => {
             const unlocked = isStageUnlocked(stage, progress);
             const cleared = stageProgressStore.isCleared(stage.id);
-            return buildStageMarkup(stage, { unlocked, cleared });
+            const current = progress.lastPlayedStageId === stage.id;
+            return buildStageMarkup(stage, { unlocked, cleared, current });
           })
           .join('')}
       </div>
@@ -99,6 +101,7 @@ const stageSelectScreen = {
       if (!stage) {
         return;
       }
+      stageProgressStore.setLastPlayed(stage.id);
       gameState.playMode = 'stage';
       gameState.selectedStageId = stage.id;
       applyStageSettings(stage, gameState);
