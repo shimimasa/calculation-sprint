@@ -52,6 +52,8 @@ const domRefs = {
     stagePanel: document.getElementById('result-stage-panel'),
     stageName: document.getElementById('result-stage-name'),
     stageStatus: document.getElementById('result-stage-status'),
+    stageMessage: document.getElementById('result-stage-message'),
+    stageUnlock: document.getElementById('result-stage-unlock'),
     stageActions: document.getElementById('result-stage-actions'),
     stageRetryButton: document.getElementById('result-stage-retry-button'),
     stageNextButton: document.getElementById('result-stage-next-button'),

@@ -10,27 +10,75 @@ import {
   isStageUnlocked,
 } from '../features/stages.js';
 
-const buildStageMarkup = (stage, unlocked) => `
+const formatWorldLabel = (worldId) => {
+  const numeric = worldId.replace(/^[a-zA-Z]+/, '');
+  if (numeric) {
+    return `WORLD ${numeric}`;
+  }
+  return `WORLD ${worldId.toUpperCase()}`;
+};
+
+const buildStageMarkup = (stage, { unlocked, cleared }) => `
   <button
-    class="stage-select-button secondary-button${unlocked ? '' : ' is-locked'}"
+    class="stage-select-button secondary-button${unlocked ? '' : ' is-locked'}${cleared ? ' is-cleared' : ''}"
     data-stage-id="${stage.id}"
     ${unlocked ? '' : 'disabled aria-disabled="true"'}
   >
     <span class="stage-select-label">STAGE ${String(stage.order).padStart(2, '0')}</span>
     <span class="stage-select-title">${stage.label}</span>
     <span class="stage-select-description">${stage.description}</span>
+    ${cleared ? '<span class="stage-select-clear">✔ クリア</span>' : ''}
     ${unlocked ? '' : '<span class="stage-select-lock">🔒 ロック中</span>'}
   </button>
 `;
+
+const buildWorldMarkup = (world, progress) => {
+  const clearedCount = world.stages.filter((stage) => stageProgressStore.isCleared(stage.id)).length;
+  const totalCount = world.stages.length;
+  return `
+    <section class="stage-world">
+      <div class="stage-world-header">
+        <h3>${formatWorldLabel(world.worldId)} <span class="stage-world-progress">(${clearedCount} / ${totalCount} クリア)</span></h3>
+      </div>
+      <div class="stage-grid">
+        ${world.stages
+          .map((stage) => {
+            const unlocked = isStageUnlocked(stage, progress);
+            const cleared = stageProgressStore.isCleared(stage.id);
+            return buildStageMarkup(stage, { unlocked, cleared });
+          })
+          .join('')}
+      </div>
+    </section>
+  `;
+};
+
+const groupStagesByWorld = (stages) => {
+  const worlds = [];
+  const worldMap = new Map();
+  stages.forEach((stage) => {
+    const worldId = stage.worldId ?? 'world';
+    if (!worldMap.has(worldId)) {
+      const entry = { worldId, stages: [] };
+      worldMap.set(worldId, entry);
+      worlds.push(entry);
+    }
+    worldMap.get(worldId).stages.push(stage);
+  });
+  return worlds;
+};
 
 const stageSelectScreen = {
   enter() {
     uiRenderer.showScreen('stage-select');
     if (domRefs.stageSelect.list) {
       const progress = stageProgressStore.getProgress();
-      domRefs.stageSelect.list.innerHTML = STAGES
-        .map((stage) => buildStageMarkup(stage, isStageUnlocked(stage, progress)))
-        .join('');
+      const worlds = groupStagesByWorld(STAGES);
+      domRefs.stageSelect.list.innerHTML = `
+        <div class="stage-worlds">
+          ${worlds.map((world) => buildWorldMarkup(world, progress)).join('')}
+        </div>
+      `;
     }
 
     this.handleStageClick = (event) => {

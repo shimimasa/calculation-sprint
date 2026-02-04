@@ -176,11 +176,16 @@ const resultScreen = {
     uiRenderer.showScreen('result');
     const isStageMode = gameState.playMode === 'stage' && gameState.selectedStageId;
     const currentStage = isStageMode ? findStageById(gameState.selectedStageId) : null;
-    const wasCleared = currentStage ? stageProgressStore.isCleared(currentStage.id) : false;
+    const progressBefore = stageProgressStore.getProgress();
+    const nextStage = currentStage ? getNextStage(currentStage.id) : null;
+    const wasNextUnlocked = nextStage ? isStageUnlocked(nextStage, progressBefore) : false;
     if (currentStage) {
       stageProgressStore.markCleared(currentStage.id);
     }
     const stageProgress = stageProgressStore.getProgress();
+    const isNextUnlocked = nextStage ? isStageUnlocked(nextStage, stageProgress) : false;
+    const unlockedNextStage = Boolean(nextStage && !wasNextUnlocked && isNextUnlocked);
+    const isClearedNow = currentStage ? stageProgressStore.isCleared(currentStage.id) : false;
     if (domRefs.result.stagePanel) {
       domRefs.result.stagePanel.hidden = !currentStage;
     }
@@ -189,8 +194,17 @@ const resultScreen = {
     }
     if (domRefs.result.stageStatus) {
       domRefs.result.stageStatus.textContent = currentStage
-        ? (wasCleared ? 'クリア済み' : 'クリア！')
+        ? (isClearedNow ? 'ステージクリア！' : 'もうすこしでクリア！')
         : '';
+    }
+    if (domRefs.result.stageMessage) {
+      domRefs.result.stageMessage.textContent = currentStage
+        ? (isClearedNow ? 'やったね！この調子で次も挑戦しよう。' : 'あとちょっと！つぎこそクリアを目指そう。')
+        : '';
+    }
+    if (domRefs.result.stageUnlock) {
+      domRefs.result.stageUnlock.hidden = !unlockedNextStage;
+      domRefs.result.stageUnlock.textContent = unlockedNextStage ? 'つぎのステージがひらいた！' : '';
     }
     if (domRefs.result.stageActions) {
       domRefs.result.stageActions.hidden = !currentStage;
