@@ -1,4 +1,5 @@
 import screenManager from './core/screenManager.js';
+import profileSelectScreen from './screens/profileSelectScreen.js';
 import titleScreen from './screens/titleScreen.js';
 import stageSelectScreen from './screens/stageSelectScreen.js';
 import settingsScreen from './screens/settingsScreen.js';
@@ -7,6 +8,7 @@ import resultScreen from './screens/resultScreen.js';
 import gameState from './core/gameState.js';
 
 const screens = {
+  'profile-select': profileSelectScreen,
   title: titleScreen,
   'stage-select': stageSelectScreen,
   settings: settingsScreen,
@@ -16,7 +18,7 @@ const screens = {
 
 const init = () => {
   screenManager.registerScreens(screens);
-  screenManager.changeScreen('title');
+  screenManager.changeScreen('profile-select');
   // Debug-only helpers for Playwright smoke screenshots.
   // This is intentionally minimal and only used when called explicitly.
   window.__debug = window.__debug || {};

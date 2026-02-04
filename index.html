@@ -11,7 +11,31 @@
     <!-- ADR-004: Scope styles under a dedicated app root to avoid collisions when embedded in a portal. -->
     <main class="calc-sprint">
       <div class="app">
-      <section id="title-screen" class="screen screen-title is-active">
+      <section id="profile-select-screen" class="screen screen-profile-select is-active">
+        <header class="screen-header">
+          <p class="screen-kicker">PROFILE</p>
+          <h1 class="screen__title">プロファイルをえらぼう</h1>
+          <p class="screen__description">なまえは入れずに、番号だけえらんでね</p>
+        </header>
+        <div class="screen-main stage-card">
+          <div class="profile-select-grid" role="group" aria-label="プロファイル一覧">
+            <button class="profile-select-button" data-profile-id="A" type="button" aria-pressed="false">A</button>
+            <button class="profile-select-button" data-profile-id="B" type="button" aria-pressed="false">B</button>
+            <button class="profile-select-button" data-profile-id="C" type="button" aria-pressed="false">C</button>
+            <button class="profile-select-button" data-profile-id="D" type="button" aria-pressed="false">D</button>
+            <button class="profile-select-button" data-profile-id="E" type="button" aria-pressed="false">E</button>
+            <button class="profile-select-button" data-profile-id="F" type="button" aria-pressed="false">F</button>
+            <button class="profile-select-button" data-profile-id="G" type="button" aria-pressed="false">G</button>
+            <button class="profile-select-button" data-profile-id="H" type="button" aria-pressed="false">H</button>
+          </div>
+          <p class="profile-select-current">現在の選択: <strong id="profile-select-current">A</strong></p>
+        </div>
+        <footer class="screen-footer">
+          <button id="profile-select-continue" class="primary-button primary-button--xl">タイトルへすすむ</button>
+        </footer>
+      </section>
+
+      <section id="title-screen" class="screen screen-title" hidden>
         <header class="screen-header">
           <p class="screen-kicker">STAGE 01</p>
           <h1 class="screen__title">計算スプリント</h1>

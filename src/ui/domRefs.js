@@ -6,11 +6,17 @@ const qsa = (selector) => appRoot.querySelectorAll(selector);
 
 const domRefs = {
   screens: {
+    'profile-select': byId('profile-select-screen'),
     title: byId('title-screen'),
     'stage-select': byId('stage-select-screen'),
     settings: byId('settings-screen'),
     game: byId('game-screen'),
     result: byId('result-screen'),
+  },
+  profileSelect: {
+    buttons: qsa('[data-profile-id]'),
+    continueButton: byId('profile-select-continue'),
+    selectedLabel: byId('profile-select-current'),
   },
   title: {
     startButton: byId('title-start-button'),
