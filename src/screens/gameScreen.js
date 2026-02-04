@@ -67,20 +67,26 @@ const getScalingLevelFromStreak = (streak) => {
 
 const gameScreen = {
   applyStageThemeHooks() {
-    const dataset = domRefs.screens.game?.dataset;
-    if (!dataset) {
-      return;
-    }
     const stage = gameState.selectedStage;
-    if (stage) {
-      dataset.stageId = stage.id;
-      dataset.bgThemeId = stage.theme?.bgThemeId ?? '';
-      dataset.bgmId = stage.theme?.bgmId ?? '';
-      return;
-    }
-    delete dataset.stageId;
-    delete dataset.bgThemeId;
-    delete dataset.bgmId;
+    [domRefs.screens.game, domRefs.game.runWorld].forEach((element) => {
+      const dataset = element?.dataset;
+      if (!dataset) {
+        return;
+      }
+      if (stage) {
+        dataset.stageId = stage.id;
+        dataset.stageTheme = stage.themeId ?? '';
+        dataset.worldId = stage.worldId ?? '';
+        dataset.bgThemeId = stage.theme?.bgThemeId ?? '';
+        dataset.bgmId = stage.theme?.bgmId ?? '';
+        return;
+      }
+      delete dataset.stageId;
+      delete dataset.stageTheme;
+      delete dataset.worldId;
+      delete dataset.bgThemeId;
+      delete dataset.bgmId;
+    });
   },
   updateScalingHud() {
     if (!domRefs.game.hud) {
@@ -112,13 +118,17 @@ const gameScreen = {
       const stage = findStageById(gameState.selectedStageId);
       if (stage) {
         applyStageSettings(stage, gameState);
+        gameState.selectedStage = stage;
       } else {
         gameState.playMode = 'free';
         gameState.selectedStageId = null;
+        gameState.selectedStage = null;
       }
     } else {
       gameState.selectedStageId = null;
+      gameState.selectedStage = null;
     }
+    this.applyStageThemeHooks();
     gameState.timeLeft = gameState.timeLimit;
     gameState.correctCount = 0;
     gameState.wrongCount = 0;

@@ -110,6 +110,12 @@ body {
   margin-bottom: 4px;
 }
 
+.stage-world-progress {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5a6477;
+}
+
 .stage-world-header p {
   font-size: 14px;
   color: #5a6477;
@@ -430,6 +436,15 @@ body {
   cursor: not-allowed;
 }
 
+.stage-select-button.is-cleared {
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  background: rgba(236, 255, 244, 0.9);
+}
+
+.stage-select-button.is-cleared .stage-select-label {
+  color: #1f7a46;
+}
+
 .stage-select-label {
   font-size: 12px;
   font-weight: 700;
@@ -453,6 +468,12 @@ body {
   font-size: 12px;
   font-weight: 700;
   color: #7a8396;
+}
+
+.stage-select-clear {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1f7a46;
 }
 
 .stage-select-footer {
@@ -490,9 +511,30 @@ body {
 }
 
 .result-stage__status {
-  font-size: 16px;
-  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.result-stage__headline {
+  font-size: 18px;
+  font-weight: 800;
   color: #1d2433;
+  margin: 0;
+}
+
+.result-stage__message {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5a6477;
+  margin: 0;
+}
+
+.result-stage__unlock {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3867ff;
   margin: 0;
 }
 

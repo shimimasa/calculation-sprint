@@ -7,11 +7,16 @@ const STAGE_DEFINITIONS = [
   { id: 'w1-4', presetKey: 'p5-mul', unlock: { clear: 'w1-3' } },
 ];
 
+const getWorldId = (stageId) => stageId.split('-')[0] ?? 'world';
+
 export const STAGES = STAGE_DEFINITIONS.map((definition, index) => {
   const preset = PRESETS[definition.presetKey];
+  const worldId = getWorldId(definition.id);
   return {
     id: definition.id,
     order: index + 1,
+    worldId,
+    themeId: definition.themeId ?? worldId,
     unlock: definition.unlock,
     label: preset?.label ?? `ステージ${index + 1}`,
     description: preset?.description ?? '',
