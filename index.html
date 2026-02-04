@@ -44,17 +44,22 @@
           <div class="settings-section settings-section--preset">
             <p class="section-title">🎯 プリセット</p>
             <div class="form-group">
-              <label class="form-label" for="settings-preset">難易度プリセット</label>
+              <label class="form-label" for="settings-preset">おすすめプリセット</label>
               <select id="settings-preset">
-                <option value="">プリセットなし（手動設定）</option>
-                <option value="p3-basic">小3 基本</option>
-                <option value="p4-nocarry">小4 繰上がりなし</option>
-                <option value="p4-carry">小4 繰上がりあり</option>
-                <option value="p5-mul">小5 九九</option>
+                <option value="" disabled>おすすめをえらぶ（プリセット）</option>
+                <option value="p3-basic">🟢 はじめてラン</option>
+                <option value="p4-nocarry">🔵 ふつうラン</option>
+                <option value="p4-carry">🟠 ちょうせんラン</option>
+                <option value="p5-mul">🟣 きゅうきゅうラン</option>
+                <option value="custom" selected>なし（カスタム）</option>
               </select>
+              <p class="settings-preset-description" id="settings-preset-description">
+                <span class="settings-preset-tag" id="settings-preset-tag">カスタム中</span>
+                <span id="settings-preset-text">こまかく設定で自分で作れるよ。</span>
+              </p>
             </div>
           </div>
-          <p class="settings-guide">まずはプリセットをえらぼう！こまかく変えたいときは下をひらくよ</p>
+          <p class="settings-guide">まずはおすすめをえらぼう！こまかく変えたいときは下をひらくよ</p>
           <details class="settings-details">
             <summary class="settings-details__summary">こまかく設定</summary>
             <div class="settings-section">

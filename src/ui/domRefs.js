@@ -10,6 +10,9 @@ const domRefs = {
   },
   settings: {
     presetSelect: document.getElementById('settings-preset'),
+    presetDescription: document.getElementById('settings-preset-description'),
+    presetDescriptionText: document.getElementById('settings-preset-text'),
+    presetTag: document.getElementById('settings-preset-tag'),
     modeInputs: document.querySelectorAll('input[name="mode"]'),
     digitInputs: document.querySelectorAll('input[name="digit"]'),
     carryCheckbox: document.getElementById('settings-carry'),

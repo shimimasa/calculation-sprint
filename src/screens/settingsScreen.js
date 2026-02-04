@@ -4,6 +4,9 @@ import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import { PRESETS } from '../features/presets.js';
 
+const CUSTOM_PRESET_VALUE = 'custom';
+const CUSTOM_PRESET_DESCRIPTION = 'こまかく設定で自分で作れるよ。';
+
 const applySettingsToUi = (settings) => {
   domRefs.settings.modeInputs.forEach((input) => {
     input.checked = input.value === settings.mode;
@@ -22,20 +25,34 @@ const readUiToSettings = () => {
   gameState.settings.carry = domRefs.settings.carryCheckbox.checked;
 };
 
+const updatePresetDescription = (presetKey) => {
+  const description = PRESETS[presetKey]?.description ?? CUSTOM_PRESET_DESCRIPTION;
+  domRefs.settings.presetDescriptionText.textContent = description;
+  const isCustom = !PRESETS[presetKey];
+  domRefs.settings.presetDescription.classList.toggle('is-custom', isCustom);
+  domRefs.settings.presetTag.hidden = !isCustom;
+};
+
 const settingsScreen = {
   enter() {
     uiRenderer.showScreen('settings');
     this.isSyncing = true;
     applySettingsToUi(gameState.settings);
     this.isSyncing = false;
+    if (!domRefs.settings.presetSelect.value) {
+      domRefs.settings.presetSelect.value = CUSTOM_PRESET_VALUE;
+    }
+    updatePresetDescription(domRefs.settings.presetSelect.value);
 
     this.handlePresetChange = () => {
       const presetKey = domRefs.settings.presetSelect.value;
-      if (!presetKey) {
+      if (!presetKey || presetKey === CUSTOM_PRESET_VALUE) {
+        updatePresetDescription(presetKey);
         return;
       }
       const preset = PRESETS[presetKey];
       if (!preset) {
+        updatePresetDescription(presetKey);
         return;
       }
       this.isSyncing = true;
@@ -44,6 +61,7 @@ const settingsScreen = {
       gameState.settings.carry = preset.carry;
       applySettingsToUi(gameState.settings);
       this.isSyncing = false;
+      updatePresetDescription(presetKey);
       console.log('Preset applied:', presetKey, {
         mode: gameState.settings.mode,
         digit: gameState.settings.digit,
@@ -56,10 +74,11 @@ const settingsScreen = {
         return;
       }
       readUiToSettings();
-      if (domRefs.settings.presetSelect.value !== '') {
-        domRefs.settings.presetSelect.value = '';
+      if (domRefs.settings.presetSelect.value !== CUSTOM_PRESET_VALUE) {
+        domRefs.settings.presetSelect.value = CUSTOM_PRESET_VALUE;
         console.log('Manual change detected: preset reset to manual.');
       }
+      updatePresetDescription(domRefs.settings.presetSelect.value);
     };
 
     this.handlePlay = () => {
