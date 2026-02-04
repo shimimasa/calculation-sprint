@@ -21,6 +21,25 @@ const formatWorldLabel = (worldId) => {
 
 const formatStageLabel = (stageId) => stageId.replace(/^w/i, '').toUpperCase();
 
+const stageSelectIcons = {
+  current: `
+    <svg class="stage-select-icon stage-select-icon--current" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 5l10 7-10 7V5z" />
+    </svg>
+  `,
+  clear: `
+    <svg class="stage-select-icon stage-select-icon--clear" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6 12l4 4 8-9" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  `,
+  lock: `
+    <svg class="stage-select-icon stage-select-icon--lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="6" y="10" width="12" height="10" rx="2" />
+      <path d="M8 10V8a4 4 0 018 0v2" fill="none" stroke-width="2" stroke-linecap="round" />
+    </svg>
+  `,
+};
+
 const buildStageMarkup = (stage, { unlocked, cleared, current }) => {
   const stageLabel = formatStageLabel(stage.id);
   const isNext = unlocked && !cleared;
@@ -32,11 +51,19 @@ const buildStageMarkup = (stage, { unlocked, cleared, current }) => {
         ${unlocked ? '' : 'disabled aria-disabled="true"'}
       >
         <span class="stage-select-label">STAGE ${stageLabel}</span>
-        ${current ? '<span class="stage-select-current">▶ いまここ</span>' : ''}
+        ${
+          current
+            ? `<span class="stage-select-current">${stageSelectIcons.current}<span>いまここ</span></span>`
+            : ''
+        }
         <span class="stage-select-title">${stage.label}</span>
         <span class="stage-select-description">${stage.description}</span>
-        ${cleared ? '<span class="stage-select-clear">✔ クリア <span class="stage-select-star">★</span></span>' : ''}
-        ${unlocked ? '' : '<span class="stage-select-lock">🔒 クリアで開放</span>'}
+        ${
+          cleared
+            ? `<span class="stage-select-clear">${stageSelectIcons.clear}<span>クリア</span> <span class="stage-select-star">★</span></span>`
+            : ''
+        }
+        ${unlocked ? '' : `<span class="stage-select-lock">${stageSelectIcons.lock}<span>クリアで開放</span></span>`}
       </button>
     </div>
   `;
@@ -79,11 +106,27 @@ const groupStagesByWorld = (stages) => {
   return worlds;
 };
 
+const resolveStageSelectTheme = (progress) => {
+  const fallbackStage = STAGES[0];
+  const lastStage = progress?.lastPlayedStageId ? findStageById(progress.lastPlayedStageId) : null;
+  const stage = lastStage ?? fallbackStage ?? null;
+  return {
+    worldId: stage?.worldId ?? 'world',
+    themeId: stage?.themeId ?? stage?.worldId ?? 'world',
+  };
+};
+
 const stageSelectScreen = {
   enter() {
     uiRenderer.showScreen('stage-select');
+    const stageSelectElement = domRefs.screens['stage-select'];
+    const progress = stageProgressStore.getProgress();
+    if (stageSelectElement) {
+      const { worldId, themeId } = resolveStageSelectTheme(progress);
+      stageSelectElement.dataset.worldId = worldId;
+      stageSelectElement.dataset.themeId = themeId;
+    }
     if (domRefs.stageSelect.list) {
-      const progress = stageProgressStore.getProgress();
       const worlds = groupStagesByWorld(STAGES);
       domRefs.stageSelect.list.innerHTML = `
         <div class="stage-worlds">
