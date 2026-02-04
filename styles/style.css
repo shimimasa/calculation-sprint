@@ -17,8 +17,11 @@ body {
 }
 
 :root {
-  --run-bg-image: url("/assets/bg/bg-sky.png");
+  --run-bg-far-image: url("/assets/bg/bg-sky.png");
+  --run-bg-near-image: url("/assets/bg/bg-sky.png");
   --run-ground-image: url("/assets/bg/ground.png");
+  --run-air-image: none;
+  --run-map-image: none;
 }
 
 .app {
@@ -1012,16 +1015,34 @@ body {
   --world-clarity: 1;
 }
 
+.run-world::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--run-air-image);
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: center top;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .run-world[data-bg-theme="default"] {
-  --run-bg-image: url("/assets/bg/bg-sky.png");
+  --run-bg-far-image: url("/assets/bg/bg-sky.png");
+  --run-bg-near-image: url("/assets/bg/bg-sky.png");
   --run-ground-image: url("/assets/bg/ground.png");
+  --run-air-image: none;
+  --run-map-image: none;
 }
 
 .run-world[data-bg-theme="theme1"],
 .run-world[data-bg-theme="w1"] {
   background: #e2ecff;
-  --run-bg-image: url("/assets/bg/bg-sky.png");
+  --run-bg-far-image: url("/assets/bg/bg-sky.png");
+  --run-bg-near-image: url("/assets/bg/bg-sky.png");
   --run-ground-image: url("/assets/bg/ground.png");
+  --run-air-image: none;
+  --run-map-image: none;
 }
 
 .run-world::after {
@@ -1041,7 +1062,8 @@ body {
 .run-bg {
   position: absolute;
   inset: 0;
-  background: var(--run-bg-image) repeat-x center bottom;
+  background-repeat: repeat-x;
+  background-position: center bottom;
   background-size: auto 100%;
   will-change: background-position;
   transition: filter 0.2s ease;
@@ -1051,6 +1073,7 @@ body {
 
 .run-bg--far {
   z-index: 1;
+  background-image: var(--run-bg-far-image, url("/assets/bg/bg-sky.png"));
   opacity: 0.78;
   filter: blur(0.3px) saturate(var(--world-clarity)) brightness(var(--world-brightness))
     contrast(var(--world-contrast));
@@ -1058,6 +1081,7 @@ body {
 
 .run-bg--near {
   z-index: 2;
+  background-image: var(--run-bg-near-image, url("/assets/bg/bg-sky.png"));
 }
 
 .run-world.stumble-freeze .run-bg {
