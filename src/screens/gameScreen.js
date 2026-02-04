@@ -15,8 +15,80 @@ const BG_NEAR_SPEED_FACTOR = 1.1;
 const BG_BOOST_DURATION_MS = 400; // 300-500ms window for noticeable boost without overstaying.
 const BG_BOOST_NEAR_DELTA = 0.3; // Near layer needs stronger bump to feel acceleration.
 const BG_BOOST_FAR_DELTA = 0.25; // Far layer bump kept subtle to avoid seam emphasis.
+const EFFECT_BY_LEVEL = {
+  0: { glow: 0.8, line: 0.9, boost: 0.95 },
+  1: { glow: 1.0, line: 1.0, boost: 1.0 },
+  2: { glow: 1.15, line: 1.1, boost: 1.05 },
+  3: { glow: 1.3, line: 1.2, boost: 1.1 },
+};
+const WORLD_TUNING_BY_LEVEL = {
+  0: {
+    parallaxFar: 1,
+    parallaxNear: 1,
+    contrast: 1,
+    brightness: 1,
+    clarity: 1,
+  },
+  1: {
+    parallaxFar: 1.04,
+    parallaxNear: 1.06,
+    contrast: 1.02,
+    brightness: 1.01,
+    clarity: 1.03,
+  },
+  2: {
+    parallaxFar: 1.07,
+    parallaxNear: 1.1,
+    contrast: 1.04,
+    brightness: 1.02,
+    clarity: 1.06,
+  },
+  3: {
+    parallaxFar: 1.1,
+    parallaxNear: 1.14,
+    contrast: 1.06,
+    brightness: 1.03,
+    clarity: 1.09,
+  },
+};
+const getScalingLevelFromStreak = (streak) => {
+  if (streak >= 10) {
+    return 3;
+  }
+  if (streak >= 6) {
+    return 2;
+  }
+  if (streak >= 3) {
+    return 1;
+  }
+  return 0;
+};
 
 const gameScreen = {
+  updateScalingHud() {
+    if (!domRefs.game.hud) {
+      return;
+    }
+    domRefs.game.hud.classList.remove(
+      'scale-lv-0',
+      'scale-lv-1',
+      'scale-lv-2',
+      'scale-lv-3',
+    );
+    domRefs.game.hud.classList.add(`scale-lv-${gameState.scalingLevel}`);
+  },
+  applyWorldTuning() {
+    const base = WORLD_TUNING_BY_LEVEL[gameState.scalingLevel] || WORLD_TUNING_BY_LEVEL[0];
+    const reduceFactor = this.prefersReducedMotion ? 0.35 : 1;
+    const tuneValue = (value) => 1 + (value - 1) * reduceFactor;
+    this.worldParallax = {
+      far: tuneValue(base.parallaxFar),
+      near: tuneValue(base.parallaxNear),
+    };
+    domRefs.game.runWorld?.style.setProperty('--world-contrast', tuneValue(base.contrast));
+    domRefs.game.runWorld?.style.setProperty('--world-brightness', tuneValue(base.brightness));
+    domRefs.game.runWorld?.style.setProperty('--world-clarity', tuneValue(base.clarity));
+  },
   enter() {
     uiRenderer.showScreen('game');
     gameState.timeLeft = gameState.timeLimit;
@@ -28,6 +100,7 @@ const gameScreen = {
     gameState.answeredCountForTiming = 0;
     gameState.currentStreak = 0;
     gameState.maxStreak = 0;
+    gameState.scalingLevel = 0;
     Object.keys(gameState.wrongByMode).forEach((key) => {
       gameState.wrongByMode[key] = 0;
     });
@@ -49,6 +122,11 @@ const gameScreen = {
     this.runnerX = 0;
     this.runnerXTarget = 0;
     this.resetEffects();
+    this.updateScalingHud();
+    this.prefersReducedMotion = window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
+    this.applyWorldTuning();
 
     this.handleKeyDown = (event) => {
       if (event.key !== 'Enter') {
@@ -110,10 +188,17 @@ const gameScreen = {
     }, delayMs);
     this.effectTimeoutIds.push(timeoutId);
   },
+  applyBoostIntensity() {
+    const effect = EFFECT_BY_LEVEL[gameState.scalingLevel] || EFFECT_BY_LEVEL[0];
+    domRefs.screens.game?.style.setProperty('--boost-glow', effect.glow);
+    domRefs.screens.game?.style.setProperty('--boost-line', effect.line);
+    domRefs.screens.game?.style.setProperty('--boost-bright', effect.boost);
+  },
   triggerBoostEffect() {
     if (!domRefs.game.runner) {
       return;
     }
+    this.applyBoostIntensity();
     domRefs.game.runner.classList.remove('hit');
     domRefs.game.runner.classList.add('boost');
     domRefs.game.speedLines?.classList.add('boost-lines');
@@ -229,6 +314,7 @@ const gameScreen = {
     if (isCorrect) {
       gameState.correctCount += 1;
       gameState.currentStreak += 1;
+      gameState.scalingLevel = getScalingLevelFromStreak(gameState.currentStreak);
       if (gameState.currentStreak > gameState.maxStreak) {
         gameState.maxStreak = gameState.currentStreak;
       }
@@ -236,11 +322,14 @@ const gameScreen = {
     } else {
       gameState.wrongCount += 1;
       gameState.currentStreak = 0;
+      gameState.scalingLevel = Math.max(0, gameState.scalingLevel - 1);
       if (isTrackableMode) {
         gameState.wrongByMode[mode] += 1;
       }
       uiRenderer.setFeedback(`× 正解: ${gameState.currentQuestion.answer}`, 'wrong');
     }
+    this.updateScalingHud();
+    this.applyWorldTuning();
 
     if (!gameState.isReviewMode) {
       if (isCorrect) {
@@ -350,11 +439,13 @@ const gameScreen = {
     }
     if (domRefs.game.runBgFar) {
       const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetFarPx;
-      domRefs.game.runBgFar.style.backgroundPositionX = `${bgOffset}px`;
+      const parallaxFar = this.worldParallax?.far ?? 1;
+      domRefs.game.runBgFar.style.backgroundPositionX = `${(bgOffset * parallaxFar).toFixed(2)}px`;
     }
     if (domRefs.game.runBgNear) {
       const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetNearPx;
-      domRefs.game.runBgNear.style.backgroundPositionX = `${bgOffset}px`;
+      const parallaxNear = this.worldParallax?.near ?? 1;
+      domRefs.game.runBgNear.style.backgroundPositionX = `${(bgOffset * parallaxNear).toFixed(2)}px`;
     }
     if (domRefs.game.speedLines) {
       const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;

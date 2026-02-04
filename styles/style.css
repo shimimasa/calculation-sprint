@@ -97,6 +97,9 @@ body {
   min-height: min(92vh, 860px);
   gap: 12px;
   position: relative;
+  --boost-glow: 1;
+  --boost-line: 1;
+  --boost-bright: 1;
 }
 
 .game-screen::before {
@@ -115,6 +118,29 @@ body {
   backdrop-filter: blur(4px);
   position: relative;
   z-index: 2;
+}
+
+.game-hud.scale-lv-0 {
+  box-shadow: none;
+}
+
+.game-hud.scale-lv-1 {
+  border-bottom-color: rgba(56, 103, 255, 0.18);
+  box-shadow: 0 8px 18px rgba(56, 103, 255, 0.12);
+}
+
+.game-hud.scale-lv-2 {
+  border-bottom-color: rgba(56, 103, 255, 0.28);
+  background: linear-gradient(180deg, rgba(220, 233, 255, 0.95), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 10px 22px rgba(56, 103, 255, 0.18);
+}
+
+.game-hud.scale-lv-3 {
+  border-bottom-color: rgba(56, 103, 255, 0.38);
+  background: linear-gradient(180deg, rgba(206, 226, 255, 0.98), rgba(255, 255, 255, 0.08));
+  box-shadow:
+    0 12px 28px rgba(56, 103, 255, 0.22),
+    0 0 22px rgba(120, 162, 255, 0.28);
 }
 
 .time-progress {
@@ -677,6 +703,9 @@ body {
   border-radius: 16px;
   background: #e9eef8;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 16px 30px rgba(29, 36, 51, 0.15);
+  --world-contrast: 1;
+  --world-brightness: 1;
+  --world-clarity: 1;
 }
 
 .run-world::after {
@@ -700,12 +729,15 @@ body {
   background-size: auto 100%;
   will-change: background-position;
   transition: filter 0.2s ease;
+  filter: saturate(var(--world-clarity)) brightness(var(--world-brightness))
+    contrast(var(--world-contrast));
 }
 
 .run-bg--far {
   z-index: 1;
   opacity: 0.78;
-  filter: blur(0.3px);
+  filter: blur(0.3px) saturate(var(--world-clarity)) brightness(var(--world-brightness))
+    contrast(var(--world-contrast));
 }
 
 .run-bg--near {
@@ -718,11 +750,15 @@ body {
 }
 
 .run-world.is-fast .run-bg {
-  filter: saturate(1.1) brightness(1.05);
+  filter: saturate(calc(var(--world-clarity) * 1.1))
+    brightness(calc(var(--world-brightness) * 1.05))
+    contrast(var(--world-contrast));
 }
 
 .run-world.is-rapid .run-bg {
-  filter: saturate(1.2) brightness(1.1);
+  filter: saturate(calc(var(--world-clarity) * 1.2))
+    brightness(calc(var(--world-brightness) * 1.1))
+    contrast(var(--world-contrast));
 }
 
 .run-ground {
@@ -737,6 +773,8 @@ body {
   background-position: center bottom;
   box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.18), 0 -1px 6px rgba(0, 0, 0, 0.25);
   z-index: 2;
+  filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
+  opacity: calc(0.94 + (var(--world-clarity) - 1) * 0.25);
 }
 
 .speed-lines {
@@ -756,7 +794,7 @@ body {
 }
 
 .speed-lines.boost-lines {
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+  filter: drop-shadow(0 0 calc(6px * var(--boost-line)) rgba(255, 255, 255, 0.6));
 }
 
 .speed-lines.is-fast {
@@ -884,7 +922,7 @@ body {
 
 #runner-sprite.boost {
   transform: translate(var(--runner-bob-x, 0px), calc(var(--runner-bob-offset, 0px) - 2px)) scale(1.06);
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)) brightness(1.1);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)) brightness(calc(1.1 * var(--boost-bright)));
 }
 
 #runner-sprite.speed-glow {
@@ -911,7 +949,9 @@ body {
 }
 
 #game-speed.glow {
-  text-shadow: 0 0 10px rgba(56, 103, 255, 0.75), 0 0 18px rgba(56, 103, 255, 0.55);
+  text-shadow:
+    0 0 calc(10px * var(--boost-glow)) rgba(56, 103, 255, calc(0.75 * var(--boost-glow))),
+    0 0 calc(18px * var(--boost-glow)) rgba(56, 103, 255, calc(0.55 * var(--boost-glow)));
 }
 
 @media (prefers-reduced-motion: reduce) {
