@@ -16,6 +16,8 @@ const gameState = {
   reviewCompleted: false,
   speedMps: 2.0,
   distanceM: 0,
+  currentStreak: 0,
+  maxStreak: 0,
   maxSpeedMps: 8.0,
   minSpeedMps: 0.8,
   speedUp: 0.3,

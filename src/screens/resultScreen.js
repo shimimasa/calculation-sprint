@@ -39,6 +39,31 @@ const calculateDistanceMultiplier = (settings) => {
   return base + digitBonus + carryBonus;
 };
 
+// 称号（優先順）:
+// S: ノーミスランナー（ミス0）
+// A: スピードスター（平均<=1.5秒/問）
+// A: 連続正解王（最大連続正解>=10）
+// B: 挑戦者（かけ算/わり算/ミックス）
+// B: 安定走（正答率>=90%）
+const selectSessionTitle = (stats) => {
+  if (stats.wrongCount === 0 && stats.total > 0) {
+    return { title: 'ノーミスランナー', message: 'ノーミスで走り切った！' };
+  }
+  if (stats.avgSec > 0 && stats.avgSec <= 1.5) {
+    return { title: 'スピードスター', message: '速さで走り切った！' };
+  }
+  if (stats.maxStreak >= 10) {
+    return { title: '連続正解王', message: '連続正解の勢いが光った！' };
+  }
+  if (['mul', 'div', 'mix'].includes(stats.mode)) {
+    return { title: '挑戦者', message: '難しい演算に挑戦した！' };
+  }
+  if (stats.accuracy >= 90 && stats.total > 0) {
+    return { title: '安定走', message: '安定した走りだった！' };
+  }
+  return { title: '称号なし', message: '次は称号を狙ってみよう！' };
+};
+
 const renderDailyHistory = (records) => {
   const tbody = domRefs.result.dailyHistoryBody;
   if (tbody) {
@@ -140,6 +165,15 @@ const resultScreen = {
     const bonusDistanceM = rawDistanceM * distanceMultiplier;
     const bonusDeltaM = bonusDistanceM - rawDistanceM;
 
+    const sessionTitle = selectSessionTitle({
+      wrongCount: gameState.wrongCount,
+      avgSec,
+      maxStreak: gameState.maxStreak,
+      mode: gameState.settings.mode,
+      accuracy,
+      total,
+    });
+
     domRefs.result.correctCount.textContent = String(gameState.correctCount);
     domRefs.result.wrongCount.textContent = String(gameState.wrongCount);
     domRefs.result.totalAnswered.textContent = String(total);
@@ -163,6 +197,12 @@ const resultScreen = {
     }
     if (domRefs.result.distanceMultiplier) {
       domRefs.result.distanceMultiplier.textContent = distanceMultiplier.toFixed(2);
+    }
+    if (domRefs.result.title) {
+      domRefs.result.title.textContent = sessionTitle.title;
+    }
+    if (domRefs.result.titleMessage) {
+      domRefs.result.titleMessage.textContent = sessionTitle.message;
     }
     ['add', 'sub', 'mul', 'div'].forEach((mode) => {
       const attempt = gameState.attemptByMode[mode];

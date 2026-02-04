@@ -394,6 +394,28 @@ body {
   background: #fff;
 }
 
+.screen-result .result-metric--title {
+  border-style: dashed;
+  border-color: rgba(56, 103, 255, 0.2);
+}
+
+.title-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(56, 103, 255, 0.12);
+  color: #1f2a44;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+
+.title-badge::before {
+  content: "🏅";
+  margin-right: 6px;
+}
+
 .screen-result .metric-label {
   font-size: 14px;
   color: #5a6477;

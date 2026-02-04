@@ -51,6 +51,8 @@ const domRefs = {
     rawDistance: document.getElementById('result-raw-distance'),
     bonusDistance: document.getElementById('result-bonus-distance'),
     distanceMultiplier: document.getElementById('result-distance-multiplier'),
+    title: document.getElementById('result-title'),
+    titleMessage: document.getElementById('result-title-message'),
     rateAdd: document.getElementById('result-rate-add'),
     rateSub: document.getElementById('result-rate-sub'),
     rateMul: document.getElementById('result-rate-mul'),
