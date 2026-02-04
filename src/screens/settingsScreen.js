@@ -83,6 +83,7 @@ const settingsScreen = {
 
     this.handlePlay = () => {
       readUiToSettings();
+      gameState.selectedStage = null;
       screenManager.changeScreen('game');
     };
 

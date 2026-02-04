@@ -65,6 +65,22 @@ const getScalingLevelFromStreak = (streak) => {
 };
 
 const gameScreen = {
+  applyStageThemeHooks() {
+    const dataset = domRefs.screens.game?.dataset;
+    if (!dataset) {
+      return;
+    }
+    const stage = gameState.selectedStage;
+    if (stage) {
+      dataset.stageId = stage.id;
+      dataset.bgThemeId = stage.theme?.bgThemeId ?? '';
+      dataset.bgmId = stage.theme?.bgmId ?? '';
+      return;
+    }
+    delete dataset.stageId;
+    delete dataset.bgThemeId;
+    delete dataset.bgmId;
+  },
   updateScalingHud() {
     if (!domRefs.game.hud) {
       return;
@@ -91,6 +107,7 @@ const gameScreen = {
   },
   enter() {
     uiRenderer.showScreen('game');
+    this.applyStageThemeHooks();
     gameState.timeLeft = gameState.timeLimit;
     gameState.correctCount = 0;
     gameState.wrongCount = 0;

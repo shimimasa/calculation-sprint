@@ -1,11 +1,13 @@
 import screenManager from './core/screenManager.js';
 import titleScreen from './screens/titleScreen.js';
+import stageSelectScreen from './screens/stageSelectScreen.js';
 import settingsScreen from './screens/settingsScreen.js';
 import gameScreen from './screens/gameScreen.js';
 import resultScreen from './screens/resultScreen.js';
 
 const screens = {
   title: titleScreen,
+  stage: stageSelectScreen,
   settings: settingsScreen,
   game: gameScreen,
   result: resultScreen,
