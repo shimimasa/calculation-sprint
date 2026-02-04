@@ -5,6 +5,7 @@ import gameState from '../core/gameState.js';
 import timer from '../core/timer.js';
 import questionGenerator from '../features/questionGenerator.js';
 import buildReviewSummary from '../core/reviewSummary.js';
+import stageProgressStore from '../core/stageProgressStore.js';
 import { applyStageSettings, findStageById } from '../features/stages.js';
 
 const RUNNER_X_MIN_RATIO = 0.08;
@@ -119,6 +120,7 @@ const gameScreen = {
       if (stage) {
         applyStageSettings(stage, gameState);
         gameState.selectedStage = stage;
+        stageProgressStore.setLastPlayed(stage.id);
       } else {
         gameState.playMode = 'free';
         gameState.selectedStageId = null;

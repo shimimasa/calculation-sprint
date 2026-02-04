@@ -59,6 +59,18 @@ const stageProgressStore = {
     };
     saveProgress(updated);
   },
+  setLastPlayed(stageId) {
+    if (!stageId) {
+      return;
+    }
+    const progress = this.getProgress();
+    const updated = {
+      ...progress,
+      lastPlayedStageId: stageId,
+      updatedAt: new Date().toISOString(),
+    };
+    saveProgress(updated);
+  },
   isCleared(stageId) {
     if (!stageId) {
       return false;

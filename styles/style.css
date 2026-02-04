@@ -485,7 +485,8 @@ body {
 
 .stage-select-button.is-next {
   border: 3px solid rgba(245, 158, 11, 0.8);
-  box-shadow: 0 14px 24px rgba(245, 158, 11, 0.18);
+  background: rgba(255, 247, 232, 0.95);
+  box-shadow: 0 14px 24px rgba(245, 158, 11, 0.18), 0 0 0 6px rgba(245, 158, 11, 0.08);
 }
 
 .stage-select-button.is-next .stage-select-label {
@@ -515,6 +516,16 @@ body {
   line-height: 1.4;
 }
 
+.stage-select-current {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
 .stage-select-lock {
   font-size: 12px;
   font-weight: 700;
@@ -525,6 +536,11 @@ body {
   font-size: 12px;
   font-weight: 700;
   color: #1f7a46;
+}
+
+.stage-select-star {
+  font-size: 11px;
+  margin-left: 4px;
 }
 
 .stage-select-footer {
