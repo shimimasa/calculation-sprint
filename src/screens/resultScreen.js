@@ -22,6 +22,21 @@ const formatSignedNumber = (value, digits = 1) => {
 
 const formatRankValue = (value) => (Number.isFinite(value) ? `${value.toFixed(1)}m` : '---');
 
+// BGM transition timings (ms): clear->next {fadeOut:400, fadeIn:300}, fail->retry {fadeOut:200, fadeIn:200}, reduced motion: <=100.
+const BGM_TRANSITION_TIMINGS = Object.freeze({
+  clearNext: { fadeOutMs: 400, fadeInMs: 300 },
+  failRetry: { fadeOutMs: 200, fadeInMs: 200 },
+});
+const REDUCED_MOTION_FADE_MS = 100;
+
+const getReducedFadeMs = (fadeMs, prefersReducedMotion) => (
+  prefersReducedMotion ? Math.min(fadeMs, REDUCED_MOTION_FADE_MS) : fadeMs
+);
+
+const resolveStageBgmId = (stage) => stage?.theme?.bgmId ?? domRefs.screens.game?.dataset?.bgmId ?? null;
+
+const getNextGameBgmId = (stage) => (stage ? resolveStageBgmId(stage) : 'bgm_free');
+
 const applyResultTheme = ({ screen, stage, isStageMode, isClearedNow }) => {
   if (!screen) {
     return;
@@ -266,6 +281,9 @@ const resultScreen = {
     }
     const resultBgmId = currentStage && isClearedNow ? 'bgm_clear' : 'bgm_result';
     audioManager.setBgm(resultBgmId);
+    this.prefersReducedMotion = window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
     if (domRefs.result.stagePanel) {
       domRefs.result.stagePanel.hidden = !currentStage;
     }
@@ -611,6 +629,12 @@ const resultScreen = {
     };
 
     this.handleRetry = () => {
+      const nextBgmId = getNextGameBgmId(currentStage);
+      const timing = BGM_TRANSITION_TIMINGS.failRetry;
+      audioManager.transitionBgm(nextBgmId, {
+        fadeOutMs: getReducedFadeMs(timing.fadeOutMs, this.prefersReducedMotion),
+        fadeInMs: getReducedFadeMs(timing.fadeInMs, this.prefersReducedMotion),
+      });
       gameState.isReviewMode = false;
       gameState.reviewModes = [];
       gameState.reviewCompleted = false;
@@ -638,6 +662,11 @@ const resultScreen = {
       if (!currentStage) {
         return;
       }
+      const timing = BGM_TRANSITION_TIMINGS.failRetry;
+      audioManager.transitionBgm(resolveStageBgmId(currentStage), {
+        fadeOutMs: getReducedFadeMs(timing.fadeOutMs, this.prefersReducedMotion),
+        fadeInMs: getReducedFadeMs(timing.fadeInMs, this.prefersReducedMotion),
+      });
       gameState.playMode = 'stage';
       gameState.selectedStageId = currentStage.id;
       screenManager.changeScreen('game', { retry: true });
@@ -647,11 +676,21 @@ const resultScreen = {
       if (!nextStage || !isStageUnlocked(nextStage, stageProgress)) {
         return;
       }
+      const timing = BGM_TRANSITION_TIMINGS.clearNext;
+      audioManager.transitionBgm(resolveStageBgmId(nextStage), {
+        fadeOutMs: getReducedFadeMs(timing.fadeOutMs, this.prefersReducedMotion),
+        fadeInMs: getReducedFadeMs(timing.fadeInMs, this.prefersReducedMotion),
+      });
       gameState.playMode = 'stage';
       gameState.selectedStageId = nextStage.id;
       screenManager.changeScreen('game');
     };
     this.handleStageSelect = () => {
+      const timing = BGM_TRANSITION_TIMINGS.clearNext;
+      audioManager.transitionBgm('bgm_result', {
+        fadeOutMs: getReducedFadeMs(timing.fadeOutMs, this.prefersReducedMotion),
+        fadeInMs: getReducedFadeMs(timing.fadeInMs, this.prefersReducedMotion),
+      });
       screenManager.changeScreen('stage-select');
     };
     this.handleNextAction = () => {

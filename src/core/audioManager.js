@@ -203,6 +203,78 @@ class AudioManager {
     this.currentBgmId = null;
   }
 
+  transitionBgm(nextId, opts = {}) {
+    const fadeOutMs = opts.fadeOutMs ?? 0;
+    const fadeInMs = opts.fadeInMs ?? 0;
+
+    if (nextId === this.currentBgmId && nextId) {
+      return;
+    }
+    if (!this.unlocked) {
+      this.pendingBgmId = nextId ?? null;
+      return;
+    }
+    if (!nextId) {
+      this.stopBgm({ fadeMs: fadeOutMs });
+      return;
+    }
+
+    const url = BGM_URLS[nextId];
+    const token = ++this.fadeToken;
+    const fadeGuard = () => token === this.fadeToken;
+
+    const startNext = () => {
+      if (token !== this.fadeToken) {
+        return;
+      }
+      if (!url) {
+        this.currentBgmId = nextId;
+        return;
+      }
+      const nextAudio = new Audio(url);
+      nextAudio.loop = true;
+      nextAudio.preload = 'auto';
+      nextAudio.volume = this.muted ? 0 : this.bgmVolume;
+      nextAudio.addEventListener('error', () => {
+        console.warn(`BGM failed to load: ${nextId}`);
+      });
+
+      this.currentBgm = nextAudio;
+      this.currentBgmId = nextId;
+      const playPromise = nextAudio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          console.warn(`BGM playback blocked: ${nextId}`);
+        });
+      }
+      if (fadeInMs > 0 && !this.muted) {
+        nextAudio.volume = 0;
+        fadeAudio(nextAudio, 0, this.bgmVolume, fadeInMs, null, fadeGuard);
+      }
+    };
+
+    if (this.currentBgm) {
+      const currentAudio = this.currentBgm;
+      const currentVolume = currentAudio.volume;
+      if (fadeOutMs > 0) {
+        fadeAudio(currentAudio, currentVolume, 0, fadeOutMs, () => {
+          if (token !== this.fadeToken) {
+            return;
+          }
+          currentAudio.pause();
+          this.currentBgm = null;
+          startNext();
+        }, fadeGuard);
+      } else {
+        currentAudio.pause();
+        this.currentBgm = null;
+        startNext();
+      }
+    } else {
+      startNext();
+    }
+  }
+
   playSfx(id, opts = {}) {
     if (!id) {
       return;
