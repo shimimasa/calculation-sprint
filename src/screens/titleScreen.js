@@ -6,7 +6,7 @@ const titleScreen = {
   enter() {
     uiRenderer.showScreen('title');
     this.handleStart = () => {
-      screenManager.changeScreen('settings');
+      screenManager.changeScreen('stage');
     };
     domRefs.title.startButton.addEventListener('click', this.handleStart);
   },
