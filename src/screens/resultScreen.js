@@ -36,6 +36,60 @@ const applyResultTheme = ({ screen, stage, isStageMode, isClearedNow }) => {
   screen.removeAttribute('data-theme-id');
 };
 
+const CTA_CLASSES = ['cta-primary', 'cta-secondary', 'cta-ghost'];
+
+const resetCtaClasses = (buttons) => {
+  buttons.filter(Boolean).forEach((button) => {
+    CTA_CLASSES.forEach((className) => {
+      button.classList.remove(className);
+    });
+  });
+};
+
+const applyCtaClass = (button, className) => {
+  if (!button || !className) {
+    return;
+  }
+  CTA_CLASSES.forEach((ctaClass) => {
+    button.classList.remove(ctaClass);
+  });
+  button.classList.add(className);
+};
+
+const applyResultCtaPriority = ({ isStageMode, isClearedNow }) => {
+  const buttons = {
+    retry: domRefs.result.retryButton,
+    review: domRefs.result.reviewButton,
+    back: domRefs.result.backButton,
+    stageRetry: domRefs.result.stageRetryButton,
+    stageNext: domRefs.result.stageNextButton,
+    stageSelect: domRefs.result.stageSelectButton,
+  };
+  resetCtaClasses(Object.values(buttons));
+
+  if (isStageMode) {
+    const stageNextVisible = Boolean(buttons.stageNext && !buttons.stageNext.hidden);
+    if (isClearedNow && stageNextVisible) {
+      applyCtaClass(buttons.stageNext, 'cta-primary');
+      applyCtaClass(buttons.stageRetry, 'cta-secondary');
+      applyCtaClass(buttons.stageSelect, 'cta-ghost');
+      return;
+    }
+    applyCtaClass(buttons.stageRetry, 'cta-primary');
+    applyCtaClass(buttons.stageSelect, isClearedNow ? 'cta-ghost' : 'cta-secondary');
+    if (stageNextVisible) {
+      applyCtaClass(buttons.stageNext, 'cta-ghost');
+    }
+    return;
+  }
+
+  applyCtaClass(buttons.retry, 'cta-primary');
+  applyCtaClass(buttons.back, 'cta-secondary');
+  if (buttons.review && !buttons.review.hidden) {
+    applyCtaClass(buttons.review, 'cta-ghost');
+  }
+};
+
 // 距離ボーナス係数テーブル:
 // add: 1.00 / sub: 1.05 / mul: 1.10 / div: 1.15 / mix: 1.08
 // digit=2 は +0.05、carry=true は +0.03 を上乗せする。
@@ -207,6 +261,9 @@ const resultScreen = {
       isStageMode: Boolean(isStageMode && currentStage),
       isClearedNow,
     });
+    if (domRefs.screens.result) {
+      domRefs.screens.result.dataset.playMode = isStageMode ? 'stage' : 'free';
+    }
     const resultBgmId = currentStage && isClearedNow ? 'bgm_clear' : 'bgm_result';
     audioManager.setBgm(resultBgmId);
     if (domRefs.result.stagePanel) {
@@ -627,6 +684,7 @@ const resultScreen = {
     if (domRefs.result.stageSelectButton) {
       domRefs.result.stageSelectButton.addEventListener('click', this.handleStageSelect);
     }
+    applyResultCtaPriority({ isStageMode: Boolean(currentStage), isClearedNow });
     if (domRefs.result.nextActionButton) {
       domRefs.result.nextActionButton.addEventListener('click', this.handleNextAction);
     }

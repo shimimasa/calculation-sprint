@@ -987,6 +987,36 @@ body {
   flex-wrap: wrap;
 }
 
+.result-actions .result-cta {
+  min-height: 48px;
+}
+
+.result-actions .cta-primary {
+  background: var(--world-accent);
+  color: #fff;
+  font-size: 18px;
+  padding: 14px 30px;
+  box-shadow: 0 12px 20px color-mix(in srgb, var(--world-accent) 28%, transparent);
+}
+
+.result-actions .cta-secondary {
+  background: #e5e9f2;
+  color: #1d2433;
+  box-shadow: 0 8px 16px rgba(29, 36, 51, 0.12);
+}
+
+.result-actions .cta-ghost {
+  background: transparent;
+  color: var(--world-accent);
+  border: 2px solid color-mix(in srgb, var(--world-accent) 24%, transparent);
+  box-shadow: none;
+}
+
+.screen-result[data-clear-state="clear"] .cta-primary {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--world-accent) 88%, #ffffff) 0%, var(--world-accent) 70%);
+  box-shadow: 0 14px 24px color-mix(in srgb, var(--world-accent) 35%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .primary-button,
   .secondary-button {
