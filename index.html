@@ -174,7 +174,8 @@
                 <span id="result-distance">0.0</span>
                 <span class="metric-unit">m</span>
               </p>
-              <p class="metric-sub">全力で走り切った距離です。</p>
+              <p class="metric-sub">距離ボーナス込みの表示です。</p>
+              <p class="distance-note">※速度や走行ロジックには影響しません</p>
             </div>
             <div class="result-metric">
               <p class="metric-label">正答率</p>
@@ -194,6 +195,7 @@
                 <li><span id="rank-2">---</span></li>
                 <li><span id="rank-3">---</span></li>
               </ol>
+              <p class="distance-note">※距離ボーナス込み</p>
             </div>
           </div>
           <details class="result-details">
@@ -204,6 +206,12 @@
                 <li>総回答数: <strong id="result-total-answered">0</strong></li>
                 <li>平均回答時間: <strong id="result-avg-time">0.0</strong> 秒/問</li>
                 <li>ベスト平均: <strong id="result-best-avg">0.0</strong> 秒/問</li>
+                <li>
+                  距離内訳:
+                  実距離 <strong id="result-raw-distance">0.0</strong> m /
+                  ボーナス <strong id="result-bonus-distance">+0.0</strong> m
+                  （係数 <strong id="result-distance-multiplier">1.00</strong>）
+                </li>
                 <li>
                   モード別正答率:
                   加 <span id="result-rate-add">0% (0/0)</span> /
@@ -223,6 +231,7 @@
                 <h3>今日の記録</h3>
                 <p>ベスト平均: <strong id="daily-best-avg">0.0</strong> 秒/問</p>
                 <p>ベスト距離: <strong id="daily-best-distance">0.0</strong> m</p>
+                <p class="distance-note">※距離ボーナス込み</p>
                 <p>回答: <strong id="daily-attempt">0</strong> / ミス: <strong id="daily-wrong">0</strong></p>
 
                 <div id="daily-diff" hidden>
@@ -247,7 +256,7 @@
                   </thead>
                   <tbody id="daily-history-body"></tbody>
                 </table>
-                <p id="daily-history-sum">直近7日合計：回答 0 / ミス 0 / 距離 0.0m</p>
+                <p id="daily-history-sum">直近7日合計：回答 0 / ミス 0 / 距離 0.0m（ボーナス込み）</p>
               </div>
             </div>
           </details>

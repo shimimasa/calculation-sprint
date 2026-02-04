@@ -898,6 +898,12 @@ body {
   color: #65708a;
 }
 
+.distance-note {
+  font-size: 12px;
+  color: #7c879b;
+  margin-top: 4px;
+}
+
 .result-metric--rank h3 {
   font-size: 16px;
   margin: 0;
