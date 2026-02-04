@@ -311,6 +311,64 @@ body {
   box-shadow: none;
 }
 
+.title-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.title-actions .primary-button,
+.title-actions .secondary-button {
+  width: 100%;
+}
+
+.stage-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.stage-select-button {
+  width: 100%;
+  text-align: left;
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stage-select-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3867ff;
+  letter-spacing: 0.08em;
+}
+
+.stage-select-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1d2433;
+}
+
+.stage-select-description {
+  font-size: 14px;
+  color: #5a6477;
+  line-height: 1.4;
+}
+
+.stage-select-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stage-select-footer .secondary-button {
+  width: 100%;
+}
+
 .mission-card {
   text-align: center;
   background: #fff;
