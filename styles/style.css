@@ -1380,6 +1380,61 @@ body {
   margin-bottom: 24px;
 }
 
+.screen-result {
+  --world-accent: #3867ff;
+  --world-frame: color-mix(in srgb, var(--world-accent) 22%, transparent);
+  --world-soft: color-mix(in srgb, var(--world-accent) 6%, #ffffff);
+  --world-bg: linear-gradient(180deg, color-mix(in srgb, var(--world-accent) 8%, #ffffff), #ffffff 65%);
+  background: var(--world-bg);
+}
+
+.screen-result[data-world-id="w1"],
+.screen-result[data-theme-id="w1"] {
+  --world-accent: #2563eb;
+}
+
+.screen-result .screen-kicker {
+  color: var(--world-accent);
+}
+
+.screen-result .stage-card {
+  border-color: var(--world-frame);
+  background: linear-gradient(180deg, var(--world-soft), #ffffff 70%);
+}
+
+.screen-result .result-stage {
+  border: 1px solid var(--world-frame);
+  background: color-mix(in srgb, var(--world-accent) 6%, #ffffff);
+}
+
+.screen-result .result-stage__label,
+.screen-result .rank-message {
+  color: var(--world-accent);
+}
+
+.screen-result .result-details {
+  border: 1px solid color-mix(in srgb, var(--world-accent) 18%, transparent);
+  background: color-mix(in srgb, var(--world-accent) 4%, #f8fafc);
+}
+
+.screen-result .result-metric {
+  border: 1px solid color-mix(in srgb, var(--world-accent) 10%, transparent);
+}
+
+.screen-result .result-metric--distance {
+  border: 1px solid color-mix(in srgb, var(--world-accent) 25%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--world-accent) 15%, #ffffff) 0%, #ffffff 60%);
+}
+
+.screen-result[data-clear-state="clear"] .result-stage {
+  border-width: 2px;
+  box-shadow: 0 10px 18px color-mix(in srgb, var(--world-accent) 20%, transparent);
+}
+
+.screen-result[data-clear-state="clear"] .result-stage__headline {
+  color: var(--world-accent);
+}
+
 .result-screen {
   position: relative;
 }

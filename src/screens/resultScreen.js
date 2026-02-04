@@ -22,6 +22,20 @@ const formatSignedNumber = (value, digits = 1) => {
 
 const formatRankValue = (value) => (Number.isFinite(value) ? `${value.toFixed(1)}m` : '---');
 
+const applyResultTheme = ({ screen, stage, isStageMode, isClearedNow }) => {
+  if (!screen) {
+    return;
+  }
+  screen.setAttribute('data-clear-state', isClearedNow ? 'clear' : 'fail');
+  if (isStageMode && stage) {
+    screen.dataset.worldId = stage.worldId ?? 'world';
+    screen.dataset.themeId = stage.themeId ?? stage.worldId ?? 'world';
+    return;
+  }
+  screen.removeAttribute('data-world-id');
+  screen.removeAttribute('data-theme-id');
+};
+
 // 距離ボーナス係数テーブル:
 // add: 1.00 / sub: 1.05 / mul: 1.10 / div: 1.15 / mix: 1.08
 // digit=2 は +0.05、carry=true は +0.03 を上乗せする。
@@ -187,6 +201,12 @@ const resultScreen = {
     const isNextUnlocked = nextStage ? isStageUnlocked(nextStage, stageProgress) : false;
     const unlockedNextStage = Boolean(nextStage && !wasNextUnlocked && isNextUnlocked);
     const isClearedNow = currentStage ? stageProgressStore.isCleared(currentStage.id) : false;
+    applyResultTheme({
+      screen: domRefs.screens.result,
+      stage: currentStage,
+      isStageMode: Boolean(isStageMode && currentStage),
+      isClearedNow,
+    });
     const resultBgmId = currentStage && isClearedNow ? 'bgm_clear' : 'bgm_result';
     audioManager.setBgm(resultBgmId);
     if (domRefs.result.stagePanel) {
