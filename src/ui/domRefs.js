@@ -15,6 +15,10 @@ const domRefs = {
     backButton: document.getElementById('stage-select-back-button'),
     freeButton: document.getElementById('stage-select-free-button'),
   },
+  stage: {
+    worlds: document.getElementById('stage-worlds'),
+    freePlayButton: document.getElementById('stage-freeplay-button'),
+  },
   settings: {
     presetSelect: document.getElementById('settings-preset'),
     presetDescription: document.getElementById('settings-preset-description'),

@@ -48,6 +48,7 @@ const gameState = {
     digit: 1,
     carry: false,
   },
+  selectedStage: null,
 };
 
 export default gameState;
