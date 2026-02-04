@@ -21,6 +21,36 @@ const EFFECT_BY_LEVEL = {
   2: { glow: 1.15, line: 1.1, boost: 1.05 },
   3: { glow: 1.3, line: 1.2, boost: 1.1 },
 };
+const WORLD_TUNING_BY_LEVEL = {
+  0: {
+    parallaxFar: 1,
+    parallaxNear: 1,
+    contrast: 1,
+    brightness: 1,
+    clarity: 1,
+  },
+  1: {
+    parallaxFar: 1.04,
+    parallaxNear: 1.06,
+    contrast: 1.02,
+    brightness: 1.01,
+    clarity: 1.03,
+  },
+  2: {
+    parallaxFar: 1.07,
+    parallaxNear: 1.1,
+    contrast: 1.04,
+    brightness: 1.02,
+    clarity: 1.06,
+  },
+  3: {
+    parallaxFar: 1.1,
+    parallaxNear: 1.14,
+    contrast: 1.06,
+    brightness: 1.03,
+    clarity: 1.09,
+  },
+};
 const getScalingLevelFromStreak = (streak) => {
   if (streak >= 10) {
     return 3;
@@ -46,6 +76,18 @@ const gameScreen = {
       'scale-lv-3',
     );
     domRefs.game.hud.classList.add(`scale-lv-${gameState.scalingLevel}`);
+  },
+  applyWorldTuning() {
+    const base = WORLD_TUNING_BY_LEVEL[gameState.scalingLevel] || WORLD_TUNING_BY_LEVEL[0];
+    const reduceFactor = this.prefersReducedMotion ? 0.35 : 1;
+    const tuneValue = (value) => 1 + (value - 1) * reduceFactor;
+    this.worldParallax = {
+      far: tuneValue(base.parallaxFar),
+      near: tuneValue(base.parallaxNear),
+    };
+    domRefs.game.runWorld?.style.setProperty('--world-contrast', tuneValue(base.contrast));
+    domRefs.game.runWorld?.style.setProperty('--world-brightness', tuneValue(base.brightness));
+    domRefs.game.runWorld?.style.setProperty('--world-clarity', tuneValue(base.clarity));
   },
   enter() {
     uiRenderer.showScreen('game');
@@ -81,6 +123,10 @@ const gameScreen = {
     this.runnerXTarget = 0;
     this.resetEffects();
     this.updateScalingHud();
+    this.prefersReducedMotion = window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
+    this.applyWorldTuning();
 
     this.handleKeyDown = (event) => {
       if (event.key !== 'Enter') {
@@ -283,6 +329,7 @@ const gameScreen = {
       uiRenderer.setFeedback(`× 正解: ${gameState.currentQuestion.answer}`, 'wrong');
     }
     this.updateScalingHud();
+    this.applyWorldTuning();
 
     if (!gameState.isReviewMode) {
       if (isCorrect) {
@@ -392,11 +439,13 @@ const gameScreen = {
     }
     if (domRefs.game.runBgFar) {
       const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetFarPx;
-      domRefs.game.runBgFar.style.backgroundPositionX = `${bgOffset}px`;
+      const parallaxFar = this.worldParallax?.far ?? 1;
+      domRefs.game.runBgFar.style.backgroundPositionX = `${(bgOffset * parallaxFar).toFixed(2)}px`;
     }
     if (domRefs.game.runBgNear) {
       const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetNearPx;
-      domRefs.game.runBgNear.style.backgroundPositionX = `${bgOffset}px`;
+      const parallaxNear = this.worldParallax?.near ?? 1;
+      domRefs.game.runBgNear.style.backgroundPositionX = `${(bgOffset * parallaxNear).toFixed(2)}px`;
     }
     if (domRefs.game.speedLines) {
       const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
