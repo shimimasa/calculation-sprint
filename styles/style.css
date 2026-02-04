@@ -202,6 +202,12 @@ body {
   z-index: 0;
 }
 
+/* Stage theme hooks
+ * - data-bg-theme is primarily consumed by .run-bg--far/.run-bg--near/.run-ground (art layers).
+ * - .game-screen/.run-world are the entry points for global tone (brightness/contrast/etc).
+ * - Keep "default" + one sample theme ("theme1") as the placeholders to swap assets/colors.
+ */
+.game-screen[data-bg-theme="theme1"]::before,
 .game-screen[data-bg-theme="w1"]::before {
   background: linear-gradient(180deg, rgba(214, 235, 255, 0.7), rgba(244, 246, 251, 0));
 }
@@ -1006,8 +1012,16 @@ body {
   --world-clarity: 1;
 }
 
+.run-world[data-bg-theme="default"] {
+  --run-bg-image: url("/assets/bg/bg-sky.png");
+  --run-ground-image: url("/assets/bg/ground.png");
+}
+
+.run-world[data-bg-theme="theme1"],
 .run-world[data-bg-theme="w1"] {
   background: #e2ecff;
+  --run-bg-image: url("/assets/bg/bg-sky.png");
+  --run-ground-image: url("/assets/bg/ground.png");
 }
 
 .run-world::after {
