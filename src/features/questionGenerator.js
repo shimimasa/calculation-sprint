@@ -14,6 +14,7 @@ const digitRange = (digit) => (digit === 1
   : { min: 10, max: 99 });
 
 const buildNumberFromDigits = (tens, ones) => tens * 10 + ones;
+const maxAttempts = 50;
 
 const nextAddNoCarry = (digit) => {
   if (digit === 1) {
@@ -52,6 +53,30 @@ const nextSubNoBorrow = (digit) => {
   };
 };
 
+const nextSubOneDigit = (allowBorrow) => {
+  let a = 1;
+  let b = 1;
+  let attempts = 0;
+  do {
+    a = randomInt(1, 9);
+    b = randomInt(1, 9);
+    if (!allowBorrow && a < b) {
+      [a, b] = [b, a];
+    }
+    if (allowBorrow && a < b) {
+      [a, b] = [b, a];
+    }
+    attempts += 1;
+  } while (attempts < maxAttempts && a - b < 1);
+
+  if (a - b < 1) {
+    a = 9;
+    b = 1;
+  }
+
+  return { a, b };
+};
+
 const questionGenerator = {
   next(settings) {
     const reviewModes = Array.isArray(settings.reviewModes)
@@ -74,7 +99,9 @@ const questionGenerator = {
       ({ a, b } = nextAddNoCarry(settings.digit));
     }
     if (mode === 'sub') {
-      if (settings.carry === false) {
+      if (settings.digit === 1) {
+        ({ a, b } = nextSubOneDigit(settings.carry !== false));
+      } else if (settings.carry === false) {
         ({ a, b } = nextSubNoBorrow(settings.digit));
       } else if (a < b) {
         [a, b] = [b, a];
@@ -85,18 +112,39 @@ const questionGenerator = {
       b = randomInt(1, 9);
     }
     if (mode === 'div') {
-      const divisorMin = settings.digit === 1 ? 1 : 2;
-      const divisorMax = settings.digit === 1 ? 9 : 12;
-      const quotientMin = settings.digit === 1 ? 1 : 2;
-      const quotientMax = settings.digit === 1 ? 9 : 12;
       let dividend = 0;
       let divisor = 0;
       let quotient = 0;
-      do {
-        divisor = randomInt(divisorMin, divisorMax);
-        quotient = randomInt(quotientMin, quotientMax);
-        dividend = divisor * quotient;
-      } while (dividend < min || dividend > max);
+      let attempts = 0;
+      if (settings.digit === 1) {
+        do {
+          divisor = randomInt(2, 9);
+          quotient = randomInt(1, 9);
+          dividend = divisor * quotient;
+          attempts += 1;
+        } while (attempts < maxAttempts && (quotient < 1 || quotient > 9));
+        if (attempts >= maxAttempts) {
+          divisor = 2;
+          quotient = 1;
+          dividend = 2;
+        }
+      } else {
+        const divisorMin = 2;
+        const divisorMax = 12;
+        const quotientMin = 2;
+        const quotientMax = 12;
+        do {
+          divisor = randomInt(divisorMin, divisorMax);
+          quotient = randomInt(quotientMin, quotientMax);
+          dividend = divisor * quotient;
+          attempts += 1;
+        } while (attempts < maxAttempts && (dividend < min || dividend > max));
+        if (attempts >= maxAttempts) {
+          divisor = 2;
+          quotient = 5;
+          dividend = 10;
+        }
+      }
       a = dividend;
       b = divisor;
     }
