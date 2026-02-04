@@ -69,6 +69,7 @@ const getScalingLevelFromStreak = (streak) => {
 const gameScreen = {
   applyStageThemeHooks() {
     const stage = gameState.selectedStage;
+    const shouldApplyTheme = gameState.playMode === 'stage' && stage;
     [domRefs.screens.game, domRefs.game.runWorld].forEach((element) => {
       const dataset = element?.dataset;
       if (!dataset) {
@@ -78,15 +79,18 @@ const gameScreen = {
         dataset.stageId = stage.id;
         dataset.stageTheme = stage.themeId ?? '';
         dataset.worldId = stage.worldId ?? '';
-        dataset.bgTheme = stage.theme?.bgThemeId ?? '';
-        dataset.bgmId = stage.theme?.bgmId ?? '';
-        return;
+      } else {
+        delete dataset.stageId;
+        delete dataset.stageTheme;
+        delete dataset.worldId;
       }
-      delete dataset.stageId;
-      delete dataset.stageTheme;
-      delete dataset.worldId;
-      delete dataset.bgTheme;
-      delete dataset.bgmId;
+      if (shouldApplyTheme) {
+        element.setAttribute('data-bg-theme', stage.theme?.bgThemeId ?? 'default');
+        element.setAttribute('data-bgm-id', stage.theme?.bgmId ?? '');
+      } else {
+        element.removeAttribute('data-bg-theme');
+        element.removeAttribute('data-bgm-id');
+      }
     });
   },
   updateScalingHud() {
