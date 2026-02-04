@@ -3,6 +3,7 @@ import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import stageProgressStore from '../core/stageProgressStore.js';
+import audioManager from '../core/audioManager.js';
 import {
   STAGES,
   applyStageSettings,
@@ -96,6 +97,7 @@ const stageSelectScreen = {
       if (!button || button.disabled) {
         return;
       }
+      audioManager.playSfx('sfx_click');
       const stageId = button.dataset.stageId;
       const stage = findStageById(stageId);
       if (!stage) {
@@ -109,10 +111,12 @@ const stageSelectScreen = {
     };
 
     this.handleBack = () => {
+      audioManager.playSfx('sfx_click');
       screenManager.changeScreen('title');
     };
 
     this.handleFreePlay = () => {
+      audioManager.playSfx('sfx_click');
       gameState.playMode = 'free';
       gameState.selectedStageId = null;
       screenManager.changeScreen('settings');

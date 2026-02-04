@@ -2,14 +2,17 @@ import domRefs from '../ui/domRefs.js';
 import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
+import audioManager from '../core/audioManager.js';
 
 const titleScreen = {
   enter() {
     uiRenderer.showScreen('title');
     this.handleStageStart = () => {
+      audioManager.playSfx('sfx_click');
       screenManager.changeScreen('stage-select');
     };
     this.handleFreePlay = () => {
+      audioManager.playSfx('sfx_click');
       gameState.playMode = 'free';
       gameState.selectedStageId = null;
       screenManager.changeScreen('settings');

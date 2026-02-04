@@ -6,6 +6,7 @@ import dailyStatsStore from '../core/dailyStatsStore.js';
 import todayRankStore from '../core/todayRankStore.js';
 import stageProgressStore from '../core/stageProgressStore.js';
 import { findStageById, getNextStage, isStageUnlocked } from '../features/stages.js';
+import audioManager from '../core/audioManager.js';
 
 const formatDateKey = (date) => {
   const year = date.getFullYear();
@@ -186,6 +187,8 @@ const resultScreen = {
     const isNextUnlocked = nextStage ? isStageUnlocked(nextStage, stageProgress) : false;
     const unlockedNextStage = Boolean(nextStage && !wasNextUnlocked && isNextUnlocked);
     const isClearedNow = currentStage ? stageProgressStore.isCleared(currentStage.id) : false;
+    const resultBgmId = currentStage && isClearedNow ? 'bgm_clear' : 'bgm_result';
+    audioManager.setBgm(resultBgmId);
     if (domRefs.result.stagePanel) {
       domRefs.result.stagePanel.hidden = !currentStage;
     }

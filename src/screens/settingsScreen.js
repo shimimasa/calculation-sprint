@@ -3,6 +3,7 @@ import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import { PRESETS } from '../features/presets.js';
+import audioManager from '../core/audioManager.js';
 
 const CUSTOM_PRESET_VALUE = 'custom';
 const CUSTOM_PRESET_DESCRIPTION = 'こまかく設定で自分で作れるよ。';
@@ -84,6 +85,7 @@ const settingsScreen = {
     };
 
     this.handlePlay = () => {
+      audioManager.playSfx('sfx_click');
       readUiToSettings();
       gameState.playMode = 'free';
       gameState.selectedStageId = null;
