@@ -343,6 +343,73 @@ body {
   opacity: 0.9;
 }
 
+.settings-guide {
+  font-size: 14px;
+  color: #5a6477;
+  margin: -4px 4px 0;
+  line-height: 1.6;
+}
+
+.settings-details {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-details__summary {
+  list-style: none;
+  cursor: pointer;
+  background: #fff;
+  border-radius: 999px;
+  border: 2px solid rgba(56, 103, 255, 0.25);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1d2433;
+  min-height: 52px;
+  box-shadow: 0 6px 12px rgba(56, 103, 255, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.settings-details__summary::after {
+  content: "▼";
+  font-size: 14px;
+  margin-left: 12px;
+  color: #3867ff;
+}
+
+.settings-details[open] .settings-details__summary::after {
+  content: "▲";
+}
+
+.settings-details__summary:hover {
+  background: rgba(56, 103, 255, 0.08);
+}
+
+.settings-details__summary:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 8px rgba(56, 103, 255, 0.12);
+}
+
+.settings-details__summary:focus-visible {
+  outline: 3px solid rgba(56, 103, 255, 0.45);
+  outline-offset: 3px;
+}
+
+.settings-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-details__summary {
+    transition: none;
+  }
+}
+
 .section-title {
   font-size: 16px;
   font-weight: 700;
