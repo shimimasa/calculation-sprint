@@ -19,6 +19,51 @@ const formatSignedNumber = (value, digits = 1) => {
 
 const formatRankValue = (value) => (Number.isFinite(value) ? `${value.toFixed(1)}m` : '---');
 
+// 距離ボーナス係数テーブル:
+// add: 1.00 / sub: 1.05 / mul: 1.10 / div: 1.15 / mix: 1.08
+// digit=2 は +0.05、carry=true は +0.03 を上乗せする。
+const DISTANCE_MULTIPLIER_TABLE = Object.freeze({
+  add: 1.0,
+  sub: 1.05,
+  mul: 1.1,
+  div: 1.15,
+  mix: 1.08,
+});
+const DISTANCE_DIGIT_BONUS = 0.05;
+const DISTANCE_CARRY_BONUS = 0.03;
+
+const calculateDistanceMultiplier = (settings) => {
+  const base = DISTANCE_MULTIPLIER_TABLE[settings?.mode] ?? 1.0;
+  const digitBonus = Number(settings?.digit) === 2 ? DISTANCE_DIGIT_BONUS : 0;
+  const carryBonus = settings?.carry ? DISTANCE_CARRY_BONUS : 0;
+  return base + digitBonus + carryBonus;
+};
+
+// 称号（優先順）:
+// S: ノーミスランナー（ミス0）
+// A: スピードスター（平均<=1.5秒/問）
+// A: 連続正解王（最大連続正解>=10）
+// B: 挑戦者（かけ算/わり算/ミックス）
+// B: 安定走（正答率>=90%）
+const selectSessionTitle = (stats) => {
+  if (stats.wrongCount === 0 && stats.total > 0) {
+    return { title: 'ノーミスランナー', message: 'ノーミスで走り切った！' };
+  }
+  if (stats.avgSec > 0 && stats.avgSec <= 1.5) {
+    return { title: 'スピードスター', message: '速さで走り切った！' };
+  }
+  if (stats.maxStreak >= 10) {
+    return { title: '連続正解王', message: '連続正解の勢いが光った！' };
+  }
+  if (['mul', 'div', 'mix'].includes(stats.mode)) {
+    return { title: '挑戦者', message: '難しい演算に挑戦した！' };
+  }
+  if (stats.accuracy >= 90 && stats.total > 0) {
+    return { title: '安定走', message: '安定した走りだった！' };
+  }
+  return { title: '称号なし', message: '次は称号を狙ってみよう！' };
+};
+
 const renderDailyHistory = (records) => {
   const tbody = domRefs.result.dailyHistoryBody;
   if (tbody) {
@@ -83,7 +128,7 @@ const renderDailyHistory = (records) => {
     }
   });
   if (domRefs.result.dailyHistorySum) {
-    domRefs.result.dailyHistorySum.textContent = `直近7日合計：回答 ${attemptSum} / ミス ${wrongSum} / 距離 ${distanceSum.toFixed(1)}m`;
+    domRefs.result.dailyHistorySum.textContent = `直近7日合計：回答 ${attemptSum} / ミス ${wrongSum} / 距離 ${distanceSum.toFixed(1)}m（ボーナス込み）`;
   }
 };
 
@@ -115,6 +160,20 @@ const resultScreen = {
     }
     const bestAvgSecSession = gameState.bestAvgSecSession ?? 0;
 
+    const rawDistanceM = gameState.isReviewMode ? 0 : gameState.distanceM;
+    const distanceMultiplier = calculateDistanceMultiplier(gameState.settings);
+    const bonusDistanceM = rawDistanceM * distanceMultiplier;
+    const bonusDeltaM = bonusDistanceM - rawDistanceM;
+
+    const sessionTitle = selectSessionTitle({
+      wrongCount: gameState.wrongCount,
+      avgSec,
+      maxStreak: gameState.maxStreak,
+      mode: gameState.settings.mode,
+      accuracy,
+      total,
+    });
+
     domRefs.result.correctCount.textContent = String(gameState.correctCount);
     domRefs.result.wrongCount.textContent = String(gameState.wrongCount);
     domRefs.result.totalAnswered.textContent = String(total);
@@ -127,8 +186,23 @@ const resultScreen = {
         domRefs.result.distance.textContent = '0.0';
       } else {
         domRefs.result.distanceRow.hidden = false;
-        domRefs.result.distance.textContent = gameState.distanceM.toFixed(1);
+        domRefs.result.distance.textContent = bonusDistanceM.toFixed(1);
       }
+    }
+    if (domRefs.result.rawDistance) {
+      domRefs.result.rawDistance.textContent = rawDistanceM.toFixed(1);
+    }
+    if (domRefs.result.bonusDistance) {
+      domRefs.result.bonusDistance.textContent = formatSignedNumber(bonusDeltaM, 1);
+    }
+    if (domRefs.result.distanceMultiplier) {
+      domRefs.result.distanceMultiplier.textContent = distanceMultiplier.toFixed(2);
+    }
+    if (domRefs.result.title) {
+      domRefs.result.title.textContent = sessionTitle.title;
+    }
+    if (domRefs.result.titleMessage) {
+      domRefs.result.titleMessage.textContent = sessionTitle.message;
     }
     ['add', 'sub', 'mul', 'div'].forEach((mode) => {
       const attempt = gameState.attemptByMode[mode];
@@ -178,15 +252,15 @@ const resultScreen = {
 
     const sessionStats = {
       avgSec,
-      distanceM: gameState.isReviewMode ? 0 : gameState.distanceM,
+      distanceM: gameState.isReviewMode ? 0 : bonusDistanceM,
       attemptTotal: total,
       wrongTotal: gameState.wrongCount,
       wrongByMode: { ...gameState.wrongByMode },
     };
     const todayKey = formatDateKey(new Date());
     let todayRank = todayRankStore.get(todayKey);
-    if (!gameState.isReviewMode && gameState.distanceM > 0) {
-      todayRank = todayRankStore.update(todayKey, gameState.distanceM);
+    if (!gameState.isReviewMode && bonusDistanceM > 0) {
+      todayRank = todayRankStore.update(todayKey, bonusDistanceM);
     }
     if (domRefs.result.todayRank) {
       domRefs.result.todayRank.hidden = gameState.isReviewMode;
@@ -203,7 +277,7 @@ const resultScreen = {
       target.textContent = formatRankValue(todayRank.top[index]);
     });
     if (domRefs.result.top3Message) {
-      if (gameState.isReviewMode || gameState.distanceM <= 0) {
+      if (gameState.isReviewMode || bonusDistanceM <= 0) {
         domRefs.result.top3Message.hidden = true;
         domRefs.result.top3Message.textContent = '';
       } else {
@@ -214,11 +288,11 @@ const resultScreen = {
         if (topValues.length === 0) {
           message = '今日の1位に！';
         } else {
-          const rank = topValues.findIndex((value) => gameState.distanceM >= value - 0.0001) + 1;
+          const rank = topValues.findIndex((value) => bonusDistanceM >= value - 0.0001) + 1;
           if (rank > 0 && rank <= 3) {
             message = `今日の${rank}位にランクイン！`;
           } else if (topValues.length >= 3) {
-            const diff = Math.max(0, topValues[2] - gameState.distanceM);
+            const diff = Math.max(0, topValues[2] - bonusDistanceM);
             message = `TOP3まであと${diff.toFixed(1)}m`;
           }
         }
@@ -355,7 +429,7 @@ const resultScreen = {
         domRefs.result.dailyHistoryBody.innerHTML = '';
       }
       if (domRefs.result.dailyHistorySum) {
-        domRefs.result.dailyHistorySum.textContent = '直近7日合計：回答 0 / ミス 0 / 距離 0.0m';
+        domRefs.result.dailyHistorySum.textContent = '直近7日合計：回答 0 / ミス 0 / 距離 0.0m（ボーナス込み）';
       }
       if (domRefs.result.bestToast) {
         if (this.bestToastTimeout) {

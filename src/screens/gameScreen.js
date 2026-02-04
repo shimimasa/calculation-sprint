@@ -26,6 +26,8 @@ const gameScreen = {
     gameState.totalAnswerTimeMs = 0;
     gameState.questionStartAtMs = 0;
     gameState.answeredCountForTiming = 0;
+    gameState.currentStreak = 0;
+    gameState.maxStreak = 0;
     Object.keys(gameState.wrongByMode).forEach((key) => {
       gameState.wrongByMode[key] = 0;
     });
@@ -226,9 +228,14 @@ const gameScreen = {
     }
     if (isCorrect) {
       gameState.correctCount += 1;
+      gameState.currentStreak += 1;
+      if (gameState.currentStreak > gameState.maxStreak) {
+        gameState.maxStreak = gameState.currentStreak;
+      }
       uiRenderer.setFeedback('◯', 'correct');
     } else {
       gameState.wrongCount += 1;
+      gameState.currentStreak = 0;
       if (isTrackableMode) {
         gameState.wrongByMode[mode] += 1;
       }
