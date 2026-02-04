@@ -95,7 +95,17 @@ body {
   display: flex;
   flex-direction: column;
   min-height: min(92vh, 860px);
-  gap: 16px;
+  gap: 12px;
+  position: relative;
+}
+
+.game-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 35%;
+  background: linear-gradient(180deg, rgba(227, 235, 255, 0.65), rgba(244, 246, 251, 0));
+  pointer-events: none;
+  z-index: 0;
 }
 
 .game-hud {
@@ -103,6 +113,8 @@ body {
   background: linear-gradient(180deg, rgba(236, 241, 255, 0.88), rgba(255, 255, 255, 0));
   border-bottom: 1px solid rgba(56, 103, 255, 0.04);
   backdrop-filter: blur(4px);
+  position: relative;
+  z-index: 2;
 }
 
 .time-progress {
@@ -210,9 +222,9 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-bottom: -16px;
+  margin-bottom: -22px;
   position: relative;
-  z-index: 3;
+  z-index: 2;
 }
 
 .run-layer {
@@ -221,6 +233,7 @@ body {
   overflow: hidden;
   position: relative;
   z-index: 1;
+  transform: translateY(-12px);
 }
 
 .screen__title {
@@ -499,13 +512,28 @@ body {
   flex-direction: column;
   gap: 16px;
   align-items: center;
+  position: relative;
   margin-bottom: 6px;
-  background: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 246, 255, 0.92));
   padding: 18px 26px;
   border-radius: 16px;
-  box-shadow: 0 18px 26px rgba(29, 36, 51, 0.16), 0 4px 0 rgba(29, 36, 51, 0.04);
+  box-shadow: 0 22px 30px rgba(29, 36, 51, 0.18), 0 6px 0 rgba(29, 36, 51, 0.06);
   border: 1px solid rgba(56, 103, 255, 0.08);
-  transform: translateY(12px);
+  transform: translateY(28px);
+  z-index: 2;
+  isolation: isolate;
+}
+
+.question-area::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -18px;
+  height: 18px;
+  background: radial-gradient(ellipse at center, rgba(29, 36, 51, 0.25), rgba(29, 36, 51, 0) 70%);
+  filter: blur(1px);
+  z-index: -1;
 }
 
 .question-text {
@@ -1046,7 +1074,7 @@ body {
 
   .game-focus {
     padding: 0 20px;
-    margin-bottom: -8px;
+    margin-bottom: -12px;
   }
 
   .status-grid {
@@ -1058,7 +1086,7 @@ body {
   }
 
   .question-area {
-    transform: translateY(6px);
+    transform: translateY(18px);
     padding: 16px 20px;
   }
 
@@ -1069,6 +1097,7 @@ body {
 
   .run-layer {
     height: min(34vh, 260px);
+    transform: translateY(-6px);
   }
 
   .result-firstview {
