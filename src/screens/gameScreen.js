@@ -15,8 +15,38 @@ const BG_NEAR_SPEED_FACTOR = 1.1;
 const BG_BOOST_DURATION_MS = 400; // 300-500ms window for noticeable boost without overstaying.
 const BG_BOOST_NEAR_DELTA = 0.3; // Near layer needs stronger bump to feel acceleration.
 const BG_BOOST_FAR_DELTA = 0.25; // Far layer bump kept subtle to avoid seam emphasis.
+const EFFECT_BY_LEVEL = {
+  0: { glow: 0.8, line: 0.9, boost: 0.95 },
+  1: { glow: 1.0, line: 1.0, boost: 1.0 },
+  2: { glow: 1.15, line: 1.1, boost: 1.05 },
+  3: { glow: 1.3, line: 1.2, boost: 1.1 },
+};
+const getScalingLevelFromStreak = (streak) => {
+  if (streak >= 10) {
+    return 3;
+  }
+  if (streak >= 6) {
+    return 2;
+  }
+  if (streak >= 3) {
+    return 1;
+  }
+  return 0;
+};
 
 const gameScreen = {
+  updateScalingHud() {
+    if (!domRefs.game.hud) {
+      return;
+    }
+    domRefs.game.hud.classList.remove(
+      'scale-lv-0',
+      'scale-lv-1',
+      'scale-lv-2',
+      'scale-lv-3',
+    );
+    domRefs.game.hud.classList.add(`scale-lv-${gameState.scalingLevel}`);
+  },
   enter() {
     uiRenderer.showScreen('game');
     gameState.timeLeft = gameState.timeLimit;
@@ -28,6 +58,7 @@ const gameScreen = {
     gameState.answeredCountForTiming = 0;
     gameState.currentStreak = 0;
     gameState.maxStreak = 0;
+    gameState.scalingLevel = 0;
     Object.keys(gameState.wrongByMode).forEach((key) => {
       gameState.wrongByMode[key] = 0;
     });
@@ -49,6 +80,7 @@ const gameScreen = {
     this.runnerX = 0;
     this.runnerXTarget = 0;
     this.resetEffects();
+    this.updateScalingHud();
 
     this.handleKeyDown = (event) => {
       if (event.key !== 'Enter') {
@@ -110,10 +142,17 @@ const gameScreen = {
     }, delayMs);
     this.effectTimeoutIds.push(timeoutId);
   },
+  applyBoostIntensity() {
+    const effect = EFFECT_BY_LEVEL[gameState.scalingLevel] || EFFECT_BY_LEVEL[0];
+    domRefs.screens.game?.style.setProperty('--boost-glow', effect.glow);
+    domRefs.screens.game?.style.setProperty('--boost-line', effect.line);
+    domRefs.screens.game?.style.setProperty('--boost-bright', effect.boost);
+  },
   triggerBoostEffect() {
     if (!domRefs.game.runner) {
       return;
     }
+    this.applyBoostIntensity();
     domRefs.game.runner.classList.remove('hit');
     domRefs.game.runner.classList.add('boost');
     domRefs.game.speedLines?.classList.add('boost-lines');
@@ -229,6 +268,7 @@ const gameScreen = {
     if (isCorrect) {
       gameState.correctCount += 1;
       gameState.currentStreak += 1;
+      gameState.scalingLevel = getScalingLevelFromStreak(gameState.currentStreak);
       if (gameState.currentStreak > gameState.maxStreak) {
         gameState.maxStreak = gameState.currentStreak;
       }
@@ -236,11 +276,13 @@ const gameScreen = {
     } else {
       gameState.wrongCount += 1;
       gameState.currentStreak = 0;
+      gameState.scalingLevel = Math.max(0, gameState.scalingLevel - 1);
       if (isTrackableMode) {
         gameState.wrongByMode[mode] += 1;
       }
       uiRenderer.setFeedback(`× 正解: ${gameState.currentQuestion.answer}`, 'wrong');
     }
+    this.updateScalingHud();
 
     if (!gameState.isReviewMode) {
       if (isCorrect) {
