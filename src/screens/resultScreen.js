@@ -239,6 +239,21 @@ const resultScreen = {
         domRefs.result.titleHint.hidden = true;
       }
     }
+    if (domRefs.result.rawDistance) {
+      domRefs.result.rawDistance.textContent = rawDistanceM.toFixed(1);
+    }
+    if (domRefs.result.bonusDistance) {
+      domRefs.result.bonusDistance.textContent = formatSignedNumber(bonusDeltaM, 1);
+    }
+    if (domRefs.result.distanceMultiplier) {
+      domRefs.result.distanceMultiplier.textContent = distanceMultiplier.toFixed(2);
+    }
+    if (domRefs.result.title) {
+      domRefs.result.title.textContent = sessionTitle.title;
+    }
+    if (domRefs.result.titleMessage) {
+      domRefs.result.titleMessage.textContent = sessionTitle.message;
+    }
     ['add', 'sub', 'mul', 'div'].forEach((mode) => {
       const attempt = gameState.attemptByMode[mode];
       const wrong = gameState.wrongByMode[mode];
