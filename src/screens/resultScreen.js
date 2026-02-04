@@ -4,6 +4,8 @@ import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import dailyStatsStore from '../core/dailyStatsStore.js';
 import todayRankStore from '../core/todayRankStore.js';
+import stageProgressStore from '../core/stageProgressStore.js';
+import { findStageById, getNextStage, isStageUnlocked } from '../features/stages.js';
 
 const formatDateKey = (date) => {
   const year = date.getFullYear();
@@ -172,6 +174,30 @@ const resultScreen = {
       domRefs.screens.result.classList.remove('is-confetti');
     }
     uiRenderer.showScreen('result');
+    const isStageMode = gameState.playMode === 'stage' && gameState.selectedStageId;
+    const currentStage = isStageMode ? findStageById(gameState.selectedStageId) : null;
+    const wasCleared = currentStage ? stageProgressStore.isCleared(currentStage.id) : false;
+    if (currentStage) {
+      stageProgressStore.markCleared(currentStage.id);
+    }
+    const stageProgress = stageProgressStore.getProgress();
+    if (domRefs.result.stagePanel) {
+      domRefs.result.stagePanel.hidden = !currentStage;
+    }
+    if (domRefs.result.stageName) {
+      domRefs.result.stageName.textContent = currentStage?.label ?? '---';
+    }
+    if (domRefs.result.stageStatus) {
+      domRefs.result.stageStatus.textContent = currentStage
+        ? (wasCleared ? 'クリア済み' : 'クリア！')
+        : '';
+    }
+    if (domRefs.result.stageActions) {
+      domRefs.result.stageActions.hidden = !currentStage;
+    }
+    if (domRefs.result.defaultActions) {
+      domRefs.result.defaultActions.hidden = Boolean(currentStage);
+    }
     const total = gameState.totalAnswered || 0;
     const accuracy = total > 0
       ? Math.round((gameState.correctCount / total) * 100)
@@ -514,6 +540,26 @@ const resultScreen = {
       gameState.selectedStageId = null;
       screenManager.changeScreen('settings');
     };
+    this.handleStageRetry = () => {
+      if (!currentStage) {
+        return;
+      }
+      gameState.playMode = 'stage';
+      gameState.selectedStageId = currentStage.id;
+      screenManager.changeScreen('game', { retry: true });
+    };
+    this.handleStageNext = () => {
+      const nextStage = currentStage ? getNextStage(currentStage.id) : null;
+      if (!nextStage || !isStageUnlocked(nextStage, stageProgress)) {
+        return;
+      }
+      gameState.playMode = 'stage';
+      gameState.selectedStageId = nextStage.id;
+      screenManager.changeScreen('game');
+    };
+    this.handleStageSelect = () => {
+      screenManager.changeScreen('stage-select');
+    };
     this.handleNextAction = () => {
       const nextAction = gameState.reviewSummary?.nextAction;
       if (!nextAction) {
@@ -532,6 +578,18 @@ const resultScreen = {
       domRefs.result.reviewButton.addEventListener('click', this.handleReview);
     }
     domRefs.result.backButton.addEventListener('click', this.handleBack);
+    if (domRefs.result.stageRetryButton) {
+      domRefs.result.stageRetryButton.addEventListener('click', this.handleStageRetry);
+    }
+    if (domRefs.result.stageNextButton) {
+      const nextStage = currentStage ? getNextStage(currentStage.id) : null;
+      const canGoNext = nextStage ? isStageUnlocked(nextStage, stageProgress) : false;
+      domRefs.result.stageNextButton.hidden = !canGoNext;
+      domRefs.result.stageNextButton.addEventListener('click', this.handleStageNext);
+    }
+    if (domRefs.result.stageSelectButton) {
+      domRefs.result.stageSelectButton.addEventListener('click', this.handleStageSelect);
+    }
     if (domRefs.result.nextActionButton) {
       domRefs.result.nextActionButton.addEventListener('click', this.handleNextAction);
     }
@@ -549,6 +607,15 @@ const resultScreen = {
     }
     if (this.handleBack) {
       domRefs.result.backButton.removeEventListener('click', this.handleBack);
+    }
+    if (this.handleStageRetry && domRefs.result.stageRetryButton) {
+      domRefs.result.stageRetryButton.removeEventListener('click', this.handleStageRetry);
+    }
+    if (this.handleStageNext && domRefs.result.stageNextButton) {
+      domRefs.result.stageNextButton.removeEventListener('click', this.handleStageNext);
+    }
+    if (this.handleStageSelect && domRefs.result.stageSelectButton) {
+      domRefs.result.stageSelectButton.removeEventListener('click', this.handleStageSelect);
     }
     if (this.handleNextAction && domRefs.result.nextActionButton) {
       domRefs.result.nextActionButton.removeEventListener('click', this.handleNextAction);

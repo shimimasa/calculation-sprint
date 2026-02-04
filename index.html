@@ -190,6 +190,11 @@
               <span></span><span></span><span></span><span></span><span></span><span></span>
             </div>
           </div>
+          <div id="result-stage-panel" class="result-stage" hidden>
+            <p class="result-stage__label">ステージ</p>
+            <p id="result-stage-name" class="result-stage__name">---</p>
+            <p id="result-stage-status" class="result-stage__status">クリア！</p>
+          </div>
           <div id="result-review-banner" class="review-banner" hidden>
             <h3>おつかれ！</h3>
             <p id="result-review-message"></p>
@@ -298,10 +303,15 @@
           </details>
         </div>
         <footer class="screen-footer">
-          <div class="button-row button-row--menu">
+          <div id="result-default-actions" class="button-row button-row--menu">
             <button id="result-retry-button" class="primary-button">リトライ</button>
             <button id="result-review-button" class="secondary-button" hidden>復習モードで再挑戦</button>
             <button id="result-back-button" class="secondary-button">設定に戻る</button>
+          </div>
+          <div id="result-stage-actions" class="button-row button-row--menu" hidden>
+            <button id="result-stage-retry-button" class="primary-button">もう一回</button>
+            <button id="result-stage-next-button" class="primary-button">次のステージ</button>
+            <button id="result-stage-select-button" class="secondary-button">ステージえらぶ</button>
           </div>
         </footer>
       </section>

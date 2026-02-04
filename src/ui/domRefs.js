@@ -15,10 +15,6 @@ const domRefs = {
     backButton: document.getElementById('stage-select-back-button'),
     freeButton: document.getElementById('stage-select-free-button'),
   },
-  stage: {
-    worlds: document.getElementById('stage-worlds'),
-    freePlayButton: document.getElementById('stage-freeplay-button'),
-  },
   settings: {
     presetSelect: document.getElementById('settings-preset'),
     presetDescription: document.getElementById('settings-preset-description'),
@@ -52,6 +48,14 @@ const domRefs = {
   },
   result: {
     bestToast: document.getElementById('result-best-toast'),
+    defaultActions: document.getElementById('result-default-actions'),
+    stagePanel: document.getElementById('result-stage-panel'),
+    stageName: document.getElementById('result-stage-name'),
+    stageStatus: document.getElementById('result-stage-status'),
+    stageActions: document.getElementById('result-stage-actions'),
+    stageRetryButton: document.getElementById('result-stage-retry-button'),
+    stageNextButton: document.getElementById('result-stage-next-button'),
+    stageSelectButton: document.getElementById('result-stage-select-button'),
     reviewBanner: document.getElementById('result-review-banner'),
     reviewMessage: document.getElementById('result-review-message'),
     nextActionButton: document.getElementById('result-next-action-button'),

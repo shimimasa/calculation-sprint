@@ -2,13 +2,24 @@ import domRefs from '../ui/domRefs.js';
 import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
-import { STAGES, applyStageSettings, findStageById } from '../features/stages.js';
+import stageProgressStore from '../core/stageProgressStore.js';
+import {
+  STAGES,
+  applyStageSettings,
+  findStageById,
+  isStageUnlocked,
+} from '../features/stages.js';
 
-const buildStageMarkup = (stage) => `
-  <button class="stage-select-button secondary-button" data-stage-id="${stage.id}">
+const buildStageMarkup = (stage, unlocked) => `
+  <button
+    class="stage-select-button secondary-button${unlocked ? '' : ' is-locked'}"
+    data-stage-id="${stage.id}"
+    ${unlocked ? '' : 'disabled aria-disabled="true"'}
+  >
     <span class="stage-select-label">STAGE ${String(stage.order).padStart(2, '0')}</span>
     <span class="stage-select-title">${stage.label}</span>
     <span class="stage-select-description">${stage.description}</span>
+    ${unlocked ? '' : '<span class="stage-select-lock">🔒 ロック中</span>'}
   </button>
 `;
 
@@ -16,12 +27,15 @@ const stageSelectScreen = {
   enter() {
     uiRenderer.showScreen('stage-select');
     if (domRefs.stageSelect.list) {
-      domRefs.stageSelect.list.innerHTML = STAGES.map(buildStageMarkup).join('');
+      const progress = stageProgressStore.getProgress();
+      domRefs.stageSelect.list.innerHTML = STAGES
+        .map((stage) => buildStageMarkup(stage, isStageUnlocked(stage, progress)))
+        .join('');
     }
 
     this.handleStageClick = (event) => {
-      const button = event.target.closest('[data-stage-id]');
-      if (!button) {
+      const button = event.target.closest('button[data-stage-id]');
+      if (!button || button.disabled) {
         return;
       }
       const stageId = button.dataset.stageId;
