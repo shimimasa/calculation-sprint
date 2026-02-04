@@ -1,6 +1,14 @@
 // ADR-004, ADR-002 Phase0補修: Centralized key generation (Phase1 will inject profileId).
-import { LEGACY_KEYS, STORE_NAMES, DEFAULT_PROFILE_ID, makeKey } from './storageKeys.js';
+import {
+  LEGACY_KEYS,
+  LEGACY_MIGRATION_KEYS,
+  STORE_NAMES,
+  DEFAULT_PROFILE_ID,
+  makeKey,
+  resolveProfileId,
+} from './storageKeys.js';
 const LEGACY_STORAGE_KEY = LEGACY_KEYS.todayRankDistance;
+const LEGACY_MIGRATION_KEY = LEGACY_MIGRATION_KEYS.todayRankDistance;
 
 const normalizeTop = (top) => {
   if (!Array.isArray(top)) {
@@ -34,14 +42,18 @@ const writeToStorage = (storageKey, data) => {
 
 const todayRankStore = {
   get(dateKey, profileId = DEFAULT_PROFILE_ID) {
-    const storageKey = makeKey(STORE_NAMES.todayRankDistance, profileId);
+    const resolvedProfileId = resolveProfileId(profileId);
+    const storageKey = makeKey(STORE_NAMES.todayRankDistance, resolvedProfileId);
     let stored = readFromStorage(storageKey);
     if (!stored) {
-      const legacy = readFromStorage(LEGACY_STORAGE_KEY);
-      if (legacy) {
-        // ADR-004: Best-effort, non-destructive migration (copy only).
-        writeToStorage(storageKey, legacy);
-        stored = legacy;
+      if (resolvedProfileId === DEFAULT_PROFILE_ID && !localStorage.getItem(LEGACY_MIGRATION_KEY)) {
+        const legacy = readFromStorage(LEGACY_STORAGE_KEY);
+        if (legacy) {
+          // ADR-004: Best-effort, non-destructive migration (copy only).
+          writeToStorage(storageKey, legacy);
+          localStorage.setItem(LEGACY_MIGRATION_KEY, '1');
+          stored = legacy;
+        }
       }
     }
     if (!stored || stored.dateKey !== dateKey) {
@@ -50,8 +62,9 @@ const todayRankStore = {
     return { dateKey, top: stored.top };
   },
   update(dateKey, distanceM, profileId = DEFAULT_PROFILE_ID) {
-    const storageKey = makeKey(STORE_NAMES.todayRankDistance, profileId);
-    const current = this.get(dateKey, profileId);
+    const resolvedProfileId = resolveProfileId(profileId);
+    const storageKey = makeKey(STORE_NAMES.todayRankDistance, resolvedProfileId);
+    const current = this.get(dateKey, resolvedProfileId);
     const nextTop = [...current.top, distanceM]
       .filter((value) => Number.isFinite(value) && value > 0)
       .sort((a, b) => b - a)

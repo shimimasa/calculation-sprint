@@ -93,6 +93,12 @@ const settingsScreen = {
       screenManager.changeScreen('game');
     };
 
+    this.handleProfileChange = () => {
+      audioManager.unlock();
+      audioManager.playSfx('sfx_click');
+      screenManager.changeScreen('profile-select');
+    };
+
     domRefs.settings.presetSelect.addEventListener('change', this.handlePresetChange);
     domRefs.settings.modeInputs.forEach((input) => {
       input.addEventListener('change', this.handleManualChange);
@@ -102,11 +108,15 @@ const settingsScreen = {
     });
     domRefs.settings.carryCheckbox.addEventListener('change', this.handleManualChange);
     domRefs.settings.playButton.addEventListener('click', this.handlePlay);
+    domRefs.settings.profileButton.addEventListener('click', this.handleProfileChange);
   },
   render() {},
   exit() {
     if (this.handlePlay) {
       domRefs.settings.playButton.removeEventListener('click', this.handlePlay);
+    }
+    if (this.handleProfileChange) {
+      domRefs.settings.profileButton.removeEventListener('click', this.handleProfileChange);
     }
     if (this.handlePresetChange) {
       domRefs.settings.presetSelect.removeEventListener('change', this.handlePresetChange);

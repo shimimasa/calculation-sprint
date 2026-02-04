@@ -1,6 +1,14 @@
 // ADR-004, ADR-002 Phase0補修: Centralized key generation (Phase1 will inject profileId).
-import { LEGACY_KEYS, STORE_NAMES, DEFAULT_PROFILE_ID, makeKey } from './storageKeys.js';
+import {
+  LEGACY_KEYS,
+  LEGACY_MIGRATION_KEYS,
+  STORE_NAMES,
+  DEFAULT_PROFILE_ID,
+  makeKey,
+  resolveProfileId,
+} from './storageKeys.js';
 const LEGACY_STORAGE_KEY = LEGACY_KEYS.daily;
+const LEGACY_MIGRATION_KEY = LEGACY_MIGRATION_KEYS.daily;
 
 const DEFAULT_WRONG_BY_MODE = Object.freeze({
   add: 0,
@@ -57,16 +65,20 @@ const writeToStorage = (storageKey, data) => {
 };
 
 const readAll = (profileId = DEFAULT_PROFILE_ID) => {
-  const storageKey = makeKey(STORE_NAMES.daily, profileId);
+  const resolvedProfileId = resolveProfileId(profileId);
+  const storageKey = makeKey(STORE_NAMES.daily, resolvedProfileId);
   const current = readFromStorage(storageKey);
   if (current) {
     return current;
   }
-  const legacy = readFromStorage(LEGACY_STORAGE_KEY);
-  if (legacy) {
-    // ADR-004: Best-effort, non-destructive migration (copy only).
-    writeToStorage(storageKey, legacy);
-    return legacy;
+  if (resolvedProfileId === DEFAULT_PROFILE_ID && !localStorage.getItem(LEGACY_MIGRATION_KEY)) {
+    const legacy = readFromStorage(LEGACY_STORAGE_KEY);
+    if (legacy) {
+      // ADR-004: Best-effort, non-destructive migration (copy only).
+      writeToStorage(storageKey, legacy);
+      localStorage.setItem(LEGACY_MIGRATION_KEY, '1');
+      return legacy;
+    }
   }
   return {};
 };
@@ -83,8 +95,9 @@ const dailyStatsStore = {
     return normalizeRecord(all[dateKey]);
   },
   upsert(dateKey, sessionStats, profileId = DEFAULT_PROFILE_ID) {
-    const storageKey = makeKey(STORE_NAMES.daily, profileId);
-    const all = readAll(profileId);
+    const resolvedProfileId = resolveProfileId(profileId);
+    const storageKey = makeKey(STORE_NAMES.daily, resolvedProfileId);
+    const all = readAll(resolvedProfileId);
     const current = normalizeRecord(all[dateKey]);
     const wrongByMode = {
       ...DEFAULT_WRONG_BY_MODE,
@@ -124,9 +137,8 @@ const dailyStatsStore = {
     return updated;
   },
   reset(profileId = DEFAULT_PROFILE_ID) {
-    // ADR-004: Remove both new + legacy keys so reset can't be undone by auto-migration.
-    localStorage.removeItem(makeKey(STORE_NAMES.daily, profileId));
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    const resolvedProfileId = resolveProfileId(profileId);
+    localStorage.removeItem(makeKey(STORE_NAMES.daily, resolvedProfileId));
   },
 };
 
