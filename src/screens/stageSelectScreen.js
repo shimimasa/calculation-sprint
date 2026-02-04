@@ -18,19 +18,27 @@ const formatWorldLabel = (worldId) => {
   return `WORLD ${worldId.toUpperCase()}`;
 };
 
-const buildStageMarkup = (stage, { unlocked, cleared }) => `
-  <button
-    class="stage-select-button secondary-button${unlocked ? '' : ' is-locked'}${cleared ? ' is-cleared' : ''}"
-    data-stage-id="${stage.id}"
-    ${unlocked ? '' : 'disabled aria-disabled="true"'}
-  >
-    <span class="stage-select-label">STAGE ${String(stage.order).padStart(2, '0')}</span>
-    <span class="stage-select-title">${stage.label}</span>
-    <span class="stage-select-description">${stage.description}</span>
-    ${cleared ? '<span class="stage-select-clear">✔ クリア</span>' : ''}
-    ${unlocked ? '' : '<span class="stage-select-lock">🔒 ロック中</span>'}
-  </button>
-`;
+const formatStageLabel = (stageId) => stageId.replace(/^w/i, '').toUpperCase();
+
+const buildStageMarkup = (stage, { unlocked, cleared }) => {
+  const stageLabel = formatStageLabel(stage.id);
+  const isNext = unlocked && !cleared;
+  return `
+    <div class="stage-map-node${cleared ? ' is-cleared' : ''}${isNext ? ' is-next' : ''}">
+      <button
+        class="stage-select-button secondary-button${unlocked ? '' : ' is-locked'}${cleared ? ' is-cleared' : ''}${isNext ? ' is-next' : ''}"
+        data-stage-id="${stage.id}"
+        ${unlocked ? '' : 'disabled aria-disabled="true"'}
+      >
+        <span class="stage-select-label">STAGE ${stageLabel}</span>
+        <span class="stage-select-title">${stage.label}</span>
+        <span class="stage-select-description">${stage.description}</span>
+        ${cleared ? '<span class="stage-select-clear">✔ クリア</span>' : ''}
+        ${unlocked ? '' : '<span class="stage-select-lock">🔒 クリアで開放</span>'}
+      </button>
+    </div>
+  `;
+};
 
 const buildWorldMarkup = (world, progress) => {
   const clearedCount = world.stages.filter((stage) => stageProgressStore.isCleared(stage.id)).length;
@@ -40,7 +48,7 @@ const buildWorldMarkup = (world, progress) => {
       <div class="stage-world-header">
         <h3>${formatWorldLabel(world.worldId)} <span class="stage-world-progress">(${clearedCount} / ${totalCount} クリア)</span></h3>
       </div>
-      <div class="stage-grid">
+      <div class="stage-map">
         ${world.stages
           .map((stage) => {
             const unlocked = isStageUnlocked(stage, progress);
