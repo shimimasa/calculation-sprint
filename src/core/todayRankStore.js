@@ -1,11 +1,6 @@
-// ADR-004, ADR-002: Use an app-specific, profile-ready storage namespace (subpath/portal safe).
-// - New key includes a stable prefix + schema version + profileId.
-// - Legacy key is migrated on first read when safe to do so.
-const STORAGE_PREFIX = 'portal.calcSprint';
-const SCHEMA_VERSION = 'v1';
-const DEFAULT_PROFILE_ID = 'default';
-const buildStorageKey = (profileId = DEFAULT_PROFILE_ID) => `${STORAGE_PREFIX}.rank.distance.today.${SCHEMA_VERSION}.${profileId}`;
-const LEGACY_STORAGE_KEY = 'calcSprint.rank.distance.today.v1';
+// ADR-004, ADR-002 Phase0補修: Centralized key generation (Phase1 will inject profileId).
+import { LEGACY_KEYS, STORE_NAMES, DEFAULT_PROFILE_ID, makeKey } from './storageKeys.js';
+const LEGACY_STORAGE_KEY = LEGACY_KEYS.todayRankDistance;
 
 const normalizeTop = (top) => {
   if (!Array.isArray(top)) {
@@ -39,7 +34,7 @@ const writeToStorage = (storageKey, data) => {
 
 const todayRankStore = {
   get(dateKey, profileId = DEFAULT_PROFILE_ID) {
-    const storageKey = buildStorageKey(profileId);
+    const storageKey = makeKey(STORE_NAMES.todayRankDistance, profileId);
     let stored = readFromStorage(storageKey);
     if (!stored) {
       const legacy = readFromStorage(LEGACY_STORAGE_KEY);
@@ -55,7 +50,7 @@ const todayRankStore = {
     return { dateKey, top: stored.top };
   },
   update(dateKey, distanceM, profileId = DEFAULT_PROFILE_ID) {
-    const storageKey = buildStorageKey(profileId);
+    const storageKey = makeKey(STORE_NAMES.todayRankDistance, profileId);
     const current = this.get(dateKey, profileId);
     const nextTop = [...current.top, distanceM]
       .filter((value) => Number.isFinite(value) && value > 0)

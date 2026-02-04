@@ -3,9 +3,12 @@ let currentName = null;
 const screens = {};
 let isTransitioning = false;
 
+// ADR-004 Phase0補修: Scope DOM queries under the calc-sprint root to avoid collisions when embedded in a portal.
+const getAppRoot = () => document.querySelector('.calc-sprint') ?? document;
+
 const setScreenVisibility = (nextName) => {
   const targetId = `${nextName}-screen`;
-  document.querySelectorAll('.screen').forEach((screen) => {
+  getAppRoot().querySelectorAll('.screen').forEach((screen) => {
     const isActive = screen.id === targetId;
     screen.classList.toggle('is-active', isActive);
     screen.toggleAttribute('hidden', !isActive);

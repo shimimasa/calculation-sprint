@@ -1,31 +1,24 @@
-/* ADR-004: Scoped stylesheet generated for portal/subpath hosting (avoid global CSS + absolute asset paths). */
-.calc-sprint *{
+/* ADR-004 Phase0陬應ｿｮ: Scoped stylesheet for portal/subpath hosting. */
+.calc-sprint * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
-
-.calc-sprint [hidden]{
+}.calc-sprint [hidden] {
   display: none !important;
-}
-
-.calc-sprint{
+}.calc-sprint {
   font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
   background: #f4f6fb;
   color: #1d2433;
   margin: 0;
   min-height: 100vh;
-}
-
-.calc-sprint{
+}.calc-sprint {
+  /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
   --run-bg-far-image: url("../assets/bg/bg-sky.png");
   --run-bg-near-image: url("../assets/bg/bg-sky.png");
   --run-ground-image: url("../assets/bg/ground.png");
   --run-air-image: none;
   --run-map-image: none;
-}
-
-.calc-sprint .app{
+}.calc-sprint .app {
   width: 100vw;
   min-height: 100vh;
   margin: 0;
@@ -33,52 +26,36 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
-}
-
-.calc-sprint .screen{
+}.calc-sprint .screen {
   display: none;
   background: #fff;
   border-radius: 16px;
   padding: 32px;
   box-shadow: 0 10px 30px rgba(29, 36, 51, 0.08);
-}
-
-.calc-sprint .screen.is-active{
+}.calc-sprint .screen.is-active {
   display: block;
-}
-
-.calc-sprint .screen-header{
+}.calc-sprint .screen-header {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 20px;
-}
-
-.calc-sprint .screen-kicker{
+}.calc-sprint .screen-kicker {
   font-size: 13px;
   font-weight: 700;
   color: #3867ff;
   letter-spacing: 0.08em;
-}
-
-.calc-sprint .screen-main{
+}.calc-sprint .screen-main {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.calc-sprint .screen-footer{
+}.calc-sprint .screen-footer {
   margin-top: 20px;
   display: flex;
   justify-content: center;
-}
-
-.calc-sprint .screen-hint{
+}.calc-sprint .screen-hint {
   font-size: 14px;
   color: #5a6477;
-}
-
-.calc-sprint .stage-card{
+}.calc-sprint .stage-card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 246, 251, 0.92));
   border-radius: 18px;
   padding: 20px 24px;
@@ -87,51 +64,33 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-}
-
-.calc-sprint .screen-title .stage-card{
+}.calc-sprint .screen-title .stage-card {
   align-items: center;
-}
-
-.calc-sprint .screen-stage .stage-card{
+}.calc-sprint .screen-stage .stage-card {
   gap: 16px;
-}
-
-.calc-sprint .stage-worlds{
+}.calc-sprint .stage-worlds {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.calc-sprint .stage-world{
+}.calc-sprint .stage-world {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.calc-sprint .stage-world-header h3{
+}.calc-sprint .stage-world-header h3 {
   font-size: 18px;
   margin-bottom: 4px;
-}
-
-.calc-sprint .stage-world-progress{
+}.calc-sprint .stage-world-progress {
   font-size: 13px;
   font-weight: 600;
   color: #5a6477;
-}
-
-.calc-sprint .stage-world-header p{
+}.calc-sprint .stage-world-header p {
   font-size: 14px;
   color: #5a6477;
-}
-
-.calc-sprint .stage-grid{
+}.calc-sprint .stage-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
-}
-
-.calc-sprint .stage-card-button{
+}.calc-sprint .stage-card-button {
   border: 1px solid rgba(56, 103, 255, 0.18);
   border-radius: 14px;
   background: #fff;
@@ -139,52 +98,36 @@
   text-align: left;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.calc-sprint .stage-card-button:hover{
+}.calc-sprint .stage-card-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 18px rgba(56, 103, 255, 0.12);
-}
-
-.calc-sprint .stage-card-button:active{
+}.calc-sprint .stage-card-button:active {
   transform: translateY(1px);
   box-shadow: none;
-}
-
-.calc-sprint .stage-card-header{
+}.calc-sprint .stage-card-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
   margin-bottom: 6px;
-}
-
-.calc-sprint .stage-card-title{
+}.calc-sprint .stage-card-title {
   font-size: 16px;
   font-weight: 700;
-}
-
-.calc-sprint .stage-card-id{
+}.calc-sprint .stage-card-id {
   font-size: 12px;
   font-weight: 700;
   color: #3867ff;
   background: rgba(56, 103, 255, 0.12);
   padding: 2px 8px;
   border-radius: 999px;
-}
-
-.calc-sprint .stage-card-description{
+}.calc-sprint .stage-card-description {
   font-size: 14px;
   color: #1d2433;
   margin-bottom: 6px;
-}
-
-.calc-sprint .stage-card-detail{
+}.calc-sprint .stage-card-detail {
   font-size: 12px;
   color: #5a6477;
-}
-
-.calc-sprint .game-screen{
+}.calc-sprint .game-screen {
   padding: 0;
   overflow: hidden;
   display: flex;
@@ -195,88 +138,65 @@
   --boost-glow: 1;
   --boost-line: 1;
   --boost-bright: 1;
-}
-
-.calc-sprint .game-screen::before{
+}.calc-sprint .game-screen::before {
   content: "";
   position: absolute;
   inset: 0 0 35%;
   background: linear-gradient(180deg, rgba(227, 235, 255, 0.65), rgba(244, 246, 251, 0));
   pointer-events: none;
   z-index: 0;
-}
-
-/* Stage theme hooks
-.calc-sprint * - data-bg-theme is primarily consumed by .run-bg--far/.run-bg--near/.run-ground (art layers).
+}.calc-sprint /* Stage theme hooks
+ * - data-bg-theme is primarily consumed by .run-bg--far/.run-bg--near/.run-ground (art layers).
  * - .game-screen/.run-world are the entry points for global tone (brightness/contrast/etc).
  * - Keep "default" + one sample theme ("theme1") as the placeholders to swap assets/colors.
  */
-.game-screen[data-bg-theme="theme1"]::before, .calc-sprint .game-screen[data-bg-theme="w1"]::before{
+.game-screen[data-bg-theme="theme1"]::before, .calc-sprint .game-screen[data-bg-theme="w1"]::before {
   background: linear-gradient(180deg, rgba(214, 235, 255, 0.7), rgba(244, 246, 251, 0));
-}
-
-.calc-sprint .game-hud{
+}.calc-sprint .game-hud {
   padding: 28px 28px 12px;
   background: linear-gradient(180deg, rgba(236, 241, 255, 0.88), rgba(255, 255, 255, 0));
   border-bottom: 1px solid rgba(56, 103, 255, 0.04);
   backdrop-filter: blur(4px);
   position: relative;
   z-index: 2;
-}
-
-.calc-sprint .game-hud.scale-lv-0{
+}.calc-sprint .game-hud.scale-lv-0 {
   box-shadow: none;
-}
-
-.calc-sprint .game-hud.scale-lv-1{
+}.calc-sprint .game-hud.scale-lv-1 {
   border-bottom-color: rgba(56, 103, 255, 0.18);
   box-shadow: 0 8px 18px rgba(56, 103, 255, 0.12);
-}
-
-.calc-sprint .game-hud.scale-lv-2{
+}.calc-sprint .game-hud.scale-lv-2 {
   border-bottom-color: rgba(56, 103, 255, 0.28);
   background: linear-gradient(180deg, rgba(220, 233, 255, 0.95), rgba(255, 255, 255, 0.02));
   box-shadow: 0 10px 22px rgba(56, 103, 255, 0.18);
-}
-
-.calc-sprint .game-hud.scale-lv-3{
+}.calc-sprint .game-hud.scale-lv-3 {
   border-bottom-color: rgba(56, 103, 255, 0.38);
   background: linear-gradient(180deg, rgba(206, 226, 255, 0.98), rgba(255, 255, 255, 0.08));
-.calc-sprint box-shadow:
-    0 12px 28px rgba(56, .calc-sprint 103, .calc-sprint 255, .calc-sprint 0.22), .calc-sprint 0 0 22px rgba(120, .calc-sprint 162, .calc-sprint 255, .calc-sprint 0.28);
-}
-
-.time-progress{
+  box-shadow:
+    0 12px 28px rgba(56, 103, 255, 0.22),
+    0 0 22px rgba(120, 162, 255, 0.28);
+}.calc-sprint .time-progress {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
-}
-
-.calc-sprint .time-progress__marker{
+}.calc-sprint .time-progress__marker {
   font-size: 12px;
   font-weight: 700;
   color: #4a5568;
-}
-
-.calc-sprint .time-progress__track{
+}.calc-sprint .time-progress__track {
   position: relative;
   height: 12px;
   border-radius: 999px;
   background: rgba(56, 103, 255, 0.12);
   overflow: hidden;
   box-shadow: inset 0 1px 2px rgba(29, 36, 51, 0.12);
-}
-
-.calc-sprint .time-progress__bar{
+}.calc-sprint .time-progress__bar {
   height: 100%;
   width: 0%;
   background: linear-gradient(90deg, rgba(56, 103, 255, 0.7), rgba(46, 204, 113, 0.85));
   transition: width 0.2s ease;
-}
-
-.calc-sprint .time-progress__runner{
+}.calc-sprint .time-progress__runner {
   position: absolute;
   top: 50%;
   left: 0%;
@@ -284,30 +204,20 @@
   font-size: 14px;
   transition: left 0.2s ease;
   pointer-events: none;
-}
-
-.calc-sprint .game-hud.final-phase .time-progress__track{
+}.calc-sprint .game-hud.final-phase .time-progress__track {
   height: 14px;
   background: rgba(255, 208, 0, 0.25);
   box-shadow: 0 0 12px rgba(255, 208, 0, 0.35);
-}
-
-.calc-sprint .game-hud.final-phase .time-progress__bar{
+}.calc-sprint .game-hud.final-phase .time-progress__bar {
   background: linear-gradient(90deg, rgba(255, 168, 0, 0.85), rgba(255, 88, 88, 0.85));
-}
-
-.calc-sprint .game-hud.final-phase .time-progress__runner{
+}.calc-sprint .game-hud.final-phase .time-progress__runner {
   filter: drop-shadow(0 0 6px rgba(255, 140, 0, 0.6));
-}
-
-.calc-sprint .status-grid{
+}.calc-sprint .status-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   align-items: stretch;
-}
-
-.calc-sprint .status-card{
+}.calc-sprint .status-card {
   background: rgba(255, 255, 255, 0.8);
   border-radius: 12px;
   padding: 10px 12px;
@@ -316,36 +226,26 @@
   gap: 6px;
   box-shadow: 0 8px 18px rgba(29, 36, 51, 0.08);
   border: 1px solid rgba(56, 103, 255, 0.05);
-}
-
-.calc-sprint .status-label{
+}.calc-sprint .status-label {
   font-size: 12px;
   color: #5a6477;
   font-weight: 600;
-}
-
-.calc-sprint .status-value{
+}.calc-sprint .status-value {
   font-size: 20px;
   font-weight: 700;
   color: #1d2433;
-}
-
-.calc-sprint .status-unit{
+}.calc-sprint .status-unit {
   font-size: 12px;
   color: #5a6477;
   font-weight: 600;
-}
-
-.calc-sprint .status-review{
+}.calc-sprint .status-review {
   align-self: center;
   font-weight: 700;
   color: #3867ff;
   background: rgba(56, 103, 255, 0.12);
   padding: 6px 12px;
   border-radius: 999px;
-}
-
-.calc-sprint .game-focus{
+}.calc-sprint .game-focus {
   padding: 8px 28px 0;
   display: flex;
   flex-direction: column;
@@ -354,29 +254,21 @@
   margin-bottom: -22px;
   position: relative;
   z-index: 2;
-}
-
-.calc-sprint .run-layer{
+}.calc-sprint .run-layer {
   padding: 0 16px 18px;
   height: min(48vh, 420px);
   overflow: hidden;
   position: relative;
   z-index: 1;
   transform: translateY(-12px);
-}
-
-.calc-sprint .screen__title{
+}.calc-sprint .screen__title {
   font-size: 28px;
   margin-bottom: 4px;
-}
-
-.calc-sprint .screen__description{
+}.calc-sprint .screen__description {
   color: #5a6477;
   font-size: 16px;
   line-height: 1.6;
-}
-
-.calc-sprint .primary-button, .calc-sprint .secondary-button{
+}.calc-sprint .primary-button, .calc-sprint .secondary-button {
   border: none;
   border-radius: 999px;
   padding: 12px 24px;
@@ -384,45 +276,29 @@
   cursor: pointer;
   min-height: 44px;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.calc-sprint .primary-button{
+}.calc-sprint .primary-button {
   background: #3867ff;
   color: #fff;
   box-shadow: 0 8px 16px rgba(56, 103, 255, 0.25);
-}
-
-.calc-sprint .secondary-button{
+}.calc-sprint .secondary-button {
   background: #e5e9f2;
   color: #1d2433;
-}
-
-.calc-sprint .primary-button--xl{
+}.calc-sprint .primary-button--xl {
   font-size: 18px;
   padding: 14px 28px;
-}
-
-.calc-sprint .primary-button:hover, .calc-sprint .secondary-button:hover{
+}.calc-sprint .primary-button:hover, .calc-sprint .secondary-button:hover {
   transform: translateY(-1px);
-}
-
-.calc-sprint .primary-button:active, .calc-sprint .secondary-button:active{
+}.calc-sprint .primary-button:active, .calc-sprint .secondary-button:active {
   transform: translateY(1px);
   box-shadow: none;
-}
-
-.calc-sprint .title-actions{
+}.calc-sprint .title-actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 100%;
-}
-
-.calc-sprint .title-actions .primary-button, .calc-sprint .title-actions .secondary-button{
+}.calc-sprint .title-actions .primary-button, .calc-sprint .title-actions .secondary-button {
   width: 100%;
-}
-
-.calc-sprint .screen-stage-select{
+}.calc-sprint .screen-stage-select {
   --world-accent: #3867ff;
   --world-map-bg: linear-gradient(180deg, rgba(245, 247, 255, 0.98), rgba(232, 238, 255, 0.9));
   --node-frame: rgba(56, 103, 255, 0.16);
@@ -437,49 +313,35 @@
   --node-current-bg: rgba(37, 99, 235, 0.12);
   --map-line: #c7cfdd;
   --map-line-clear: #22c55e;
-}
-
-.calc-sprint .screen-stage-select[data-world-id="w1"], .calc-sprint .screen-stage-select[data-theme-id="w1"]{
+}.calc-sprint .screen-stage-select[data-world-id="w1"], .calc-sprint .screen-stage-select[data-theme-id="w1"] {
   --world-accent: #2563eb;
   --world-map-bg: linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(219, 234, 254, 0.92));
   --node-frame: rgba(37, 99, 235, 0.2);
   --node-next: #f97316;
   --node-next-bg: rgba(255, 237, 213, 0.96);
-}
-
-.calc-sprint .screen-stage-select .stage-card{
+}.calc-sprint .screen-stage-select .stage-card {
   background: var(--world-map-bg);
   border-color: var(--node-frame);
-}
-
-.calc-sprint .stage-select-list{
+}.calc-sprint .stage-select-list {
   display: flex;
   flex-direction: column;
   gap: 18px;
   width: 100%;
-}
-
-.calc-sprint .stage-map{
+}.calc-sprint .stage-map {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 22px;
   padding: 6px 0 4px;
-}
-
-.calc-sprint .stage-map-node{
+}.calc-sprint .stage-map-node {
   width: 100%;
   display: flex;
   justify-content: center;
   position: relative;
   padding-bottom: 24px;
-}
-
-.calc-sprint .stage-map-node:last-child{
+}.calc-sprint .stage-map-node:last-child {
   padding-bottom: 0;
-}
-
-.calc-sprint .stage-map-node:not(:last-child)::after{
+}.calc-sprint .stage-map-node:not(:last-child)::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -489,14 +351,10 @@
   height: 22px;
   background: var(--map-line);
   border-radius: 999px;
-}
-
-.calc-sprint .stage-map-node.is-cleared:not(:last-child)::after{
+}.calc-sprint .stage-map-node.is-cleared:not(:last-child)::after {
   background: var(--map-line-clear);
   box-shadow: 0 0 10px rgba(34, 197, 94, 0.45);
-}
-
-.calc-sprint .stage-select-button{
+}.calc-sprint .stage-select-button {
   width: min(100%, 520px);
   text-align: left;
   border-radius: 16px;
@@ -508,53 +366,36 @@
   border: 2px solid transparent;
   background: var(--node-bg);
   box-shadow: 0 10px 18px rgba(29, 36, 51, 0.08);
-}
-
-.calc-sprint .stage-select-button.is-locked{
+}.calc-sprint .stage-select-button.is-locked {
   opacity: 0.6;
   cursor: not-allowed;
   box-shadow: none;
-}
-
-.calc-sprint .stage-select-button.is-cleared{
+}.calc-sprint .stage-select-button.is-cleared {
   border: 2px solid color-mix(in srgb, var(--node-clear) 35%, transparent);
   background: var(--node-clear-bg);
-}
-
-.calc-sprint .stage-select-button.is-next{
+}.calc-sprint .stage-select-button.is-next {
   border: 3px solid color-mix(in srgb, var(--node-next) 80%, transparent);
   background: var(--node-next-bg);
-.calc-sprint box-shadow: 0 14px 24px color-mix(in srgb, .calc-sprint var(--node-next) 20%, .calc-sprint transparent), .calc-sprint 0 0 0 6px color-mix(in srgb, .calc-sprint var(--node-next) 8%, .calc-sprint transparent);
-}
-
-.stage-select-button.is-next .stage-select-label{
+  box-shadow: 0 14px 24px color-mix(in srgb, var(--node-next) 20%, transparent),
+    0 0 0 6px color-mix(in srgb, var(--node-next) 8%, transparent);
+}.calc-sprint .stage-select-button.is-next .stage-select-label {
   color: color-mix(in srgb, var(--node-next) 70%, #000);
-}
-
-.calc-sprint .stage-select-button.is-cleared .stage-select-label{
+}.calc-sprint .stage-select-button.is-cleared .stage-select-label {
   color: var(--node-clear);
-}
-
-.calc-sprint .stage-select-label{
+}.calc-sprint .stage-select-label {
   font-size: 12px;
   font-weight: 700;
   color: var(--world-accent);
   letter-spacing: 0.08em;
-}
-
-.calc-sprint .stage-select-title{
+}.calc-sprint .stage-select-title {
   font-size: 18px;
   font-weight: 700;
   color: var(--node-text);
-}
-
-.calc-sprint .stage-select-description{
+}.calc-sprint .stage-select-description {
   font-size: 14px;
   color: var(--node-muted);
   line-height: 1.4;
-}
-
-.calc-sprint .stage-select-current{
+}.calc-sprint .stage-select-current {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
@@ -565,64 +406,45 @@
   background: var(--node-current-bg);
   padding: 2px 8px;
   border-radius: 999px;
-}
-
-.calc-sprint .stage-select-lock{
+}.calc-sprint .stage-select-lock {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
   font-weight: 700;
   color: var(--node-locked);
-}
-
-.calc-sprint .stage-select-clear{
+}.calc-sprint .stage-select-clear {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
   font-weight: 700;
   color: var(--node-clear);
-}
-
-.calc-sprint .stage-select-star{
+}.calc-sprint .stage-select-star {
   font-size: 11px;
   margin-left: 4px;
-}
-
-.calc-sprint .stage-select-footer{
+}.calc-sprint .stage-select-footer {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.calc-sprint .stage-select-footer .secondary-button{
+}.calc-sprint .stage-select-footer .secondary-button {
   width: 100%;
-}
-
-.calc-sprint .stage-select-icon{
+}.calc-sprint .stage-select-icon {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
   display: inline-block;
-}
-
-.calc-sprint .stage-select-icon--current path, .calc-sprint .stage-select-icon--lock rect{
+}.calc-sprint .stage-select-icon--current path, .calc-sprint .stage-select-icon--lock rect {
   fill: currentColor;
-}
-
-.calc-sprint .stage-select-icon--lock path, .calc-sprint .stage-select-icon--clear path{
+}.calc-sprint .stage-select-icon--lock path, .calc-sprint .stage-select-icon--clear path {
   stroke: currentColor;
 }
 
-@media (prefers-reduced-motion: reduce) {
-.calc-sprint .stage-select-button, .calc-sprint .stage-map-node::after, .calc-sprint .stage-select-icon{
+@media (prefers-reduced-motion: reduce) {.calc-sprint .stage-select-button, .calc-sprint .stage-map-node::after, .calc-sprint .stage-select-icon {
     transition: none;
     animation: none;
   }
-}
-
-.calc-sprint .result-stage{
+}.calc-sprint .result-stage {
   width: 100%;
   background: rgba(56, 103, 255, 0.08);
   border-radius: 16px;
@@ -631,92 +453,66 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.calc-sprint .result-stage__label{
+}.calc-sprint .result-stage__label {
   font-size: 12px;
   font-weight: 700;
   color: #3867ff;
   letter-spacing: 0.08em;
-}
-
-.calc-sprint .result-stage__name{
+}.calc-sprint .result-stage__name {
   font-size: 18px;
   font-weight: 700;
   margin: 0;
-}
-
-.calc-sprint .result-stage__status{
+}.calc-sprint .result-stage__status {
   display: flex;
   flex-direction: column;
   gap: 4px;
   margin: 0;
-}
-
-.calc-sprint .result-stage__headline{
+}.calc-sprint .result-stage__headline {
   font-size: 18px;
   font-weight: 800;
   color: #1d2433;
   margin: 0;
-}
-
-.calc-sprint .result-stage__message{
+}.calc-sprint .result-stage__message {
   font-size: 14px;
   font-weight: 600;
   color: #5a6477;
   margin: 0;
-}
-
-.calc-sprint .result-stage__unlock{
+}.calc-sprint .result-stage__unlock {
   font-size: 14px;
   font-weight: 700;
   color: #3867ff;
   margin: 0;
-}
-
-.calc-sprint .mission-card{
+}.calc-sprint .mission-card {
   text-align: center;
   background: #fff;
   border-radius: 16px;
   padding: 16px 18px;
   border: 1px solid rgba(56, 103, 255, 0.15);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
-.calc-sprint .mission-label{
+}.calc-sprint .mission-label {
   font-size: 12px;
   font-weight: 700;
   color: #3867ff;
   letter-spacing: 0.08em;
   margin-bottom: 6px;
-}
-
-.calc-sprint .mission-text{
+}.calc-sprint .mission-text {
   font-size: 18px;
   font-weight: 700;
-}
-
-.calc-sprint .how-to{
+}.calc-sprint .how-to {
   width: 100%;
   background: rgba(56, 103, 255, 0.08);
   border-radius: 14px;
   padding: 12px 16px;
-}
-
-.calc-sprint .how-to__title{
+}.calc-sprint .how-to__title {
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 6px;
-}
-
-.calc-sprint .how-to__list{
+}.calc-sprint .how-to__list {
   padding-left: 18px;
   font-size: 14px;
   line-height: 1.6;
   color: #5a6477;
-}
-
-.calc-sprint .settings-section{
+}.calc-sprint .settings-section {
   width: 100%;
   align-self: stretch;
   background: #fff;
@@ -726,13 +522,9 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.calc-sprint .settings-section--preset{
+}.calc-sprint .settings-section--preset {
   opacity: 0.9;
-}
-
-.calc-sprint .settings-preset-description{
+}.calc-sprint .settings-preset-description {
   font-size: 13px;
   color: #6a7386;
   margin: 6px 2px 0;
@@ -740,9 +532,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.calc-sprint .settings-preset-tag{
+}.calc-sprint .settings-preset-tag {
   font-size: 11px;
   font-weight: 700;
   padding: 2px 8px;
@@ -750,27 +540,19 @@
   background: rgba(56, 103, 255, 0.12);
   color: #3867ff;
   display: none;
-}
-
-.calc-sprint .settings-preset-description.is-custom .settings-preset-tag{
+}.calc-sprint .settings-preset-description.is-custom .settings-preset-tag {
   display: inline-flex;
-}
-
-.calc-sprint .settings-guide{
+}.calc-sprint .settings-guide {
   font-size: 14px;
   color: #5a6477;
   margin: -4px 4px 0;
   line-height: 1.6;
-}
-
-.calc-sprint .settings-details{
+}.calc-sprint .settings-details {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.calc-sprint .settings-details__summary{
+}.calc-sprint .settings-details__summary {
   list-style: none;
   cursor: pointer;
   background: #fff;
@@ -786,62 +568,41 @@
   min-height: 52px;
   box-shadow: 0 6px 12px rgba(56, 103, 255, 0.12);
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-}
-
-.calc-sprint .settings-details__summary::after{
+}.calc-sprint .settings-details__summary::after {
   content: "▼";
   font-size: 14px;
   margin-left: 12px;
   color: #3867ff;
-}
-
-.calc-sprint .settings-details[open] .settings-details__summary::after{
+}.calc-sprint .settings-details[open] .settings-details__summary::after {
   content: "▲";
-}
-
-.calc-sprint .settings-details__summary:hover{
+}.calc-sprint .settings-details__summary:hover {
   background: rgba(56, 103, 255, 0.08);
-}
-
-.calc-sprint .settings-details__summary:active{
+}.calc-sprint .settings-details__summary:active {
   transform: translateY(1px);
   box-shadow: 0 4px 8px rgba(56, 103, 255, 0.12);
-}
-
-.calc-sprint .settings-details__summary:focus-visible{
+}.calc-sprint .settings-details__summary:focus-visible {
   outline: 3px solid rgba(56, 103, 255, 0.45);
   outline-offset: 3px;
-}
-
-.calc-sprint .settings-details__summary::-webkit-details-marker{
+}.calc-sprint .settings-details__summary::-webkit-details-marker {
   display: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-.calc-sprint .settings-details__summary{
+@media (prefers-reduced-motion: reduce) {.calc-sprint .settings-details__summary {
     transition: none;
   }
-}
-
-.calc-sprint .section-title{
+}.calc-sprint .section-title {
   font-size: 16px;
   font-weight: 700;
-}
-
-.calc-sprint .pill-group{
+}.calc-sprint .pill-group {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-}
-
-.calc-sprint .settings-note{
+}.calc-sprint .settings-note {
   margin-top: 8px;
   font-size: 13px;
   line-height: 1.5;
   color: #5a6477;
-}
-
-.calc-sprint .pill-option{
+}.calc-sprint .pill-option {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -852,15 +613,11 @@
   color: #1d2433;
   cursor: pointer;
   min-height: 44px;
-}
-
-.calc-sprint .pill-option input{
+}.calc-sprint .pill-option input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
-}
-
-.calc-sprint .pill-option span{
+}.calc-sprint .pill-option span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -869,43 +626,29 @@
   border: 2px solid rgba(56, 103, 255, 0.2);
   background: #f7f9ff;
   min-height: 44px;
-}
-
-.calc-sprint .pill-option input:checked + span{
+}.calc-sprint .pill-option input:checked + span {
   background: rgba(56, 103, 255, 0.15);
   border-color: rgba(56, 103, 255, 0.6);
-}
-
-.calc-sprint .toggle-option{
+}.calc-sprint .toggle-option {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   font-size: 15px;
   font-weight: 600;
-}
-
-.calc-sprint .toggle-option input{
+}.calc-sprint .toggle-option input {
   width: 20px;
   height: 20px;
-}
-
-.calc-sprint .screen-result .result-firstview{
+}.calc-sprint .screen-result .result-firstview {
   gap: 16px;
-}
-
-.calc-sprint .screen-result .result-metric{
+}.calc-sprint .screen-result .result-metric {
   border: 1px solid rgba(56, 103, 255, 0.12);
   border-radius: 16px;
   padding: 16px;
   background: #fff;
-}
-
-.calc-sprint .screen-result .result-metric--title{
+}.calc-sprint .screen-result .result-metric--title {
   border-style: dashed;
   border-color: rgba(56, 103, 255, 0.2);
-}
-
-.calc-sprint .title-badge{
+}.calc-sprint .title-badge {
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
@@ -915,115 +658,76 @@
   font-weight: 700;
   font-size: 16px;
   letter-spacing: 0.02em;
-}
-
-.calc-sprint .title-badge::before{
+}.calc-sprint .title-badge::before {
   content: "🏅";
   margin-right: 6px;
-}
-
-.calc-sprint .title-hint{
+}.calc-sprint .title-hint {
   margin-top: 6px;
   font-size: 12px;
   color: #7c879b;
-}
-
-.calc-sprint .screen-result .metric-label{
+}.calc-sprint .screen-result .metric-label {
   font-size: 14px;
   color: #5a6477;
-}
-
-.calc-sprint .screen-result .metric-value{
+}.calc-sprint .screen-result .metric-value {
   font-size: 28px;
   font-weight: 700;
-}
-
-.calc-sprint .screen-result .result-details summary{
+}.calc-sprint .screen-result .result-details summary {
   font-weight: 700;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-}
-
-.calc-sprint .screen-result .result-details summary::after{
+}.calc-sprint .screen-result .result-details summary::after {
   content: "+";
   font-weight: 700;
   color: #3867ff;
-}
-
-.calc-sprint .screen-result .result-details summary:hover{
+}.calc-sprint .screen-result .result-details summary:hover {
   color: #3867ff;
-}
-
-.calc-sprint .screen-result .result-details[open] summary::after{
+}.calc-sprint .screen-result .result-details[open] summary::after {
   content: "−";
-}
-
-.calc-sprint .screen-result .result-details__content{
+}.calc-sprint .screen-result .result-details__content {
   border-top: 1px solid rgba(56, 103, 255, 0.12);
   padding-top: 16px;
-}
-
-.calc-sprint .screen-result .result-list li{
+}.calc-sprint .screen-result .result-list li {
   line-height: 1.7;
-}
-
-.calc-sprint .button-row--menu{
+}.calc-sprint .button-row--menu {
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.calc-sprint .result-actions .result-cta{
+}.calc-sprint .result-actions .result-cta {
   min-height: 48px;
-}
-
-.calc-sprint .result-actions .cta-primary{
+}.calc-sprint .result-actions .cta-primary {
   background: var(--world-accent);
   color: #fff;
   font-size: 18px;
   padding: 14px 30px;
   box-shadow: 0 12px 20px color-mix(in srgb, var(--world-accent) 28%, transparent);
-}
-
-.calc-sprint .result-actions .cta-secondary{
+}.calc-sprint .result-actions .cta-secondary {
   background: #e5e9f2;
   color: #1d2433;
   box-shadow: 0 8px 16px rgba(29, 36, 51, 0.12);
-}
-
-.calc-sprint .result-actions .cta-ghost{
+}.calc-sprint .result-actions .cta-ghost {
   background: transparent;
   color: var(--world-accent);
   border: 2px solid color-mix(in srgb, var(--world-accent) 24%, transparent);
   box-shadow: none;
-}
-
-.calc-sprint .screen-result[data-clear-state="clear"] .cta-primary{
+}.calc-sprint .screen-result[data-clear-state="clear"] .cta-primary {
   background: linear-gradient(135deg, color-mix(in srgb, var(--world-accent) 88%, #ffffff) 0%, var(--world-accent) 70%);
   box-shadow: 0 14px 24px color-mix(in srgb, var(--world-accent) 35%, transparent);
 }
 
-@media (prefers-reduced-motion: reduce) {
-.calc-sprint .primary-button, .calc-sprint .secondary-button{
+@media (prefers-reduced-motion: reduce) {.calc-sprint .primary-button, .calc-sprint .secondary-button {
     transition: none;
   }
-}
-
-.calc-sprint .form-group{
+}.calc-sprint .form-group {
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.calc-sprint .form-label{
+}.calc-sprint .form-label {
   font-weight: 600;
-}
-
-.calc-sprint .question-area{
+}.calc-sprint .question-area {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1038,9 +742,7 @@
   transform: translateY(28px);
   z-index: 2;
   isolation: isolate;
-}
-
-.calc-sprint .question-area::after{
+}.calc-sprint .question-area::after {
   content: "";
   position: absolute;
   left: 12%;
@@ -1050,14 +752,10 @@
   background: radial-gradient(ellipse at center, rgba(29, 36, 51, 0.25), rgba(29, 36, 51, 0) 70%);
   filter: blur(1px);
   z-index: -1;
-}
-
-.calc-sprint .question-text{
+}.calc-sprint .question-text {
   font-size: 32px;
   font-weight: 700;
-}
-
-.calc-sprint .answer-input{
+}.calc-sprint .answer-input {
   font-size: 24px;
   padding: 8px 12px;
   width: min(240px, 80vw);
@@ -1066,29 +764,19 @@
   border: 2px solid rgba(56, 103, 255, 0.2);
   outline: none;
   transition: border 0.2s ease, box-shadow 0.2s ease;
-}
-
-.calc-sprint .answer-input:focus{
+}.calc-sprint .answer-input:focus {
   border-color: rgba(56, 103, 255, 0.6);
   box-shadow: 0 0 0 4px rgba(56, 103, 255, 0.15);
-}
-
-.calc-sprint .feedback{
+}.calc-sprint .feedback {
   min-height: 32px;
   text-align: center;
   font-size: 24px;
   font-weight: 700;
-}
-
-.calc-sprint .feedback.is-correct{
+}.calc-sprint .feedback.is-correct {
   color: #2ecc71;
-}
-
-.calc-sprint .feedback.is-wrong{
+}.calc-sprint .feedback.is-wrong {
   color: #e74c3c;
-}
-
-.calc-sprint .run-world{
+}.calc-sprint .run-world {
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -1098,9 +786,7 @@
   --world-contrast: 1;
   --world-brightness: 1;
   --world-clarity: 1;
-}
-
-.calc-sprint .run-world::before{
+}.calc-sprint .run-world::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1110,26 +796,22 @@
   background-position: center top;
   pointer-events: none;
   z-index: 0;
-}
-
-.calc-sprint .run-world[data-bg-theme="default"]{
+}.calc-sprint .run-world[data-bg-theme="default"] {
+  /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
   --run-bg-far-image: url("../assets/bg/bg-sky.png");
   --run-bg-near-image: url("../assets/bg/bg-sky.png");
   --run-ground-image: url("../assets/bg/ground.png");
   --run-air-image: none;
   --run-map-image: none;
-}
-
-.calc-sprint .run-world[data-bg-theme="theme1"], .calc-sprint .run-world[data-bg-theme="w1"]{
+}.calc-sprint .run-world[data-bg-theme="theme1"], .calc-sprint .run-world[data-bg-theme="w1"] {
   background: #e2ecff;
+  /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
   --run-bg-far-image: url("../assets/bg/bg-sky.png");
   --run-bg-near-image: url("../assets/bg/bg-sky.png");
   --run-ground-image: url("../assets/bg/ground.png");
   --run-air-image: none;
   --run-map-image: none;
-}
-
-.calc-sprint .run-world::after{
+}.calc-sprint .run-world::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1137,13 +819,9 @@
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
-}
-
-.calc-sprint .run-world.miss-flash::after{
+}.calc-sprint .run-world.miss-flash::after {
   opacity: 1;
-}
-
-.calc-sprint .run-bg{
+}.calc-sprint .run-bg {
   position: absolute;
   inset: 0;
   background-repeat: repeat-x;
@@ -1151,41 +829,31 @@
   background-size: auto 100%;
   will-change: background-position;
   transition: filter 0.2s ease;
-.calc-sprint filter: saturate(var(--world-clarity)) brightness(var(--world-brightness))
+  filter: saturate(var(--world-clarity)) brightness(var(--world-brightness))
     contrast(var(--world-contrast));
-}
-
-.run-bg--far{
+}.calc-sprint .run-bg--far {
   z-index: 1;
+  /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
   background-image: var(--run-bg-far-image, url("../assets/bg/bg-sky.png"));
   opacity: 0.78;
-.calc-sprint filter: blur(0.3px) saturate(var(--world-clarity)) brightness(var(--world-brightness))
+  filter: blur(0.3px) saturate(var(--world-clarity)) brightness(var(--world-brightness))
     contrast(var(--world-contrast));
-}
-
-.run-bg--near{
+}.calc-sprint .run-bg--near {
   z-index: 2;
+  /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
   background-image: var(--run-bg-near-image, url("../assets/bg/bg-sky.png"));
-}
-
-.calc-sprint .run-world.stumble-freeze .run-bg{
+}.calc-sprint .run-world.stumble-freeze .run-bg {
   background-position-x: var(--stumble-freeze-x, 0px);
   transition: none;
-}
-
-.calc-sprint .run-world.is-fast .run-bg{
-.calc-sprint filter: saturate(calc(var(--world-clarity) * 1.1))
+}.calc-sprint .run-world.is-fast .run-bg {
+  filter: saturate(calc(var(--world-clarity) * 1.1))
     brightness(calc(var(--world-brightness) * 1.05))
     contrast(var(--world-contrast));
-}
-
-.run-world.is-rapid .run-bg{
-.calc-sprint filter: saturate(calc(var(--world-clarity) * 1.2))
+}.calc-sprint .run-world.is-rapid .run-bg {
+  filter: saturate(calc(var(--world-clarity) * 1.2))
     brightness(calc(var(--world-brightness) * 1.1))
     contrast(var(--world-contrast));
-}
-
-.run-ground{
+}.calc-sprint .run-ground {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -1199,29 +867,25 @@
   z-index: 2;
   filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
   opacity: calc(0.94 + (var(--world-clarity) - 1) * 0.25);
-}
-
-.calc-sprint .speed-lines{
+}.calc-sprint .speed-lines {
   position: absolute;
   inset: 0;
-.calc-sprint background: repeating-linear-gradient(
-    -20deg, .calc-sprint rgba(255, .calc-sprint 255, .calc-sprint 255, .calc-sprint 0.35) 0px, .calc-sprint rgba(255, .calc-sprint 255, .calc-sprint 255, .calc-sprint 0.35) 4px, .calc-sprint rgba(255, .calc-sprint 255, .calc-sprint 255, .calc-sprint 0) 6px, .calc-sprint rgba(255, .calc-sprint 255, .calc-sprint 255, .calc-sprint 0) 16px
+  background: repeating-linear-gradient(
+    -20deg,
+    rgba(255, 255, 255, 0.35) 0px,
+    rgba(255, 255, 255, 0.35) 4px,
+    rgba(255, 255, 255, 0) 6px,
+    rgba(255, 255, 255, 0) 16px
   );
   opacity: 0;
   transition: opacity 0.1s ease;
   pointer-events: none;
   z-index: 3;
-}
-
-.speed-lines.boost-lines{
+}.calc-sprint .speed-lines.boost-lines {
   filter: drop-shadow(0 0 calc(6px * var(--boost-line)) rgba(255, 255, 255, 0.6));
-}
-
-.calc-sprint .speed-lines.is-fast{
+}.calc-sprint .speed-lines.is-fast {
   background-size: 18px 18px;
-}
-
-.calc-sprint .speed-lines.is-rapid{
+}.calc-sprint .speed-lines.is-rapid {
   background-size: 12px 12px;
 }
 
@@ -1238,38 +902,39 @@
 }
 
 @keyframes runner-bob {
-.calc-sprint 0%, .calc-sprint 100%{
+  0%,
+  100% {
     --runner-bob-offset: 0px;
     --runner-bob-x: 0px;
   }
-.calc-sprint 50%{
+  50% {
     --runner-bob-offset: -4px;
     --runner-bob-x: 1px;
   }
 }
 
 @keyframes runner-stumble {
-.calc-sprint 0%{
+  0% {
     transform: translate(var(--runner-bob-x, 0px), var(--runner-bob-offset, 0px)) rotate(0deg);
   }
-.calc-sprint 30%{
-.calc-sprint transform: translate(
-        var(--runner-bob-x, .calc-sprint 0px), .calc-sprint calc(var(--runner-bob-offset, .calc-sprint 0px) + 2px)
+  30% {
+    transform: translate(
+        var(--runner-bob-x, 0px),
+        calc(var(--runner-bob-offset, 0px) + 2px)
       )
       rotate(-10deg);
   }
-  60%{
-.calc-sprint transform: translate(
-        var(--runner-bob-x, .calc-sprint 0px), .calc-sprint calc(var(--runner-bob-offset, .calc-sprint 0px) - 1px)
+  60% {
+    transform: translate(
+        var(--runner-bob-x, 0px),
+        calc(var(--runner-bob-offset, 0px) - 1px)
       )
       rotate(6deg);
   }
-  100%{
+  100% {
     transform: translate(var(--runner-bob-x, 0px), var(--runner-bob-offset, 0px)) rotate(0deg);
   }
-}
-
-.calc-sprint .runner-wrap{
+}.calc-sprint .runner-wrap {
   position: absolute;
   left: 64px;
   bottom: 24px;
@@ -1278,9 +943,7 @@
   z-index: 4;
   transform: translateX(0);
   will-change: transform;
-}
-
-.calc-sprint .runner-shadow{
+}.calc-sprint .runner-shadow {
   position: absolute;
   left: 6px;
   right: 6px;
@@ -1292,9 +955,7 @@
   transform: scale(1.05);
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 0;
-}
-
-.calc-sprint .runner-missing .runner-wrap::before{
+}.calc-sprint .runner-missing .runner-wrap::before {
   content: "";
   display: block;
   width: 100%;
@@ -1302,9 +963,7 @@
   border-radius: 50%;
   background: #0b0f18;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.35);
-}
-
-.calc-sprint #runner-sprite{
+}.calc-sprint #runner-sprite {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -1313,143 +972,89 @@
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
   position: relative;
   z-index: 1;
-}
-
-.calc-sprint .run-layer #runner-sprite.runner-bob{
+}.calc-sprint .run-layer #runner-sprite.runner-bob {
   animation: runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite;
-}
-
-.calc-sprint #runner-sprite.runner-speed-low{
+}.calc-sprint #runner-sprite.runner-speed-low {
   --runner-bob-duration: 0.42s;
-}
-
-.calc-sprint #runner-sprite.runner-speed-mid{
+}.calc-sprint #runner-sprite.runner-speed-mid {
   --runner-bob-duration: 0.34s;
-}
-
-.calc-sprint #runner-sprite.runner-speed-high{
+}.calc-sprint #runner-sprite.runner-speed-high {
   --runner-bob-duration: 0.26s;
-}
-
-.calc-sprint .run-layer #runner-sprite.runner-bob.stumble{
-.calc-sprint animation:
-    runner-bob var(--runner-bob-duration, .calc-sprint 0.32s) ease-in-out infinite, .calc-sprint runner-stumble 0.32s ease-out 1;
-}
-
-#runner-sprite.boost{
+}.calc-sprint .run-layer #runner-sprite.runner-bob.stumble {
+  animation:
+    runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite,
+    runner-stumble 0.32s ease-out 1;
+}.calc-sprint #runner-sprite.boost {
   transform: translate(var(--runner-bob-x, 0px), calc(var(--runner-bob-offset, 0px) - 2px)) scale(1.06);
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)) brightness(calc(1.1 * var(--boost-bright)));
-}
-
-.calc-sprint #runner-sprite.speed-glow{
+}.calc-sprint #runner-sprite.speed-glow {
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45)) blur(0.2px) brightness(1.12);
-}
-
-.calc-sprint .runner-wrap.is-fast .runner-shadow{
+}.calc-sprint .runner-wrap.is-fast .runner-shadow {
   opacity: 0.9;
   transform: scale(1.12);
-}
-
-.calc-sprint #runner-sprite.hit{
+}.calc-sprint #runner-sprite.hit {
   transform: translate(var(--runner-bob-x, 0px), calc(var(--runner-bob-offset, 0px) + 4px));
 }
 
-@media (prefers-reduced-motion: reduce) {
-.calc-sprint .run-layer #runner-sprite.runner-bob{
+@media (prefers-reduced-motion: reduce) {.calc-sprint .run-layer #runner-sprite.runner-bob {
+    animation: none;
+  }.calc-sprint .run-layer #runner-sprite.runner-bob.stumble {
     animation: none;
   }
-
-.calc-sprint .run-layer #runner-sprite.runner-bob.stumble{
-    animation: none;
-  }
+}.calc-sprint #game-speed.glow {
+  text-shadow:
+    0 0 calc(10px * var(--boost-glow)) rgba(56, 103, 255, calc(0.75 * var(--boost-glow))),
+    0 0 calc(18px * var(--boost-glow)) rgba(56, 103, 255, calc(0.55 * var(--boost-glow)));
 }
 
-.calc-sprint #game-speed.glow{
-.calc-sprint text-shadow:
-    0 0 calc(10px * var(--boost-glow)) rgba(56, .calc-sprint 103, .calc-sprint 255, .calc-sprint calc(0.75 * var(--boost-glow))), .calc-sprint 0 0 calc(18px * var(--boost-glow)) rgba(56, .calc-sprint 103, .calc-sprint 255, .calc-sprint calc(0.55 * var(--boost-glow)));
-}
-
-@media (prefers-reduced-motion: reduce){
-.calc-sprint .time-progress__bar, .calc-sprint .time-progress__runner{
+@media (prefers-reduced-motion: reduce) {.calc-sprint .time-progress__bar, .calc-sprint .time-progress__runner {
     transition: none;
-  }
-
-.calc-sprint .game-hud.final-phase .time-progress__track{
+  }.calc-sprint .game-hud.final-phase .time-progress__track {
     box-shadow: inset 0 1px 2px rgba(29, 36, 51, 0.12);
   }
-}
-
-.calc-sprint .result-list{
+}.calc-sprint .result-list {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 24px;
-}
-
-.calc-sprint .screen-result{
+}.calc-sprint .screen-result {
   --world-accent: #3867ff;
   --world-frame: color-mix(in srgb, var(--world-accent) 22%, transparent);
   --world-soft: color-mix(in srgb, var(--world-accent) 6%, #ffffff);
   --world-bg: linear-gradient(180deg, color-mix(in srgb, var(--world-accent) 8%, #ffffff), #ffffff 65%);
   background: var(--world-bg);
-}
-
-.calc-sprint .screen-result[data-world-id="w1"], .calc-sprint .screen-result[data-theme-id="w1"]{
+}.calc-sprint .screen-result[data-world-id="w1"], .calc-sprint .screen-result[data-theme-id="w1"] {
   --world-accent: #2563eb;
-}
-
-.calc-sprint .screen-result .screen-kicker{
+}.calc-sprint .screen-result .screen-kicker {
   color: var(--world-accent);
-}
-
-.calc-sprint .screen-result .stage-card{
+}.calc-sprint .screen-result .stage-card {
   border-color: var(--world-frame);
   background: linear-gradient(180deg, var(--world-soft), #ffffff 70%);
-}
-
-.calc-sprint .screen-result .result-stage{
+}.calc-sprint .screen-result .result-stage {
   border: 1px solid var(--world-frame);
   background: color-mix(in srgb, var(--world-accent) 6%, #ffffff);
-}
-
-.calc-sprint .screen-result .result-stage__label, .calc-sprint .screen-result .rank-message{
+}.calc-sprint .screen-result .result-stage__label, .calc-sprint .screen-result .rank-message {
   color: var(--world-accent);
-}
-
-.calc-sprint .screen-result .result-details{
+}.calc-sprint .screen-result .result-details {
   border: 1px solid color-mix(in srgb, var(--world-accent) 18%, transparent);
   background: color-mix(in srgb, var(--world-accent) 4%, #f8fafc);
-}
-
-.calc-sprint .screen-result .result-metric{
+}.calc-sprint .screen-result .result-metric {
   border: 1px solid color-mix(in srgb, var(--world-accent) 10%, transparent);
-}
-
-.calc-sprint .screen-result .result-metric--distance{
+}.calc-sprint .screen-result .result-metric--distance {
   border: 1px solid color-mix(in srgb, var(--world-accent) 25%, transparent);
   background: linear-gradient(135deg, color-mix(in srgb, var(--world-accent) 15%, #ffffff) 0%, #ffffff 60%);
-}
-
-.calc-sprint .screen-result[data-clear-state="clear"] .result-stage{
+}.calc-sprint .screen-result[data-clear-state="clear"] .result-stage {
   border-width: 2px;
   box-shadow: 0 10px 18px color-mix(in srgb, var(--world-accent) 20%, transparent);
-}
-
-.calc-sprint .screen-result[data-clear-state="clear"] .result-stage__headline{
+}.calc-sprint .screen-result[data-clear-state="clear"] .result-stage__headline {
   color: var(--world-accent);
-}
-
-.calc-sprint .result-screen{
+}.calc-sprint .result-screen {
   position: relative;
-}
-
-.calc-sprint .result-hero{
+}.calc-sprint .result-hero {
   position: relative;
   margin-bottom: 16px;
-}
-
-.calc-sprint .best-toast{
+}.calc-sprint .best-toast {
   background: #fff3bf;
   color: #7a5200;
   font-weight: 700;
@@ -1457,76 +1062,49 @@
   padding: 10px 16px;
   border-radius: 999px;
   margin-bottom: 16px;
-}
-
-.calc-sprint .best-toast--hero{
+}.calc-sprint .best-toast--hero {
   font-size: 20px;
   letter-spacing: 0.04em;
   padding: 14px 18px;
   box-shadow: 0 12px 30px rgba(255, 196, 0, 0.25);
-}
-
-.calc-sprint .result-confetti{
+}.calc-sprint .result-confetti {
   pointer-events: none;
   position: absolute;
   inset: -40px 0 auto 0;
   height: 160px;
   opacity: 0;
   overflow: hidden;
-}
-
-.calc-sprint .result-confetti span{
+}.calc-sprint .result-confetti span {
   position: absolute;
   width: 10px;
   height: 18px;
   border-radius: 3px;
   opacity: 0;
   transform: translateY(-30px) rotate(0deg);
-}
-
-.calc-sprint .result-screen.is-confetti .result-confetti{
+}.calc-sprint .result-screen.is-confetti .result-confetti {
   opacity: 1;
-}
-
-.calc-sprint .result-screen.is-confetti .result-confetti span{
+}.calc-sprint .result-screen.is-confetti .result-confetti span {
   animation: confetti-fall 1.2s ease-out forwards;
-}
-
-.calc-sprint .result-confetti span:nth-child(1){ left: 8%; background: #ff6b6b; animation-delay: 0.05s; }
-.calc-sprint .result-confetti span:nth-child(2){ left: 18%; background: #ffd93d; animation-delay: 0.12s; }
-.calc-sprint .result-confetti span:nth-child(3){ left: 28%; background: #6bcB77; animation-delay: 0.18s; }
-.calc-sprint .result-confetti span:nth-child(4){ left: 38%; background: #4d96ff; animation-delay: 0.06s; }
-.calc-sprint .result-confetti span:nth-child(5){ left: 48%; background: #845ec2; animation-delay: 0.22s; }
-.calc-sprint .result-confetti span:nth-child(6){ left: 58%; background: #ff9f1c; animation-delay: 0.1s; }
-.calc-sprint .result-confetti span:nth-child(7){ left: 68%; background: #00c2a8; animation-delay: 0.16s; }
-.calc-sprint .result-confetti span:nth-child(8){ left: 78%; background: #f72585; animation-delay: 0.2s; }
-.calc-sprint .result-confetti span:nth-child(9){ left: 88%; background: #4cc9f0; animation-delay: 0.08s; }
-.calc-sprint .result-confetti span:nth-child(10){ left: 24%; background: #ff8fab; animation-delay: 0.14s; }
-.calc-sprint .result-confetti span:nth-child(11){ left: 52%; background: #aacc00; animation-delay: 0.03s; }
-.calc-sprint .result-confetti span:nth-child(12){ left: 72%; background: #ffcad4; animation-delay: 0.19s; }
+}.calc-sprint .result-confetti span:nth-child(1) { left: 8%; background: #ff6b6b; animation-delay: 0.05s; }.calc-sprint .result-confetti span:nth-child(2) { left: 18%; background: #ffd93d; animation-delay: 0.12s; }.calc-sprint .result-confetti span:nth-child(3) { left: 28%; background: #6bcB77; animation-delay: 0.18s; }.calc-sprint .result-confetti span:nth-child(4) { left: 38%; background: #4d96ff; animation-delay: 0.06s; }.calc-sprint .result-confetti span:nth-child(5) { left: 48%; background: #845ec2; animation-delay: 0.22s; }.calc-sprint .result-confetti span:nth-child(6) { left: 58%; background: #ff9f1c; animation-delay: 0.1s; }.calc-sprint .result-confetti span:nth-child(7) { left: 68%; background: #00c2a8; animation-delay: 0.16s; }.calc-sprint .result-confetti span:nth-child(8) { left: 78%; background: #f72585; animation-delay: 0.2s; }.calc-sprint .result-confetti span:nth-child(9) { left: 88%; background: #4cc9f0; animation-delay: 0.08s; }.calc-sprint .result-confetti span:nth-child(10) { left: 24%; background: #ff8fab; animation-delay: 0.14s; }.calc-sprint .result-confetti span:nth-child(11) { left: 52%; background: #aacc00; animation-delay: 0.03s; }.calc-sprint .result-confetti span:nth-child(12) { left: 72%; background: #ffcad4; animation-delay: 0.19s; }
 
 @keyframes confetti-fall {
-.calc-sprint 0%{
+  0% {
     opacity: 0;
     transform: translateY(-30px) rotate(0deg);
   }
-.calc-sprint 10%{
+  10% {
     opacity: 1;
   }
-.calc-sprint 100%{
+  100% {
     opacity: 0;
     transform: translateY(140px) rotate(220deg);
   }
-}
-
-.calc-sprint .result-firstview{
+}.calc-sprint .result-firstview {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 20px;
-}
-
-.calc-sprint .result-metric{
+}.calc-sprint .result-metric {
   background: #ffffff;
   border-radius: 18px;
   padding: 18px 20px;
@@ -1535,63 +1113,43 @@
   flex-direction: column;
   gap: 6px;
   min-height: 140px;
-}
-
-.calc-sprint .result-metric--distance{
+}.calc-sprint .result-metric--distance {
   background: linear-gradient(135deg, #e0f2ff 0%, #ffffff 60%);
   border: 1px solid rgba(56, 103, 255, 0.2);
-}
-
-.calc-sprint .metric-label{
+}.calc-sprint .metric-label {
   font-size: 14px;
   font-weight: 700;
   color: #52607a;
-}
-
-.calc-sprint .metric-value{
+}.calc-sprint .metric-value {
   font-size: 36px;
   font-weight: 800;
   color: #1f2a44;
   margin: 4px 0;
-}
-
-.calc-sprint .metric-unit{
+}.calc-sprint .metric-unit {
   font-size: 18px;
   font-weight: 700;
   margin-left: 4px;
   color: #4b5563;
-}
-
-.calc-sprint .metric-sub{
+}.calc-sprint .metric-sub {
   font-size: 13px;
   color: #65708a;
-}
-
-.calc-sprint .distance-note{
+}.calc-sprint .distance-note {
   font-size: 12px;
   color: #7c879b;
   margin-top: 4px;
-}
-
-.calc-sprint .result-metric--rank h3{
+}.calc-sprint .result-metric--rank h3 {
   font-size: 16px;
   margin: 0;
-}
-
-.calc-sprint .rank-header{
+}.calc-sprint .rank-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-}
-
-.calc-sprint .rank-message{
+}.calc-sprint .rank-message {
   font-size: 12px;
   font-weight: 700;
   color: #3867ff;
-}
-
-.calc-sprint .rank-list{
+}.calc-sprint .rank-list {
   list-style: none;
   padding: 0;
   margin: 8px 0 0;
@@ -1600,115 +1158,72 @@
   gap: 6px;
   font-weight: 700;
   color: #1f2a44;
-}
-
-.calc-sprint .result-details{
+}.calc-sprint .result-details {
   background: #f8fafc;
   border-radius: 16px;
   padding: 8px 12px;
   margin-bottom: 20px;
   border: 1px solid rgba(148, 163, 184, 0.3);
-}
-
-.calc-sprint .result-details summary{
+}.calc-sprint .result-details summary {
   cursor: pointer;
   font-weight: 700;
   color: #1f2a44;
   padding: 8px 4px;
   list-style: none;
-}
-
-.calc-sprint .result-details summary::-webkit-details-marker{
+}.calc-sprint .result-details summary::-webkit-details-marker {
   display: none;
-}
-
-.calc-sprint .result-details summary::after{
+}.calc-sprint .result-details summary::after {
   content: '＋';
   float: right;
   font-weight: 700;
-}
-
-.calc-sprint .result-details[open] summary::after{
+}.calc-sprint .result-details[open] summary::after {
   content: '－';
-}
-
-.calc-sprint .result-details__content{
+}.calc-sprint .result-details__content {
   padding: 12px 4px 4px;
-}
-
-.calc-sprint .button-row{
+}.calc-sprint .button-row {
   display: flex;
   gap: 12px;
   flex-wrap: nowrap;
-}
-
-.calc-sprint .daily-history table{
+}.calc-sprint .daily-history table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 8px;
-}
-
-.calc-sprint .daily-history th, .calc-sprint .daily-history td{
+}.calc-sprint .daily-history th, .calc-sprint .daily-history td {
   padding: 6px 8px;
   text-align: center;
-}
-
-.calc-sprint .daily-history tr.is-best{
+}.calc-sprint .daily-history tr.is-best {
   font-weight: 700;
-}
-
-.calc-sprint .daily-history tr.is-best-distance{
+}.calc-sprint .daily-history tr.is-best-distance {
   outline: 2px solid rgba(56, 103, 255, 0.35);
   background: rgba(56, 103, 255, 0.06);
-}
-
-.calc-sprint #daily-history-sum{
+}.calc-sprint #daily-history-sum {
   color: #5a6477;
   font-weight: 600;
 }
 
-@media (max-width: 768px) {
-.calc-sprint .screen{
+@media (max-width: 768px) {.calc-sprint .screen {
     padding: 20px;
-  }
-
-.calc-sprint .game-hud{
+  }.calc-sprint .game-hud {
     padding: 20px 20px 10px;
-  }
-
-.calc-sprint .game-focus{
+  }.calc-sprint .game-focus {
     padding: 0 20px;
     margin-bottom: -12px;
-  }
-
-.calc-sprint .status-grid{
+  }.calc-sprint .status-grid {
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  }
-
-.calc-sprint .question-text{
+  }.calc-sprint .question-text {
     font-size: 28px;
-  }
-
-.calc-sprint .question-area{
+  }.calc-sprint .question-area {
     transform: translateY(18px);
     padding: 16px 20px;
-  }
-
-.calc-sprint .answer-input{
+  }.calc-sprint .answer-input {
     font-size: 22px;
     width: min(280px, 90vw);
-  }
-
-.calc-sprint .run-layer{
+  }.calc-sprint .run-layer {
     height: min(34vh, 260px);
     transform: translateY(-6px);
-  }
-
-.calc-sprint .result-firstview{
+  }.calc-sprint .result-firstview {
     grid-template-columns: 1fr;
-  }
-
-.calc-sprint .button-row{
+  }.calc-sprint .button-row {
     flex-direction: column;
   }
 }

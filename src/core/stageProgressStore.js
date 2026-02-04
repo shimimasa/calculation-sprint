@@ -1,11 +1,6 @@
-// ADR-004, ADR-002: Use an app-specific, profile-ready storage namespace (subpath/portal safe).
-// - New key includes a stable prefix + schema version + profileId.
-// - Legacy key is migrated on first read when safe to do so.
-const STORAGE_PREFIX = 'portal.calcSprint';
-const SCHEMA_VERSION = 'v1';
-const DEFAULT_PROFILE_ID = 'default';
-const buildStorageKey = (profileId = DEFAULT_PROFILE_ID) => `${STORAGE_PREFIX}.stageProgress.${SCHEMA_VERSION}.${profileId}`;
-const LEGACY_STORAGE_KEY = 'calcSprint.stageProgress.v1';
+// ADR-004, ADR-002 Phase0補修: Centralized key generation (Phase1 will inject profileId).
+import { LEGACY_KEYS, STORE_NAMES, DEFAULT_PROFILE_ID, makeKey } from './storageKeys.js';
+const LEGACY_STORAGE_KEY = LEGACY_KEYS.stageProgress;
 
 const buildDefaultProgress = () => ({
   clearedStageIds: [],
@@ -44,7 +39,7 @@ const saveProgress = (storageKey, progress) => {
 
 const stageProgressStore = {
   getProgress(profileId = DEFAULT_PROFILE_ID) {
-    const storageKey = buildStorageKey(profileId);
+    const storageKey = makeKey(STORE_NAMES.stageProgress, profileId);
     try {
       const raw = window.localStorage.getItem(storageKey);
       const parsed = parseProgress(raw);
@@ -65,7 +60,7 @@ const stageProgressStore = {
     if (!stageId) {
       return;
     }
-    const storageKey = buildStorageKey(profileId);
+    const storageKey = makeKey(STORE_NAMES.stageProgress, profileId);
     const progress = this.getProgress(profileId);
     const clearedStageIds = progress.clearedStageIds.includes(stageId)
       ? progress.clearedStageIds
@@ -81,7 +76,7 @@ const stageProgressStore = {
     if (!stageId) {
       return;
     }
-    const storageKey = buildStorageKey(profileId);
+    const storageKey = makeKey(STORE_NAMES.stageProgress, profileId);
     const progress = this.getProgress(profileId);
     const updated = {
       ...progress,
@@ -100,7 +95,7 @@ const stageProgressStore = {
   reset(profileId = DEFAULT_PROFILE_ID) {
     try {
       // ADR-004: Remove both new + legacy keys so reset can't be undone by auto-migration.
-      window.localStorage.removeItem(buildStorageKey(profileId));
+      window.localStorage.removeItem(makeKey(STORE_NAMES.stageProgress, profileId));
       window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch (error) {
       // ignore storage failures
