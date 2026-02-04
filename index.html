@@ -44,40 +44,49 @@
           <div class="settings-section settings-section--preset">
             <p class="section-title">🎯 プリセット</p>
             <div class="form-group">
-              <label class="form-label" for="settings-preset">難易度プリセット</label>
+              <label class="form-label" for="settings-preset">おすすめプリセット</label>
               <select id="settings-preset">
-                <option value="">プリセットなし（手動設定）</option>
-                <option value="p3-basic">小3 基本</option>
-                <option value="p4-nocarry">小4 繰上がりなし</option>
-                <option value="p4-carry">小4 繰上がりあり</option>
-                <option value="p5-mul">小5 九九</option>
+                <option value="" disabled>おすすめをえらぶ（プリセット）</option>
+                <option value="p3-basic">🟢 はじめてラン</option>
+                <option value="p4-nocarry">🔵 ふつうラン</option>
+                <option value="p4-carry">🟠 ちょうせんラン</option>
+                <option value="p5-mul">🟣 きゅうきゅうラン</option>
+                <option value="custom" selected>なし（カスタム）</option>
               </select>
+              <p class="settings-preset-description" id="settings-preset-description">
+                <span class="settings-preset-tag" id="settings-preset-tag">カスタム中</span>
+                <span id="settings-preset-text">こまかく設定で自分で作れるよ。</span>
+              </p>
             </div>
           </div>
-          <div class="settings-section">
-            <p class="section-title">🧮 モード</p>
-            <div class="pill-group">
-              <label class="pill-option"><input type="radio" name="mode" value="add" checked /><span>たし算</span></label>
-              <label class="pill-option"><input type="radio" name="mode" value="sub" /><span>ひき算</span></label>
-              <label class="pill-option"><input type="radio" name="mode" value="mul" /><span>かけ算</span></label>
-              <label class="pill-option"><input type="radio" name="mode" value="div" /><span>わり算</span></label>
-              <label class="pill-option"><input type="radio" name="mode" value="mix" /><span>ミックス</span></label>
+          <p class="settings-guide">まずはおすすめをえらぼう！こまかく変えたいときは下をひらくよ</p>
+          <details class="settings-details">
+            <summary class="settings-details__summary">こまかく設定</summary>
+            <div class="settings-section">
+              <p class="section-title">🧮 モード</p>
+              <div class="pill-group">
+                <label class="pill-option"><input type="radio" name="mode" value="add" checked /><span>たし算</span></label>
+                <label class="pill-option"><input type="radio" name="mode" value="sub" /><span>ひき算</span></label>
+                <label class="pill-option"><input type="radio" name="mode" value="mul" /><span>かけ算</span></label>
+                <label class="pill-option"><input type="radio" name="mode" value="div" /><span>わり算</span></label>
+                <label class="pill-option"><input type="radio" name="mode" value="mix" /><span>ミックス</span></label>
+              </div>
             </div>
-          </div>
-          <div class="settings-section">
-            <p class="section-title">🔢 桁数</p>
-            <div class="pill-group">
-              <label class="pill-option"><input type="radio" name="digit" value="1" checked /><span>1桁</span></label>
-              <label class="pill-option"><input type="radio" name="digit" value="2" /><span>2桁</span></label>
+            <div class="settings-section">
+              <p class="section-title">🔢 桁数</p>
+              <div class="pill-group">
+                <label class="pill-option"><input type="radio" name="digit" value="1" checked /><span>1桁</span></label>
+                <label class="pill-option"><input type="radio" name="digit" value="2" /><span>2桁</span></label>
+              </div>
             </div>
-          </div>
-          <div class="settings-section">
-            <p class="section-title">⚙️ オプション</p>
-            <label class="toggle-option">
-              <input type="checkbox" id="settings-carry" />
-              <span>繰り上がり/繰り下がり</span>
-            </label>
-          </div>
+            <div class="settings-section">
+              <p class="section-title">⚙️ オプション</p>
+              <label class="toggle-option">
+                <input type="checkbox" id="settings-carry" />
+                <span>繰り上がり/繰り下がり</span>
+              </label>
+            </div>
+          </details>
         </div>
         <footer class="screen-footer">
           <button id="settings-play-button" class="primary-button primary-button--xl">プレイ</button>
