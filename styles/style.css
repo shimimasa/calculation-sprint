@@ -445,6 +445,13 @@ body {
   gap: 10px;
 }
 
+.settings-note {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5a6477;
+}
+
 .pill-option {
   position: relative;
   display: inline-flex;
