@@ -147,7 +147,6 @@ const stageSelectScreen = {
       if (!stage) {
         return;
       }
-      stageProgressStore.setLastPlayed(stage.id);
       gameState.playMode = 'stage';
       gameState.selectedStageId = stage.id;
       applyStageSettings(stage, gameState);
