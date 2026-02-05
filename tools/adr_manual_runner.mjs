@@ -1,7 +1,9 @@
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { basename, resolve } from 'node:path';
+import { basename, resolve, dirname, join, normalize, sep } from 'node:path';
 import fs from 'node:fs/promises';
+import http from 'node:http';
+import { createReadStream, existsSync } from 'node:fs';
 
 const execFileAsync = promisify(execFile);
 
@@ -10,18 +12,111 @@ const repoName = basename(resolve('.'));
 const baseUrl = 'http://127.0.0.1:8082/';
 const subpathUrl = `http://127.0.0.1:8083/${repoName}/`;
 
-const startServer = (args) => {
-  const proc = spawn('./tools/serve', args, {
-    stdio: 'ignore',
+const isWindows = process.platform === 'win32';
+
+const guessRepoRoot = () => resolve('.');
+
+const parsePort = (args, fallback) => {
+  const idx = args.findIndex((value) => value === '--port');
+  if (idx !== -1 && args[idx + 1]) {
+    const parsed = Number(args[idx + 1]);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.floor(parsed);
+    }
+  }
+  return fallback;
+};
+
+const hasFlag = (args, flag) => args.includes(flag);
+
+const contentTypeByExt = Object.freeze({
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml; charset=utf-8',
+  '.mp3': 'audio/mpeg',
+});
+
+const getExt = (path) => {
+  const dot = path.lastIndexOf('.');
+  return dot === -1 ? '' : path.slice(dot).toLowerCase();
+};
+
+const safeJoin = (root, requestPath) => {
+  const cleaned = requestPath.split('?')[0].split('#')[0];
+  const withoutLeading = cleaned.replace(/^\/+/, '');
+  const candidate = normalize(join(root, withoutLeading));
+  const rootNorm = normalize(root.endsWith(sep) ? root : `${root}${sep}`);
+  if (!candidate.startsWith(rootNorm)) {
+    return null;
+  }
+  return candidate;
+};
+
+const startStaticServer = ({ port, rootDir }) => {
+  const server = http.createServer((req, res) => {
+    try {
+      const urlPath = decodeURIComponent(req.url || '/');
+      let pathname = urlPath.split('?')[0] || '/';
+      if (pathname.endsWith('/')) {
+        pathname = `${pathname}index.html`;
+      }
+      const filePath = safeJoin(rootDir, pathname);
+      if (!filePath) {
+        res.statusCode = 403;
+        res.end('Forbidden');
+        return;
+      }
+      if (!existsSync(filePath)) {
+        res.statusCode = 404;
+        res.end('Not Found');
+        return;
+      }
+      const ext = getExt(filePath);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', contentTypeByExt[ext] || 'application/octet-stream');
+      createReadStream(filePath).pipe(res);
+    } catch (error) {
+      res.statusCode = 500;
+      res.end('Server Error');
+    }
   });
-  return proc;
+  server.listen(port, '127.0.0.1');
+  return server;
+};
+
+const startServer = (args) => {
+  if (!isWindows) {
+    const proc = spawn('./tools/serve', args, {
+      stdio: 'ignore',
+    });
+    return proc;
+  }
+
+  const port = parsePort(args, 8082);
+  const repoRoot = guessRepoRoot();
+  const shouldSubpath = hasFlag(args, '--subpath');
+  const rootDir = shouldSubpath ? dirname(repoRoot) : repoRoot;
+  const server = startStaticServer({ port, rootDir });
+  return server;
 };
 
 const stopServer = (proc) => {
   if (!proc) {
     return;
   }
-  proc.kill('SIGTERM');
+  if (typeof proc.kill === 'function') {
+    proc.kill('SIGTERM');
+    return;
+  }
+  if (typeof proc.close === 'function') {
+    proc.close();
+  }
 };
 
 const waitForHttp = async (url, attempts = 15) => {
