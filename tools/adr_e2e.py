@@ -96,7 +96,7 @@ async def run(base_url):
     title_visible = await page.locator('#title-screen').is_visible()
     results.append({'id': 'T2', 'pass': label == 'B' and title_visible})
 
-    last_profile = await page.evaluate('localStorage.getItem("portal.calcSprint.lastProfileId")')
+    last_profile = await page.evaluate('localStorage.getItem("calc-sprint::meta::last-profile")')
     results.append({'id': 'T3', 'pass': last_profile == 'B'})
 
     await page.click('#title-free-button')
@@ -108,8 +108,8 @@ async def run(base_url):
       await start_free_game(page, profile_id)
       await submit_answer(page, 'click')
       await page.wait_for_selector('#result-screen', state='visible', timeout=10000)
-      daily_key = f'portal.calcSprint.daily.v1.p:{profile_id}'
-      rank_key = f'portal.calcSprint.rank.distance.today.v1.p:{profile_id}'
+      daily_key = f'calc-sprint::{profile_id}::daily.v1'
+      rank_key = f'calc-sprint::{profile_id}::rank.distance.today.v1'
       daily_val = await page.evaluate('(key) => localStorage.getItem(key)', daily_key)
       rank_val = await page.evaluate('(key) => localStorage.getItem(key)', rank_key)
       return {'daily': daily_val, 'rank': rank_val}
@@ -132,10 +132,10 @@ async def run(base_url):
     page.once('dialog', lambda dialog: asyncio.create_task(dialog.accept()))
     await page.click('#settings-profile-reset')
     await page.wait_for_timeout(300)
-    a_daily = await page.evaluate('localStorage.getItem("portal.calcSprint.daily.v1.p:A")')
-    a_rank = await page.evaluate('localStorage.getItem("portal.calcSprint.rank.distance.today.v1.p:A")')
-    b_daily = await page.evaluate('localStorage.getItem("portal.calcSprint.daily.v1.p:B")')
-    b_rank = await page.evaluate('localStorage.getItem("portal.calcSprint.rank.distance.today.v1.p:B")')
+    a_daily = await page.evaluate('localStorage.getItem("calc-sprint::A::daily.v1")')
+    a_rank = await page.evaluate('localStorage.getItem("calc-sprint::A::rank.distance.today.v1")')
+    b_daily = await page.evaluate('localStorage.getItem("calc-sprint::B::daily.v1")')
+    b_rank = await page.evaluate('localStorage.getItem("calc-sprint::B::rank.distance.today.v1")')
     results.append({'id': 'T6', 'pass': a_daily is None and a_rank is None and b_daily is not None and b_rank is not None})
 
     await page.goto(f'{base_url}?test=1&timeLimit=20', wait_until='domcontentloaded')

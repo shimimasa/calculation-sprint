@@ -9,6 +9,10 @@
 - ADR-004: 達成
 - ADR-005: 達成
 - ADR-006: 達成
+- ADR-007: 未検証（Not run）
+- ADR-008: 未検証（Not run）
+- ADR-009: 未検証（Not run）
+- ADR-010: 未検証（Not run）
 
 ## Checks
 - [PASS] S1 ADR-004 CSS selectors are fully scoped under .calc-sprint
@@ -22,6 +26,13 @@
 - [PASS] M5 ADR-003 action layer drives submit/back/next, Enter is shortcut, keypad is available
 - [PASS] M6 ADR-005 SSoT references and acceptance record updated
 - [PASS] M7 ADR-006 action contract supports Backspace/Delete and NumpadEnter
+- [PENDING] G1 ADR-007 asset HTML/404 warnings are emitted once per URL (Not run)
+- [PENDING] G2 ADR-007 asset logs include basepath/rewrite hints (Not run)
+- [PENDING] G3 ADR-008 storage keys use calc-sprint::<profileId>::<storeName>.<version> (Not run)
+- [PENDING] G4 ADR-008 legacy keys are copied once to new namespace for default profile (Not run)
+- [PENDING] G5 ADR-009 screen events are registered via eventRegistry and cleared on exit (Not run)
+- [PENDING] G6 ADR-010 tools/gate runs lint/build/acceptance steps (Not run)
+- [PENDING] G7 ADR-010 CI runs tools/gate-ci (Not run)
 
 ## Evidence
 ### S1 ADR-004 CSS selectors are fully scoped under .calc-sprint

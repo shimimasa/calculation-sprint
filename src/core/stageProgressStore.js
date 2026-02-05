@@ -7,7 +7,7 @@ import {
   makeKey,
   resolveProfileId,
 } from './storageKeys.js';
-const LEGACY_STORAGE_KEY = LEGACY_KEYS.stageProgress;
+const LEGACY_STORAGE_KEYS = LEGACY_KEYS.stageProgress;
 const LEGACY_MIGRATION_KEY = LEGACY_MIGRATION_KEYS.stageProgress;
 
 const buildDefaultProgress = () => ({
@@ -45,6 +45,16 @@ const saveProgress = (storageKey, progress) => {
   }
 };
 
+const readLegacyRaw = (storageKeys) => {
+  for (const storageKey of storageKeys) {
+    const legacyRaw = window.localStorage.getItem(storageKey);
+    if (legacyRaw) {
+      return legacyRaw;
+    }
+  }
+  return null;
+};
+
 const stageProgressStore = {
   getProgress(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
@@ -54,7 +64,7 @@ const stageProgressStore = {
       const parsed = parseProgress(raw);
       // ADR-004: Best-effort migration if new key is empty but legacy exists.
       if (!raw && resolvedProfileId === DEFAULT_PROFILE_ID && !window.localStorage.getItem(LEGACY_MIGRATION_KEY)) {
-        const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+        const legacyRaw = readLegacyRaw(LEGACY_STORAGE_KEYS);
         if (legacyRaw) {
           saveProgress(storageKey, parseProgress(legacyRaw));
           window.localStorage.setItem(LEGACY_MIGRATION_KEY, '1');

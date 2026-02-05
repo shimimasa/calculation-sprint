@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[gate] lint: node --check"
+rg -l --glob '*.{js,mjs}' src tools scripts | xargs -I{} node --check "{}"
+
+echo "[gate] build: static (no build step)"
+
+echo "[gate] acceptance: ./tools/adr-e2e"
+./tools/adr-e2e

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[gate-ci] lint: node --check"
+rg -l --glob '*.{js,mjs}' src tools scripts | xargs -I{} node --check "{}"

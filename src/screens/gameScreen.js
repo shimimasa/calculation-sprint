@@ -9,6 +9,7 @@ import stageProgressStore from '../core/stageProgressStore.js';
 import { applyStageSettings, findStageById } from '../features/stages.js';
 import audioManager from '../core/audioManager.js';
 import inputActions from '../core/inputActions.js';
+import { createEventRegistry } from '../core/eventRegistry.js';
 
 const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
@@ -172,6 +173,7 @@ const gameScreen = {
   },
   enter() {
     uiRenderer.showScreen('game');
+    this.events = createEventRegistry('game');
     if (gameState.playMode === 'stage') {
       const stage = findStageById(gameState.selectedStageId);
       if (stage) {
@@ -266,17 +268,17 @@ const gameScreen = {
     inputActions.on(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
 
     this.handleKeyDown = inputActions.createKeyHandler();
-    domRefs.game.answerInput?.addEventListener('keydown', this.handleKeyDown);
+    this.events.on(domRefs.game.answerInput, 'keydown', this.handleKeyDown);
 
     this.handleSubmitClick = () => {
       inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
     };
-    domRefs.game.submitButton?.addEventListener('click', this.handleSubmitClick);
+    this.events.on(domRefs.game.submitButton, 'click', this.handleSubmitClick);
 
     this.handleKeypadToggleClick = () => {
       inputActions.dispatch(inputActions.ACTIONS.TOGGLE_KEYPAD, { source: 'button' });
     };
-    domRefs.game.keypadToggle?.addEventListener('click', this.handleKeypadToggleClick);
+    this.events.on(domRefs.game.keypadToggle, 'click', this.handleKeypadToggleClick);
 
     this.handleKeypadClick = (event) => {
       const button = event.target.closest('[data-keypad-key]');
@@ -290,7 +292,7 @@ const gameScreen = {
       }
       this.appendKeypadDigit(key);
     };
-    domRefs.game.keypad?.addEventListener('click', this.handleKeypadClick);
+    this.events.on(domRefs.game.keypad, 'click', this.handleKeypadClick);
 
     this.loadNextQuestion();
     this.startTimer();
@@ -675,18 +677,8 @@ const gameScreen = {
   },
   exit() {
     timer.stop();
-    if (this.handleKeyDown) {
-      domRefs.game.answerInput.removeEventListener('keydown', this.handleKeyDown);
-    }
-    if (this.handleSubmitClick) {
-      domRefs.game.submitButton?.removeEventListener('click', this.handleSubmitClick);
-    }
-    if (this.handleKeypadToggleClick) {
-      domRefs.game.keypadToggle?.removeEventListener('click', this.handleKeypadToggleClick);
-    }
-    if (this.handleKeypadClick) {
-      domRefs.game.keypad?.removeEventListener('click', this.handleKeypadClick);
-    }
+    this.events?.clear();
+    this.events = null;
     if (this.handleSubmitAction) {
       inputActions.off(inputActions.ACTIONS.SUBMIT, this.handleSubmitAction);
     }
