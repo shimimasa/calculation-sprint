@@ -283,6 +283,12 @@ const resultScreen = {
     }
     const resultBgmId = currentStage && isClearedNow ? 'bgm_clear' : 'bgm_result';
     audioManager.setBgm(resultBgmId);
+    if (currentStage && isClearedNow) {
+      audioManager.playSfx('sfx_stage_clear');
+    }
+    if (unlockedNextStage) {
+      audioManager.playSfx('sfx_stage_unlock');
+    }
     this.prefersReducedMotion = window.matchMedia
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false;
@@ -513,6 +519,7 @@ const resultScreen = {
       }
       if (shouldShowBestToast) {
         domRefs.result.bestToast.hidden = false;
+        audioManager.playSfx('sfx_levelup');
         if (domRefs.screens.result) {
           domRefs.screens.result.classList.add('is-confetti');
           if (this.confettiTimeout) {

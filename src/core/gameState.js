@@ -48,6 +48,7 @@ const gameState = {
     mode: 'add',
     digit: 1,
     carry: false,
+    allowedModes: null,
   },
   selectedStage: null,
 };

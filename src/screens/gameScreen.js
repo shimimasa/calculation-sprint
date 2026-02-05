@@ -415,10 +415,15 @@ const gameScreen = {
     this.stumbleTimeoutId = timeoutIds;
   },
   startTimer() {
+    this.hasCountdownSfxPlayed = false;
     timer.start(
       gameState.timeLimit,
       (timeLeft) => {
         gameState.timeLeft = timeLeft;
+        if (!gameState.isReviewMode && timeLeft <= 10 && !this.hasCountdownSfxPlayed) {
+          this.hasCountdownSfxPlayed = true;
+          audioManager.playSfx('sfx_countdown');
+        }
       },
       () => this.handleTimeUp(),
     );

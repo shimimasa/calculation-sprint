@@ -82,10 +82,14 @@ const questionGenerator = {
     const reviewModes = Array.isArray(settings.reviewModes)
       ? settings.reviewModes.filter((mode) => modes.includes(mode))
       : [];
+    const allowedMixModes = Array.isArray(settings.allowedModes)
+      ? settings.allowedModes.filter((mode) => modes.includes(mode))
+      : [];
+    const mixModes = allowedMixModes.length > 0 ? allowedMixModes : modes;
     const mode = reviewModes.length > 0
       ? reviewModes[randomInt(0, reviewModes.length - 1)]
       : (settings.mode === 'mix'
-        ? modes[randomInt(0, modes.length - 1)]
+        ? mixModes[randomInt(0, mixModes.length - 1)]
         : settings.mode);
     const operator = operators[mode];
     if (!operator) {
