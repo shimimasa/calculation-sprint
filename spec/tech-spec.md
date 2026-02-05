@@ -79,6 +79,15 @@ Action層は `src/core/inputActions.js` を正とし、画面は Action を購�
 - `next`: 「次へ」の抽象アクション（画面ごとに意味を割当）
 - `toggle_keypad`: オンスクリーンテンキーの表示切替
 
+### 7.1 Action Contract 表
+
+| Action | 意味 | 代表的な発火元 | 対象画面 | 無効条件（例） |
+| --- | --- | --- | --- | --- |
+| `submit` | 回答確定（前進アクション） | Enter / 確定ボタン | gameScreen | ロック中・時間切れ・未出題時 |
+| `back` | 1文字削除 | テンキーの⌫ / Backspace相当 | gameScreen | ロック中・時間切れ |
+| `next` | 画面の「次へ」を示す抽象アクション（gameScreenでは`submit`相当） | Space / ArrowRight | gameScreen | ロック中・時間切れ・未出題時 |
+| `toggle_keypad` | オンスクリーンテンキーの表示切替 | テンキー切替ボタン | gameScreen | 画面非表示時 |
+
 ## 8. Debug / Test フラグ（手動検証）
 
 ### 8.1 タイムリミット短縮（手動/E2E向け）
@@ -102,4 +111,3 @@ URLクエリで `test` を有効化する（`src/core/testFlags.js`）。
    - 画面上の「確定」操作で回答確定できる（Enter 依存ではない）。
    - オンスクリーンテンキー/ボタン操作で回答確定まで完結できる。
    - 「戻る」「次へ」などのアクション操作が入力デバイス差に依存しない。
-

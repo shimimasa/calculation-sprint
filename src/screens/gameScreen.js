@@ -244,6 +244,12 @@ const gameScreen = {
       }
       this.submitAnswer();
     };
+    this.handleNextAction = () => {
+      if (!this.canSubmit()) {
+        return;
+      }
+      this.submitAnswer();
+    };
     this.handleBackAction = () => {
       this.handleBackspace();
     };
@@ -255,6 +261,7 @@ const gameScreen = {
     };
 
     inputActions.on(inputActions.ACTIONS.SUBMIT, this.handleSubmitAction);
+    inputActions.on(inputActions.ACTIONS.NEXT, this.handleNextAction);
     inputActions.on(inputActions.ACTIONS.BACK, this.handleBackAction);
     inputActions.on(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
 
@@ -682,6 +689,9 @@ const gameScreen = {
     }
     if (this.handleSubmitAction) {
       inputActions.off(inputActions.ACTIONS.SUBMIT, this.handleSubmitAction);
+    }
+    if (this.handleNextAction) {
+      inputActions.off(inputActions.ACTIONS.NEXT, this.handleNextAction);
     }
     if (this.handleBackAction) {
       inputActions.off(inputActions.ACTIONS.BACK, this.handleBackAction);
