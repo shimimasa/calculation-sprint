@@ -1,8 +1,10 @@
 # ADR Acceptance Checklist (Manual Runner)
-- Timestamp: 2026-02-05T03:47:58.835Z
+- Timestamp: 2026-02-05T04:32:06.760Z
 - Overall: PASS
 
 ## Checks
+- [PASS] S1 ADR-004 CSS selectors are fully scoped under .calc-sprint
+- [PASS] S2 ADR-004 index.html references scoped CSS only
 - [PASS] M1 Root server responds with 200
 - [PASS] M2 Subpath server responds with 200
 - [PASS] M3 Profile storage keys are separated
@@ -10,6 +12,20 @@
 - [PASS] M5 ADR-001 unlocks next stage only after result (markCleared)
 
 ## Evidence
+### S1 ADR-004 CSS selectors are fully scoped under .calc-sprint
+Status: PASS
+
+All selector lines are scoped under .calc-sprint.
+
+### S2 ADR-004 index.html references scoped CSS only
+Status: PASS
+
+index.html references styles/style.scoped.css: YES
+index.html references styles/style.css: NO
+index.html references styles/legacy/style.css: NO
+
+Rule: index.html must reference styles/style.scoped.css and must not reference styles/style.css.
+
 ### M1 Root server responds with 200
 Status: PASS
 
@@ -39,7 +55,7 @@ after reset A rank: null
 after reset A stage: null
 remaining B daily: {"2099-01-01":{"bestAvgSec":1.8,"bestDistanceM":9,"attemptTotal":5,"wrongTotal":0,"wrongByMode":{"add":0,"sub":0,"mul":0,"div":0},"sessions":1}}
 remaining B rank: {"dateKey":"2099-01-01","top":[8.8]}
-remaining B stage: {"clearedStageIds":["w1-1"],"lastPlayedStageId":"w1-1","updatedAt":"2026-02-05T03:47:58.834Z"}
+remaining B stage: {"clearedStageIds":["w1-1"],"lastPlayedStageId":"w1-1","updatedAt":"2026-02-05T04:32:06.760Z"}
 
 ### M5 ADR-001 unlocks next stage only after result (markCleared)
 Status: PASS

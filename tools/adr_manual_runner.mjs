@@ -196,6 +196,116 @@ const renderReport = async (results, callLog) => {
   return overallPass;
 };
 
+const countBraces = (text) => {
+  let open = 0;
+  let close = 0;
+  for (const ch of text) {
+    if (ch === '{') {
+      open += 1;
+    } else if (ch === '}') {
+      close += 1;
+    }
+  }
+  return { open, close };
+};
+
+// ADR-004 static check (CSS non-invasive):
+// - Evaluate "selector lines" only: after stripping leading '}' and whitespace, the text contains '{'
+// - Allow at-rule lines themselves (@media/@supports/@property/@font-face/@layer/etc.)
+// - Ignore @keyframes blocks and their internal from/to/xx% steps
+const checkScopedCssSelectors = async () => {
+  const cssPath = resolve('styles/style.scoped.css');
+  const raw = await fs.readFile(cssPath, 'utf8');
+  const lines = raw.split(/\r?\n/);
+
+  const offenders = [];
+  let keyframesDepth = 0;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const originalLine = lines[i];
+    const trimmed = originalLine.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    const withoutLead = trimmed.replace(/^[}\s]+/, '');
+
+    // Track keyframes block depth to ignore from/to/xx% selectors.
+    if (withoutLead.startsWith('@keyframes')) {
+      const { open, close } = countBraces(withoutLead);
+      keyframesDepth += Math.max(1, open) - close;
+      continue;
+    }
+    if (keyframesDepth > 0) {
+      const { open, close } = countBraces(trimmed);
+      keyframesDepth += open - close;
+      if (keyframesDepth <= 0) {
+        keyframesDepth = 0;
+      }
+      continue;
+    }
+
+    // At-rule lines are allowed as-is.
+    if (withoutLead.startsWith('@')) {
+      continue;
+    }
+
+    // Selector line heuristic: must contain '{' after stripping leading braces/spaces.
+    if (!withoutLead.includes('{')) {
+      continue;
+    }
+
+    // Keyframe step lines are selector-like but exempt.
+    if (/^(from|to|\d+%)(\s*,\s*(from|to|\d+%))*\s*\{/.test(withoutLead)) {
+      continue;
+    }
+
+    if (!withoutLead.startsWith('.calc-sprint')) {
+      offenders.push({ line: i + 1, text: withoutLead.slice(0, 160) });
+    }
+  }
+
+  return {
+    pass: offenders.length === 0,
+    offenders,
+    details: offenders.length === 0
+      ? 'All selector lines are scoped under .calc-sprint.'
+      : [
+        `Found ${offenders.length} unscoped selector line(s).`,
+        'Examples (up to 10):',
+        ...offenders.slice(0, 10).map((o) => `- L${o.line}: ${o.text}`),
+        '',
+        'Rules:',
+        '- Check only selector lines (contains "{", after stripping leading "}" and whitespace).',
+        '- Allow at-rule lines: @media/@supports/@property/@font-face/@layer/etc.',
+        '- Ignore @keyframes blocks and their from/to/xx% steps.',
+      ].join('\n'),
+  };
+};
+
+// ADR-004 static check (asset-safe):
+// - index.html must reference styles/style.scoped.css
+// - index.html must NOT reference styles/style.css (or legacy style.css)
+const checkIndexHtmlCssLinks = async () => {
+  const htmlPath = resolve('index.html');
+  const html = await fs.readFile(htmlPath, 'utf8');
+  const hasScoped = html.includes('href="styles/style.scoped.css"') || html.includes("href='styles/style.scoped.css'");
+  const hasStyleCss = html.includes('styles/style.css');
+  const hasLegacyCss = html.includes('styles/legacy/style.css');
+  const hasAnyLegacyRef = hasStyleCss || hasLegacyCss;
+
+  return {
+    pass: Boolean(hasScoped && !hasAnyLegacyRef),
+    details: [
+      `index.html references styles/style.scoped.css: ${hasScoped ? 'YES' : 'NO'}`,
+      `index.html references styles/style.css: ${hasStyleCss ? 'YES' : 'NO'}`,
+      `index.html references styles/legacy/style.css: ${hasLegacyCss ? 'YES' : 'NO'}`,
+      '',
+      'Rule: index.html must reference styles/style.scoped.css and must not reference styles/style.css.',
+    ].join('\n'),
+  };
+};
+
 const run = async () => {
   const callLog = [];
   const serverRoot = startServer(['--port', '8082']);
@@ -206,6 +316,24 @@ const run = async () => {
   });
 
   const results = [];
+
+  // ADR-004 static guards (CSS non-invasive).
+  const cssScope = await checkScopedCssSelectors();
+  results.push({
+    id: 'S1',
+    title: 'ADR-004 CSS selectors are fully scoped under .calc-sprint',
+    pass: cssScope.pass,
+    details: cssScope.details,
+  });
+
+  const htmlLinks = await checkIndexHtmlCssLinks();
+  results.push({
+    id: 'S2',
+    title: 'ADR-004 index.html references scoped CSS only',
+    pass: htmlLinks.pass,
+    details: htmlLinks.details,
+  });
+
   const rootCheck = await waitForHttp(baseUrl);
   callLog.push(`curl ${baseUrl} -> ${rootCheck.code}`);
   results.push({

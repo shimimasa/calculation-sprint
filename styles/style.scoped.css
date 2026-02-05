@@ -177,7 +177,7 @@
  * - .game-screen/.run-world are the entry points for global tone (brightness/contrast/etc).
  * - Keep "default" + one sample theme ("theme1") as the placeholders to swap assets/colors.
  */
-.game-screen[data-bg-theme="theme1"]::before, .calc-sprint .game-screen[data-bg-theme="w1"]::before {
+.calc-sprint .game-screen[data-bg-theme="theme1"]::before, .calc-sprint .game-screen[data-bg-theme="w1"]::before {
   background: linear-gradient(180deg, rgba(214, 235, 255, 0.7), rgba(244, 246, 251, 0));
 }.calc-sprint .game-hud {
   padding: 28px 28px 12px;
