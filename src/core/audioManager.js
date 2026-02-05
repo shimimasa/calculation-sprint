@@ -6,6 +6,11 @@ const BGM_URLS = {
   bgm_free: 'assets/audio/bgm/free.mp3',
   bgm_result: 'assets/audio/bgm/result.mp3',
   bgm_clear: 'assets/audio/bgm/clear.mp3',
+  bgm_add: 'assets/audio/bgm/free.mp3',
+  bgm_sub: 'assets/audio/bgm/free.mp3',
+  bgm_mul: 'assets/audio/bgm/free.mp3',
+  bgm_div: 'assets/audio/bgm/free.mp3',
+  bgm_mix: 'assets/audio/bgm/free.mp3',
 };
 
 // ADR-004: Use relative asset paths so subpath hosting works (avoid absolute `/assets/...`).
@@ -13,11 +18,29 @@ const SFX_URLS = {
   sfx_click: 'assets/audio/sfx/click.mp3',
   sfx_correct: 'assets/audio/sfx/correct.mp3',
   sfx_wrong: 'assets/audio/sfx/wrong.mp3',
+  sfx_decide: 'assets/audio/sfx/click.mp3',
+  sfx_cancel: 'assets/audio/sfx/click.mp3',
+  sfx_stage_clear: 'assets/audio/sfx/correct.mp3',
+  sfx_stage_unlock: 'assets/audio/sfx/correct.mp3',
+  sfx_levelup: 'assets/audio/sfx/correct.mp3',
+  sfx_countdown: 'assets/audio/sfx/wrong.mp3',
 };
 
 const SILENT_WAV_DATA_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const resolveBgmId = (id) => {
+  if (!id) {
+    return null;
+  }
+  if (BGM_URLS[id]) {
+    return id;
+  }
+  if (id !== 'bgm_free' && BGM_URLS.bgm_free) {
+    return 'bgm_free';
+  }
+  return null;
+};
 
 const fadeAudio = (audio, from, to, durationMs, onComplete, shouldContinue) => {
   if (!audio) {
@@ -111,35 +134,30 @@ class AudioManager {
   }
 
   setBgm(id, opts = {}) {
-    if (id === this.currentBgmId) {
+    const resolvedId = resolveBgmId(id);
+    if (resolvedId === this.currentBgmId) {
       return;
     }
     if (!this.unlocked) {
-      this.pendingBgmId = id ?? null;
+      this.pendingBgmId = resolvedId ?? null;
       return;
     }
-    if (!id) {
+    if (!resolvedId) {
       this.stopBgm(opts);
       return;
     }
-    const url = BGM_URLS[id];
+    const url = BGM_URLS[resolvedId];
     const fadeMs = opts.fadeMs ?? 0;
     const token = ++this.fadeToken;
     const fadeGuard = () => token === this.fadeToken;
-
-    if (!url) {
-      this.stopCurrentBgm(fadeMs, token);
-      this.currentBgmId = id;
-      return;
-    }
 
     const nextAudio = new Audio(url);
     nextAudio.loop = true;
     nextAudio.preload = 'auto';
     nextAudio.volume = this.muted ? 0 : this.bgmVolume;
     nextAudio.addEventListener('error', () => {
-      diagnoseAssetResponse(url, `bgm:${id}`);
-      console.warn(`BGM failed to load: ${id}`);
+      diagnoseAssetResponse(url, `bgm:${resolvedId}`);
+      console.warn(`BGM failed to load: ${resolvedId}`);
     });
 
     const startNext = () => {
@@ -147,11 +165,11 @@ class AudioManager {
         return;
       }
       this.currentBgm = nextAudio;
-      this.currentBgmId = id;
+      this.currentBgmId = resolvedId;
       const playPromise = nextAudio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
-          console.warn(`BGM playback blocked: ${id}`);
+          console.warn(`BGM playback blocked: ${resolvedId}`);
         });
       }
       if (fadeMs > 0 && !this.muted) {
@@ -212,19 +230,20 @@ class AudioManager {
     const fadeOutMs = opts.fadeOutMs ?? 0;
     const fadeInMs = opts.fadeInMs ?? 0;
 
-    if (nextId === this.currentBgmId && nextId) {
+    const resolvedId = resolveBgmId(nextId);
+    if (resolvedId === this.currentBgmId && resolvedId) {
       return;
     }
     if (!this.unlocked) {
-      this.pendingBgmId = nextId ?? null;
+      this.pendingBgmId = resolvedId ?? null;
       return;
     }
-    if (!nextId) {
+    if (!resolvedId) {
       this.stopBgm({ fadeMs: fadeOutMs });
       return;
     }
 
-    const url = BGM_URLS[nextId];
+    const url = BGM_URLS[resolvedId];
     const token = ++this.fadeToken;
     const fadeGuard = () => token === this.fadeToken;
 
@@ -232,25 +251,21 @@ class AudioManager {
       if (token !== this.fadeToken) {
         return;
       }
-      if (!url) {
-        this.currentBgmId = nextId;
-        return;
-      }
       const nextAudio = new Audio(url);
       nextAudio.loop = true;
       nextAudio.preload = 'auto';
       nextAudio.volume = this.muted ? 0 : this.bgmVolume;
       nextAudio.addEventListener('error', () => {
-        diagnoseAssetResponse(url, `bgm:${nextId}`);
-        console.warn(`BGM failed to load: ${nextId}`);
+        diagnoseAssetResponse(url, `bgm:${resolvedId}`);
+        console.warn(`BGM failed to load: ${resolvedId}`);
       });
 
       this.currentBgm = nextAudio;
-      this.currentBgmId = nextId;
+      this.currentBgmId = resolvedId;
       const playPromise = nextAudio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
-          console.warn(`BGM playback blocked: ${nextId}`);
+          console.warn(`BGM playback blocked: ${resolvedId}`);
         });
       }
       if (fadeInMs > 0 && !this.muted) {

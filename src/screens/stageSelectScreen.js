@@ -143,7 +143,7 @@ const stageSelectScreen = {
         return;
       }
       audioManager.unlock();
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_decide');
       const stageId = button.dataset.stageId;
       const stage = findStageById(stageId);
       if (!stage) {
@@ -157,13 +157,13 @@ const stageSelectScreen = {
 
     this.handleBack = () => {
       audioManager.unlock();
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_cancel');
       screenManager.changeScreen('title');
     };
 
     this.handleFreePlay = () => {
       audioManager.unlock();
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_decide');
       gameState.playMode = 'free';
       gameState.selectedStageId = null;
       screenManager.changeScreen('settings');

@@ -26,6 +26,7 @@ const readUiToSettings = () => {
   gameState.settings.mode = selectedMode ? selectedMode.value : 'add';
   gameState.settings.digit = selectedDigit ? Number(selectedDigit.value) : 1;
   gameState.settings.carry = domRefs.settings.carryCheckbox.checked;
+  gameState.settings.allowedModes = null;
 };
 
 const updatePresetDescription = (presetKey) => {
@@ -65,6 +66,7 @@ const settingsScreen = {
       gameState.settings.mode = preset.mode;
       gameState.settings.digit = preset.digit;
       gameState.settings.carry = preset.carry;
+      gameState.settings.allowedModes = preset.allowedModes ?? null;
       applySettingsToUi(gameState.settings);
       this.isSyncing = false;
       updatePresetDescription(presetKey);
@@ -89,7 +91,7 @@ const settingsScreen = {
 
     this.handlePlay = () => {
       audioManager.unlock();
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_decide');
       readUiToSettings();
       gameState.playMode = 'free';
       gameState.selectedStageId = null;
@@ -98,7 +100,7 @@ const settingsScreen = {
 
     this.handleProfileChange = () => {
       audioManager.unlock();
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_cancel');
       screenManager.changeScreen('profile-select');
     };
 
@@ -108,7 +110,7 @@ const settingsScreen = {
         return;
       }
       resetProfileData(gameState.profileId);
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_cancel');
     };
 
     this.handleAdminResetToggle = (event) => {
@@ -127,7 +129,7 @@ const settingsScreen = {
         return;
       }
       resetAllData();
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_cancel');
       this.isAdminVisible = false;
       if (domRefs.settings.adminResetWrap) {
         domRefs.settings.adminResetWrap.hidden = true;
