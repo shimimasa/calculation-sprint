@@ -57,3 +57,4 @@ Last updated: 2026-02-06
 - `spec/adr/ADR-003.md`（入力Action層/確定/テンキー/送信ロック）
 - `spec/adr/ADR-004.md`（サブパス配信/CSSスコープ/storage名前空間）
 - `spec/adr/ADR-005.md`（SSoT運用）
+- `spec/adr/ADR-006.md`（入力Action契約/CSS隠れグローバル排除/導線固定）

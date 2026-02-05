@@ -948,50 +948,58 @@
   background-size: 12px 12px;
 }
 
-@property --runner-bob-offset {
+@property --calc-sprint-runner-bob-offset {
   syntax: "<length>";
   inherits: true;
   initial-value: 0px;
 }
 
-@property --runner-bob-x {
+@property --calc-sprint-runner-bob-x {
   syntax: "<length>";
   inherits: true;
   initial-value: 0px;
 }
 
-@keyframes runner-bob {
+@keyframes calc-sprint-runner-bob {
   0%,
   100% {
-    --runner-bob-offset: 0px;
-    --runner-bob-x: 0px;
+    --calc-sprint-runner-bob-offset: 0px;
+    --calc-sprint-runner-bob-x: 0px;
   }
   50% {
-    --runner-bob-offset: -4px;
-    --runner-bob-x: 1px;
+    --calc-sprint-runner-bob-offset: -4px;
+    --calc-sprint-runner-bob-x: 1px;
   }
 }
 
-@keyframes runner-stumble {
+@keyframes calc-sprint-runner-stumble {
   0% {
-    transform: translate(var(--runner-bob-x, 0px), var(--runner-bob-offset, 0px)) rotate(0deg);
+    transform: translate(
+        var(--calc-sprint-runner-bob-x, 0px),
+        var(--calc-sprint-runner-bob-offset, 0px)
+      )
+      rotate(0deg);
   }
   30% {
     transform: translate(
-        var(--runner-bob-x, 0px),
-        calc(var(--runner-bob-offset, 0px) + 2px)
+        var(--calc-sprint-runner-bob-x, 0px),
+        calc(var(--calc-sprint-runner-bob-offset, 0px) + 2px)
       )
       rotate(-10deg);
   }
   60% {
     transform: translate(
-        var(--runner-bob-x, 0px),
-        calc(var(--runner-bob-offset, 0px) - 1px)
+        var(--calc-sprint-runner-bob-x, 0px),
+        calc(var(--calc-sprint-runner-bob-offset, 0px) - 1px)
       )
       rotate(6deg);
   }
   100% {
-    transform: translate(var(--runner-bob-x, 0px), var(--runner-bob-offset, 0px)) rotate(0deg);
+    transform: translate(
+        var(--calc-sprint-runner-bob-x, 0px),
+        var(--calc-sprint-runner-bob-offset, 0px)
+      )
+      rotate(0deg);
   }
 }.calc-sprint .runner-wrap {
   position: absolute;
@@ -1026,13 +1034,16 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: translate(var(--runner-bob-x, 0px), var(--runner-bob-offset, 0px));
+  transform: translate(
+    var(--calc-sprint-runner-bob-x, 0px),
+    var(--calc-sprint-runner-bob-offset, 0px)
+  );
   transition: transform 0.2s ease, filter 0.2s ease;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
   position: relative;
   z-index: 1;
 }.calc-sprint .run-layer #runner-sprite.runner-bob {
-  animation: runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite;
+  animation: calc-sprint-runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite;
 }.calc-sprint #runner-sprite.runner-speed-low {
   --runner-bob-duration: 0.42s;
 }.calc-sprint #runner-sprite.runner-speed-mid {
@@ -1041,10 +1052,14 @@
   --runner-bob-duration: 0.26s;
 }.calc-sprint .run-layer #runner-sprite.runner-bob.stumble {
   animation:
-    runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite,
-    runner-stumble 0.32s ease-out 1;
+    calc-sprint-runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite,
+    calc-sprint-runner-stumble 0.32s ease-out 1;
 }.calc-sprint #runner-sprite.boost {
-  transform: translate(var(--runner-bob-x, 0px), calc(var(--runner-bob-offset, 0px) - 2px)) scale(1.06);
+  transform: translate(
+      var(--calc-sprint-runner-bob-x, 0px),
+      calc(var(--calc-sprint-runner-bob-offset, 0px) - 2px)
+    )
+    scale(1.06);
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)) brightness(calc(1.1 * var(--boost-bright)));
 }.calc-sprint #runner-sprite.speed-glow {
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45)) blur(0.2px) brightness(1.12);
@@ -1052,7 +1067,10 @@
   opacity: 0.9;
   transform: scale(1.12);
 }.calc-sprint #runner-sprite.hit {
-  transform: translate(var(--runner-bob-x, 0px), calc(var(--runner-bob-offset, 0px) + 4px));
+  transform: translate(
+    var(--calc-sprint-runner-bob-x, 0px),
+    calc(var(--calc-sprint-runner-bob-offset, 0px) + 4px)
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {.calc-sprint .run-layer #runner-sprite.runner-bob {
@@ -1143,10 +1161,10 @@
 }.calc-sprint .result-screen.is-confetti .result-confetti {
   opacity: 1;
 }.calc-sprint .result-screen.is-confetti .result-confetti span {
-  animation: confetti-fall 1.2s ease-out forwards;
+  animation: calc-sprint-confetti-fall 1.2s ease-out forwards;
 }.calc-sprint .result-confetti span:nth-child(1) { left: 8%; background: #ff6b6b; animation-delay: 0.05s; }.calc-sprint .result-confetti span:nth-child(2) { left: 18%; background: #ffd93d; animation-delay: 0.12s; }.calc-sprint .result-confetti span:nth-child(3) { left: 28%; background: #6bcB77; animation-delay: 0.18s; }.calc-sprint .result-confetti span:nth-child(4) { left: 38%; background: #4d96ff; animation-delay: 0.06s; }.calc-sprint .result-confetti span:nth-child(5) { left: 48%; background: #845ec2; animation-delay: 0.22s; }.calc-sprint .result-confetti span:nth-child(6) { left: 58%; background: #ff9f1c; animation-delay: 0.1s; }.calc-sprint .result-confetti span:nth-child(7) { left: 68%; background: #00c2a8; animation-delay: 0.16s; }.calc-sprint .result-confetti span:nth-child(8) { left: 78%; background: #f72585; animation-delay: 0.2s; }.calc-sprint .result-confetti span:nth-child(9) { left: 88%; background: #4cc9f0; animation-delay: 0.08s; }.calc-sprint .result-confetti span:nth-child(10) { left: 24%; background: #ff8fab; animation-delay: 0.14s; }.calc-sprint .result-confetti span:nth-child(11) { left: 52%; background: #aacc00; animation-delay: 0.03s; }.calc-sprint .result-confetti span:nth-child(12) { left: 72%; background: #ffcad4; animation-delay: 0.19s; }
 
-@keyframes confetti-fall {
+@keyframes calc-sprint-confetti-fall {
   0% {
     opacity: 0;
     transform: translateY(-30px) rotate(0deg);

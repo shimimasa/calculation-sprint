@@ -1,5 +1,5 @@
 # ADR Acceptance Checklist (Manual Runner)
-- Timestamp: 2026-02-05T05:35:41+00:00
+- Timestamp: 2026-02-06T09:12:00+00:00
 - Overall: PASS
 
 ## ADR Status
@@ -8,17 +8,20 @@
 - ADR-003: 達成
 - ADR-004: 達成
 - ADR-005: 達成
+- ADR-006: 達成
 
 ## Checks
 - [PASS] S1 ADR-004 CSS selectors are fully scoped under .calc-sprint
 - [PASS] S2 ADR-004 index.html references scoped CSS only
 - [PASS] S3 ADR-004 legacy global CSS is removed from distribution
+- [PASS] S4 ADR-006 keyframes/property names are prefixed to avoid global collisions
 - [PASS] M1 ADR-002 profile selection is required on launch
 - [PASS] M2 ADR-002 storage keys are separated per profile
 - [PASS] M3 ADR-002 profile reset clears only targeted keys
 - [PASS] M4 ADR-001 next stage unlocks after result (markCleared)
 - [PASS] M5 ADR-003 action layer drives submit/back/next, Enter is shortcut, keypad is available
 - [PASS] M6 ADR-005 SSoT references and acceptance record updated
+- [PASS] M7 ADR-006 action contract supports Backspace/Delete and NumpadEnter
 
 ## Evidence
 ### S1 ADR-004 CSS selectors are fully scoped under .calc-sprint
@@ -37,6 +40,12 @@ index.html references styles/legacy/style.css: NO
 Status: PASS
 
 styles/legacy/ directory removed.
+
+### S4 ADR-006 keyframes/property names are prefixed to avoid global collisions
+Status: PASS
+
+1. Inspect styles/style.scoped.css for @keyframes/@property definitions.
+2. Confirm they are prefixed with calc-sprint-.
 
 ### M1 ADR-002 profile selection is required on launch
 Status: PASS
@@ -76,6 +85,13 @@ Status: PASS
 
 1. Confirm README links to spec/product-spec.md and spec/tech-spec.md.
 2. Confirm this acceptance record is the latest artifact.
+
+### M7 ADR-006 action contract supports Backspace/Delete and NumpadEnter
+Status: PASS
+
+1. On game screen, enter digits.
+2. Use Backspace/Delete to remove digits; confirm delete works and respects lock/time-up.
+3. Use NumpadEnter or Enter to submit; confirm it behaves as submit shortcut.
 
 ## Unresolved Issues
 - None
