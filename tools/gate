@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+node tools/gate-ci.js
+
+if command -v rg >/dev/null 2>&1; then
+  echo ""
+  echo "[gate] Optional local checks (rg)"
+  rg -n "TODO|FIXME" src || true
+else
+  echo "[gate] rg not found; skipping optional local checks."
+fi
