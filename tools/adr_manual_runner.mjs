@@ -449,6 +449,21 @@ const run = async () => {
     ].join('\n'),
   });
 
+  const gameScreenSource = await fs.readFile(resolve('src/screens/gameScreen.js'), 'utf8');
+  const hasNextAction = gameScreenSource.includes('ACTIONS.NEXT');
+  const hasNextHandler = gameScreenSource.includes('handleNextAction');
+  const hasNextSubmit = gameScreenSource.includes('submitAnswer');
+  results.push({
+    id: 'M6',
+    title: 'ADR-003 NEXT action is wired to submit in gameScreen',
+    pass: hasNextAction && hasNextHandler && hasNextSubmit,
+    details: [
+      `gameScreen references ACTIONS.NEXT: ${hasNextAction}`,
+      `gameScreen defines handleNextAction: ${hasNextHandler}`,
+      `gameScreen can submit (submitAnswer reference): ${hasNextSubmit}`,
+    ].join('\n'),
+  });
+
   const passAll = await renderReport(results, callLog);
   if (!passAll) {
     process.exitCode = 1;

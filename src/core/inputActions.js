@@ -32,7 +32,14 @@ const dispatch = (action, payload = {}) => {
   bucket.forEach((handler) => handler({ action, ...payload }));
 };
 
-const createKeyHandler = (keyMap = { Enter: ACTIONS.SUBMIT }) => (event) => {
+const createKeyHandler = (
+  keyMap = {
+    Enter: ACTIONS.SUBMIT,
+    ' ': ACTIONS.NEXT,
+    Spacebar: ACTIONS.NEXT,
+    ArrowRight: ACTIONS.NEXT,
+  },
+) => (event) => {
   const action = keyMap[event.key];
   if (!action) {
     return;
