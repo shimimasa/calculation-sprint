@@ -25,6 +25,7 @@ SSoT（正本）として、以後の参照は本ファイルを優先する（A
 - `index.html` は **必ず** `styles/style.scoped.css` を参照する（ADR-004）。
 - `styles/style.scoped.css` は `.calc-sprint` ルート配下へ閉じる。
 - **グローバルCSS（body/html/:root/*）は禁止**。ポータル統合で衝突するため、`styles/style.css` のようなグローバル侵食CSSは採用しない。
+- **@keyframes/@property は `calc-sprint-` プレフィックスで命名**し、アニメーションやカスタムプロパティの衝突を避ける（ADR-006）。
 
 ## 4. storage（名前空間 / プロファイル分離 / 移行）
 
@@ -37,7 +38,7 @@ SSoT（正本）として、以後の参照は本ファイルを優先する（A
 
 ## 5. 入力I/F（Action層）
 
-Action層は `src/core/inputActions.js` を正とし、画面は Action を購読して動く（ADR-003）。
+Action層は `src/core/inputActions.js` を正とし、画面は Action を購読して動く（ADR-003/006）。
 
 - `submit`: 回答確定（Enterはショートカット扱い）
 - `back`: 1文字削除（テンキーの⌫等）
@@ -48,8 +49,8 @@ Action層は `src/core/inputActions.js` を正とし、画面は Action を購�
 
 | Action | 意味 | 代表的な発火元 | 対象画面 | 無効条件（例） |
 | --- | --- | --- | --- | --- |
-| `submit` | 回答確定（前進アクション） | Enter / 確定ボタン | gameScreen | ロック中・時間切れ・未出題時 |
-| `back` | 1文字削除 | テンキーの⌫ / Backspace相当 | gameScreen | ロック中・時間切れ |
+| `submit` | 回答確定（前進アクション） | Enter / NumpadEnter / 確定ボタン | gameScreen | ロック中・時間切れ・未出題時 |
+| `back` | 1文字削除 | テンキーの⌫ / Backspace / Delete | gameScreen | ロック中・時間切れ |
 | `next` | 画面の「次へ」を示す抽象アクション（gameScreenでは`submit`相当） | Space / ArrowRight | gameScreen | ロック中・時間切れ・未出題時 |
 | `toggle_keypad` | オンスクリーンテンキーの表示切替 | テンキー切替ボタン | gameScreen | 画面非表示時 |
 

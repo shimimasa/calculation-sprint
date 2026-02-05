@@ -35,9 +35,12 @@ const dispatch = (action, payload = {}) => {
 const createKeyHandler = (
   keyMap = {
     Enter: ACTIONS.SUBMIT,
+    NumpadEnter: ACTIONS.SUBMIT,
     ' ': ACTIONS.NEXT,
     Spacebar: ACTIONS.NEXT,
     ArrowRight: ACTIONS.NEXT,
+    Backspace: ACTIONS.BACK,
+    Delete: ACTIONS.BACK,
   },
 ) => (event) => {
   const action = keyMap[event.key];
