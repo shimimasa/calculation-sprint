@@ -26,13 +26,13 @@
 - [PASS] M5 ADR-003 action layer drives submit/back/next, Enter is shortcut, keypad is available
 - [PASS] M6 ADR-005 SSoT references and acceptance record updated
 - [PASS] M7 ADR-006 action contract supports Backspace/Delete and NumpadEnter
-- [PENDING] G1 ADR-007 asset HTML/404 warnings are emitted once per URL (Not run)
-- [PENDING] G2 ADR-007 asset logs include basepath/rewrite hints (Not run)
-- [PENDING] G3 ADR-008 storage keys use calc-sprint::<profileId>::<storeName>.<version> (Not run)
-- [PENDING] G4 ADR-008 legacy keys are copied once to new namespace for default profile (Not run)
-- [PENDING] G5 ADR-009 screen events are registered via eventRegistry and cleared on exit (Not run)
-- [PENDING] G6 ADR-010 tools/gate runs lint/build/acceptance steps (Not run)
-- [PENDING] G7 ADR-010 CI runs tools/gate-ci (Not run)
+- [PENDING] G1 ADR-007 HTML誤配信時にURL単位で1回警告され、basepath推測ログが出る (Not run)
+- [PENDING] G2 ADR-007 404時にURL単位で1回警告される (Not run)
+- [PENDING] G3 ADR-008 storageキーがcalc-sprint::<profileId>::<storeName>.<version>で統一される (Not run)
+- [PENDING] G4 ADR-008 legacyがデフォルトプロファイルにコピー移行される (Not run)
+- [PENDING] G5 ADR-009 exit時にイベントがclearされ、重複登録が抑制される (Not run)
+- [PENDING] G6 ADR-010 tools/gateがローカルで完走する (Not run)
+- [PENDING] G7 ADR-010 CIでgate-ciが回る (Not run)
 
 ## Evidence
 ### S1 ADR-004 CSS selectors are fully scoped under .calc-sprint
