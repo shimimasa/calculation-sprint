@@ -1,0 +1,10 @@
+Run: 2026-02-05
+Browser: Playwright firefox (browser_tools)
+Base URL: http://127.0.0.1:8082/?test=1
+
+Result JSON:
+[{"id": "T1", "pass": true}, {"id": "T2", "pass": true}, {"id": "T3", "pass": true}, {"id": "T4", "pass": true}, {"id": "T5", "pass": true}, {"id": "T6", "pass": true}, {"id": "E1", "pass": true}, {"id": "E2", "pass": true}, {"id": "E3", "pass": true}, {"id": "E4", "pass": true}, {"id": "E5", "pass": true}]
+
+Notes:
+- ADR-002 checks used timeLimit=5 (test flag).
+- ADR-003 checks used timeLimit=20 (E1-E4) and timeLimit=5 (E5).
