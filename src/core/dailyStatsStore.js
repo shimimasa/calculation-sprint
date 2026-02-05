@@ -7,7 +7,7 @@ import {
   makeKey,
   resolveProfileId,
 } from './storageKeys.js';
-const LEGACY_STORAGE_KEY = LEGACY_KEYS.daily;
+const LEGACY_STORAGE_KEYS = LEGACY_KEYS.daily;
 const LEGACY_MIGRATION_KEY = LEGACY_MIGRATION_KEYS.daily;
 
 const DEFAULT_WRONG_BY_MODE = Object.freeze({
@@ -64,6 +64,16 @@ const writeToStorage = (storageKey, data) => {
   localStorage.setItem(storageKey, JSON.stringify(data));
 };
 
+const readLegacy = (storageKeys) => {
+  for (const storageKey of storageKeys) {
+    const legacy = readFromStorage(storageKey);
+    if (legacy) {
+      return legacy;
+    }
+  }
+  return null;
+};
+
 const readAll = (profileId) => {
   const resolvedProfileId = resolveProfileId(profileId);
   const storageKey = makeKey(STORE_NAMES.daily, resolvedProfileId);
@@ -72,7 +82,7 @@ const readAll = (profileId) => {
     return current;
   }
   if (resolvedProfileId === DEFAULT_PROFILE_ID && !localStorage.getItem(LEGACY_MIGRATION_KEY)) {
-    const legacy = readFromStorage(LEGACY_STORAGE_KEY);
+    const legacy = readLegacy(LEGACY_STORAGE_KEYS);
     if (legacy) {
       // ADR-004: Best-effort, non-destructive migration (copy only).
       writeToStorage(storageKey, legacy);

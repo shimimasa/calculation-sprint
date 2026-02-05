@@ -7,6 +7,7 @@ import todayRankStore from '../core/todayRankStore.js';
 import stageProgressStore from '../core/stageProgressStore.js';
 import { findStageById, getNextStage, isStageUnlocked } from '../features/stages.js';
 import audioManager from '../core/audioManager.js';
+import { createEventRegistry } from '../core/eventRegistry.js';
 
 const formatDateKey = (date) => {
   const year = date.getFullYear();
@@ -258,6 +259,7 @@ const resultScreen = {
       domRefs.screens.result.classList.remove('is-confetti');
     }
     uiRenderer.showScreen('result');
+    this.events = createEventRegistry('result');
     const isStageMode = gameState.playMode === 'stage' && gameState.selectedStageId;
     const currentStage = isStageMode ? findStageById(gameState.selectedStageId) : null;
     const progressBefore = stageProgressStore.getProgress();
@@ -706,57 +708,35 @@ const resultScreen = {
       screenManager.changeScreen('settings');
     };
 
-    domRefs.result.retryButton.addEventListener('click', this.handleRetry);
+    this.events.on(domRefs.result.retryButton, 'click', this.handleRetry);
     if (domRefs.result.reviewButton) {
-      domRefs.result.reviewButton.addEventListener('click', this.handleReview);
+      this.events.on(domRefs.result.reviewButton, 'click', this.handleReview);
     }
-    domRefs.result.backButton.addEventListener('click', this.handleBack);
+    this.events.on(domRefs.result.backButton, 'click', this.handleBack);
     if (domRefs.result.stageRetryButton) {
-      domRefs.result.stageRetryButton.addEventListener('click', this.handleStageRetry);
+      this.events.on(domRefs.result.stageRetryButton, 'click', this.handleStageRetry);
     }
     if (domRefs.result.stageNextButton) {
       const nextStage = currentStage ? getNextStage(currentStage.id) : null;
       const canGoNext = nextStage ? isStageUnlocked(nextStage, stageProgress) : false;
       domRefs.result.stageNextButton.hidden = !canGoNext;
-      domRefs.result.stageNextButton.addEventListener('click', this.handleStageNext);
+      this.events.on(domRefs.result.stageNextButton, 'click', this.handleStageNext);
     }
     if (domRefs.result.stageSelectButton) {
-      domRefs.result.stageSelectButton.addEventListener('click', this.handleStageSelect);
+      this.events.on(domRefs.result.stageSelectButton, 'click', this.handleStageSelect);
     }
     applyResultCtaPriority({ isStageMode: Boolean(currentStage), isClearedNow });
     if (domRefs.result.nextActionButton) {
-      domRefs.result.nextActionButton.addEventListener('click', this.handleNextAction);
+      this.events.on(domRefs.result.nextActionButton, 'click', this.handleNextAction);
     }
     if (domRefs.result.dailyResetButton) {
-      domRefs.result.dailyResetButton.addEventListener('click', this.handleDailyReset);
+      this.events.on(domRefs.result.dailyResetButton, 'click', this.handleDailyReset);
     }
   },
   render() {},
   exit() {
-    if (this.handleRetry) {
-      domRefs.result.retryButton.removeEventListener('click', this.handleRetry);
-    }
-    if (this.handleReview && domRefs.result.reviewButton) {
-      domRefs.result.reviewButton.removeEventListener('click', this.handleReview);
-    }
-    if (this.handleBack) {
-      domRefs.result.backButton.removeEventListener('click', this.handleBack);
-    }
-    if (this.handleStageRetry && domRefs.result.stageRetryButton) {
-      domRefs.result.stageRetryButton.removeEventListener('click', this.handleStageRetry);
-    }
-    if (this.handleStageNext && domRefs.result.stageNextButton) {
-      domRefs.result.stageNextButton.removeEventListener('click', this.handleStageNext);
-    }
-    if (this.handleStageSelect && domRefs.result.stageSelectButton) {
-      domRefs.result.stageSelectButton.removeEventListener('click', this.handleStageSelect);
-    }
-    if (this.handleNextAction && domRefs.result.nextActionButton) {
-      domRefs.result.nextActionButton.removeEventListener('click', this.handleNextAction);
-    }
-    if (this.handleDailyReset && domRefs.result.dailyResetButton) {
-      domRefs.result.dailyResetButton.removeEventListener('click', this.handleDailyReset);
-    }
+    this.events?.clear();
+    this.events = null;
     if (this.bestToastTimeout) {
       clearTimeout(this.bestToastTimeout);
       this.bestToastTimeout = null;

@@ -23,6 +23,10 @@
 
 - [adr-acceptance-latest.md](./spec/test-results/adr-acceptance-latest.md)
 
+## リリース前チェック
+
+- `./tools/gate`
+
 ## ADR
 
 - [spec/adr](./spec/adr/)

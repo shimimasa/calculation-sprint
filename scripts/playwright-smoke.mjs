@@ -19,7 +19,7 @@ const createScreenshots = async (browserType) => {
         lastPlayedStageId: 'w1-2',
         updatedAt: new Date().toISOString(),
       };
-      window.localStorage.setItem('calcSprint.stageProgress.v1', JSON.stringify(progress));
+      window.localStorage.setItem('calc-sprint::default::stageProgress.v1', JSON.stringify(progress));
       window.__debug.showStageSelect();
     });
     await page.waitForSelector('#stage-select-screen:not([hidden])');

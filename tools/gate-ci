@@ -25,7 +25,7 @@ const collectFiles = (dirPath, results) => {
 };
 
 const lintFiles = () => {
-  console.log('[gate] lint: node --check');
+  console.log('[gate-ci] lint: node --check');
   const files = [];
   for (const dir of TARGET_DIRS) {
     const fullDir = path.join(ROOT_DIR, dir);
@@ -40,11 +40,4 @@ const lintFiles = () => {
   }
 };
 
-const main = () => {
-  lintFiles();
-  console.log('[gate] build: static (no build step)');
-  console.log('[gate] acceptance: ./tools/adr-e2e');
-  execFileSync(path.join(ROOT_DIR, 'tools', 'adr-e2e'), { stdio: 'inherit' });
-};
-
-main();
+lintFiles();

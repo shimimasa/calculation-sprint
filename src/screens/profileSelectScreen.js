@@ -3,7 +3,8 @@ import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import audioManager from '../core/audioManager.js';
-import { LAST_PROFILE_ID_KEY } from '../core/storageKeys.js';
+import { LAST_PROFILE_ID_KEY, LEGACY_LAST_PROFILE_ID_KEYS } from '../core/storageKeys.js';
+import { createEventRegistry } from '../core/eventRegistry.js';
 
 const PROFILE_IDS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
@@ -12,12 +13,20 @@ const loadLastProfileId = () => {
   if (stored && PROFILE_IDS.includes(stored)) {
     return stored;
   }
+  for (const legacyKey of LEGACY_LAST_PROFILE_ID_KEYS) {
+    const legacy = window.localStorage.getItem(legacyKey);
+    if (legacy && PROFILE_IDS.includes(legacy)) {
+      window.localStorage.setItem(LAST_PROFILE_ID_KEY, legacy);
+      return legacy;
+    }
+  }
   return PROFILE_IDS[0];
 };
 
 const profileSelectScreen = {
   enter() {
     uiRenderer.showScreen('profile-select');
+    this.events = createEventRegistry('profile-select');
     this.selectedProfileId = loadLastProfileId();
     this.handleProfileClick = (event) => {
       const button = event.currentTarget;
@@ -37,9 +46,9 @@ const profileSelectScreen = {
       screenManager.changeScreen('title');
     };
     domRefs.profileSelect.buttons.forEach((button) => {
-      button.addEventListener('click', this.handleProfileClick);
+      this.events.on(button, 'click', this.handleProfileClick);
     });
-    domRefs.profileSelect.continueButton.addEventListener('click', this.handleContinue);
+    this.events.on(domRefs.profileSelect.continueButton, 'click', this.handleContinue);
     this.selectProfile(this.selectedProfileId);
   },
   selectProfile(profileId) {
@@ -53,14 +62,8 @@ const profileSelectScreen = {
   },
   render() {},
   exit() {
-    if (this.handleProfileClick) {
-      domRefs.profileSelect.buttons.forEach((button) => {
-        button.removeEventListener('click', this.handleProfileClick);
-      });
-    }
-    if (this.handleContinue) {
-      domRefs.profileSelect.continueButton.removeEventListener('click', this.handleContinue);
-    }
+    this.events?.clear();
+    this.events = null;
   },
 };
 

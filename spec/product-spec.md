@@ -1,7 +1,7 @@
 # Product Spec（SSoT）: 計算スプリント
 
 Status: SSoT（正本）
-Last updated: 2026-02-06
+Last updated: 2026-02-07
 
 ## 目的 / 成功条件
 
@@ -58,3 +58,7 @@ Last updated: 2026-02-06
 - `spec/adr/ADR-004.md`（サブパス配信/CSSスコープ/storage名前空間）
 - `spec/adr/ADR-005.md`（SSoT運用）
 - `spec/adr/ADR-006.md`（入力Action契約/CSS隠れグローバル排除/導線固定）
+- `spec/adr/ADR-007.md`（アセット/ルーティング診断ゲート）
+- `spec/adr/ADR-008.md`（ストレージ/プロファイル完全分離ゲート）
+- `spec/adr/ADR-009.md`（UIイベント一元化）
+- `spec/adr/ADR-010.md`（リリース/CI品質ゲート）

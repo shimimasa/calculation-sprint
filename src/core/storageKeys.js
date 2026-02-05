@@ -1,14 +1,19 @@
 import gameState from './gameState.js';
 
 // ADR-004, ADR-002 Phase0補修: Centralize storage key generation so Phase1 can inject profileId safely.
-export const STORAGE_NAMESPACE = 'portal.calcSprint';
+export const STORAGE_NAMESPACE = 'calc-sprint';
+const STORAGE_META_SCOPE = `${STORAGE_NAMESPACE}::meta`;
 export const DEFAULT_PROFILE_ID = 'default';
 export const DEFAULT_SCHEMA_VERSION = 'v1';
-export const LAST_PROFILE_ID_KEY = `${STORAGE_NAMESPACE}.lastProfileId`;
+export const LAST_PROFILE_ID_KEY = `${STORAGE_META_SCOPE}::last-profile`;
+export const LEGACY_LAST_PROFILE_ID_KEYS = Object.freeze([
+  'portal.calcSprint.lastProfileId',
+  'calcSprint.lastProfileId',
+]);
 
 // makeKey(storeName, profileId='default', version='v1')
 export const makeKey = (storeName, profileId = DEFAULT_PROFILE_ID, version = DEFAULT_SCHEMA_VERSION) => (
-  `${STORAGE_NAMESPACE}.${storeName}.${version}.p:${profileId}`
+  `${STORAGE_NAMESPACE}::${profileId}::${storeName}.${version}`
 );
 
 export const STORE_NAMES = Object.freeze({
@@ -18,15 +23,24 @@ export const STORE_NAMES = Object.freeze({
 });
 
 export const LEGACY_MIGRATION_KEYS = Object.freeze({
-  daily: `${STORAGE_NAMESPACE}.migration.${STORE_NAMES.daily}.${DEFAULT_SCHEMA_VERSION}`,
-  todayRankDistance: `${STORAGE_NAMESPACE}.migration.${STORE_NAMES.todayRankDistance}.${DEFAULT_SCHEMA_VERSION}`,
-  stageProgress: `${STORAGE_NAMESPACE}.migration.${STORE_NAMES.stageProgress}.${DEFAULT_SCHEMA_VERSION}`,
+  daily: `${STORAGE_META_SCOPE}::migration::${STORE_NAMES.daily}.${DEFAULT_SCHEMA_VERSION}`,
+  todayRankDistance: `${STORAGE_META_SCOPE}::migration::${STORE_NAMES.todayRankDistance}.${DEFAULT_SCHEMA_VERSION}`,
+  stageProgress: `${STORAGE_META_SCOPE}::migration::${STORE_NAMES.stageProgress}.${DEFAULT_SCHEMA_VERSION}`,
 });
 
 export const LEGACY_KEYS = Object.freeze({
-  daily: 'calcSprint.daily.v1',
-  todayRankDistance: 'calcSprint.rank.distance.today.v1',
-  stageProgress: 'calcSprint.stageProgress.v1',
+  daily: [
+    `portal.calcSprint.${STORE_NAMES.daily}.${DEFAULT_SCHEMA_VERSION}.p:${DEFAULT_PROFILE_ID}`,
+    `calcSprint.${STORE_NAMES.daily}.${DEFAULT_SCHEMA_VERSION}`,
+  ],
+  todayRankDistance: [
+    `portal.calcSprint.${STORE_NAMES.todayRankDistance}.${DEFAULT_SCHEMA_VERSION}.p:${DEFAULT_PROFILE_ID}`,
+    `calcSprint.${STORE_NAMES.todayRankDistance}.${DEFAULT_SCHEMA_VERSION}`,
+  ],
+  stageProgress: [
+    `portal.calcSprint.${STORE_NAMES.stageProgress}.${DEFAULT_SCHEMA_VERSION}.p:${DEFAULT_PROFILE_ID}`,
+    `calcSprint.${STORE_NAMES.stageProgress}.${DEFAULT_SCHEMA_VERSION}`,
+  ],
 });
 
 export const resolveProfileId = (profileId) => {
