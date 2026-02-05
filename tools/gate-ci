@@ -40,4 +40,26 @@ const lintFiles = () => {
   }
 };
 
+const readPackageJson = () => {
+  const pkgPath = path.join(ROOT_DIR, 'package.json');
+  try {
+    const raw = fs.readFileSync(pkgPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const maybeRunNpmTest = () => {
+  const pkg = readPackageJson();
+  const hasTestScript = Boolean(pkg?.scripts && typeof pkg.scripts.test === 'string' && pkg.scripts.test.length > 0);
+  if (!hasTestScript) {
+    console.warn('[gate-ci] skip: no "test" script in package.json');
+    return;
+  }
+  execFileSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['test'], { stdio: 'inherit' });
+};
+
 lintFiles();
+maybeRunNpmTest();

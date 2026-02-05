@@ -44,7 +44,11 @@ const main = () => {
   lintFiles();
   console.log('[gate] build: static (no build step)');
   console.log('[gate] acceptance: ./tools/adr-e2e');
-  execFileSync(path.join(ROOT_DIR, 'tools', 'adr-e2e'), { stdio: 'inherit' });
+  execFileSync(
+    process.execPath,
+    [path.join(ROOT_DIR, 'tools', 'adr_manual_runner.mjs')],
+    { stdio: 'inherit' },
+  );
 };
 
 main();
