@@ -64,7 +64,7 @@ const writeToStorage = (storageKey, data) => {
   localStorage.setItem(storageKey, JSON.stringify(data));
 };
 
-const readAll = (profileId = DEFAULT_PROFILE_ID) => {
+const readAll = (profileId) => {
   const resolvedProfileId = resolveProfileId(profileId);
   const storageKey = makeKey(STORE_NAMES.daily, resolvedProfileId);
   const current = readFromStorage(storageKey);
@@ -84,17 +84,17 @@ const readAll = (profileId = DEFAULT_PROFILE_ID) => {
 };
 
 const dailyStatsStore = {
-  getAll(profileId = DEFAULT_PROFILE_ID) {
+  getAll(profileId) {
     return readAll(profileId);
   },
-  get(dateKey, profileId = DEFAULT_PROFILE_ID) {
+  get(dateKey, profileId) {
     const all = readAll(profileId);
     if (!all[dateKey]) {
       return null;
     }
     return normalizeRecord(all[dateKey]);
   },
-  upsert(dateKey, sessionStats, profileId = DEFAULT_PROFILE_ID) {
+  upsert(dateKey, sessionStats, profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     const storageKey = makeKey(STORE_NAMES.daily, resolvedProfileId);
     const all = readAll(resolvedProfileId);
@@ -136,7 +136,7 @@ const dailyStatsStore = {
     writeToStorage(storageKey, all);
     return updated;
   },
-  reset(profileId = DEFAULT_PROFILE_ID) {
+  reset(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     localStorage.removeItem(makeKey(STORE_NAMES.daily, resolvedProfileId));
   },
