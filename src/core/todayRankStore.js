@@ -4,7 +4,7 @@ import {
   LEGACY_MIGRATION_KEYS,
   STORE_NAMES,
   DEFAULT_PROFILE_ID,
-  makeKey,
+  makeStoreKey,
   resolveProfileId,
 } from './storageKeys.js';
 const LEGACY_STORAGE_KEYS = LEGACY_KEYS.todayRankDistance;
@@ -53,7 +53,7 @@ const readLegacy = (storageKeys) => {
 const todayRankStore = {
   get(dateKey, profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
-    const storageKey = makeKey(STORE_NAMES.todayRankDistance, resolvedProfileId);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.todayRankDistance);
     let stored = readFromStorage(storageKey);
     if (!stored) {
       if (resolvedProfileId === DEFAULT_PROFILE_ID && !localStorage.getItem(LEGACY_MIGRATION_KEY)) {
@@ -73,7 +73,7 @@ const todayRankStore = {
   },
   update(dateKey, distanceM, profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
-    const storageKey = makeKey(STORE_NAMES.todayRankDistance, resolvedProfileId);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.todayRankDistance);
     const current = this.get(dateKey, resolvedProfileId);
     const nextTop = [...current.top, distanceM]
       .filter((value) => Number.isFinite(value) && value > 0)
@@ -86,7 +86,7 @@ const todayRankStore = {
   reset(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     try {
-      localStorage.removeItem(makeKey(STORE_NAMES.todayRankDistance, resolvedProfileId));
+      localStorage.removeItem(makeStoreKey(resolvedProfileId, STORE_NAMES.todayRankDistance));
     } catch (error) {
       // ignore storage failures
     }

@@ -11,9 +11,14 @@ export const LEGACY_LAST_PROFILE_ID_KEYS = Object.freeze([
   'calcSprint.lastProfileId',
 ]);
 
-// makeKey(storeName, profileId='default', version='v1')
-export const makeKey = (storeName, profileId = DEFAULT_PROFILE_ID, version = DEFAULT_SCHEMA_VERSION) => (
+// makeStoreKey(profileId='default', storeName, version='v1')
+export const makeStoreKey = (profileId = DEFAULT_PROFILE_ID, storeName, version = DEFAULT_SCHEMA_VERSION) => (
   `${STORAGE_NAMESPACE}::${profileId}::${storeName}.${version}`
+);
+
+// makeKey(storeName, profileId='default', version='v1') - legacy signature
+export const makeKey = (storeName, profileId = DEFAULT_PROFILE_ID, version = DEFAULT_SCHEMA_VERSION) => (
+  makeStoreKey(profileId, storeName, version)
 );
 
 export const STORE_NAMES = Object.freeze({

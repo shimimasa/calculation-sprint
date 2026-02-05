@@ -1,4 +1,5 @@
 const warnedUrls = new Set();
+const DEFAULT_HINT = 'SPA rewrite or basepath mismatch may be returning HTML for asset URLs.';
 
 const normalizeUrl = (url) => {
   try {
@@ -8,18 +9,32 @@ const normalizeUrl = (url) => {
   }
 };
 
-const buildContext = (url, response, context) => {
-  const resolvedUrl = normalizeUrl(url);
+const resolveBaseInfo = () => {
   const appPath = window.location.pathname;
   const baseHref = document.querySelector('base')?.getAttribute('href') ?? null;
+  const baseUrl = baseHref ? new URL(baseHref, window.location.href) : null;
+  const viteBase = import.meta?.env?.BASE_URL ?? null;
+  return {
+    appPath,
+    baseHref,
+    baseUrl: baseUrl?.href ?? null,
+    basePathGuess: baseUrl?.pathname ?? viteBase ?? null,
+    hasBaseTag: Boolean(baseHref),
+    viteBase,
+  };
+};
+
+const buildContext = (url, response, context, hint) => {
+  const resolvedUrl = normalizeUrl(url);
+  const baseInfo = resolveBaseInfo();
   return {
     requestedUrl: resolvedUrl,
     status: response?.status ?? null,
     contentType: response?.headers?.get('content-type') ?? null,
-    appPath,
-    baseHref,
+    ...baseInfo,
     context: context ?? null,
-    hint: 'If assets return HTML or 404, check basepath and rewrite rules (SPA fallback may be responding).',
+    hint: hint || DEFAULT_HINT,
+    rewriteNote: 'If assets return HTML, an SPA fallback rewrite may be responding to asset URLs.',
   };
 };
 
@@ -32,16 +47,16 @@ const warnOnce = (url, message, details) => {
   console.warn(message, details);
 };
 
-const warnIfHtmlAssetResponse = (url, response, context) => {
+const warnIfHtmlAssetResponse = (url, { response, context, hint } = {}) => {
   const contentType = response?.headers?.get('content-type') ?? '';
   if (contentType.toLowerCase().includes('text/html')) {
-    warnOnce(url, '[asset] HTML response detected for asset URL.', buildContext(url, response, context));
+    warnOnce(url, '[asset] HTML response detected for asset URL.', buildContext(url, response, context, hint));
   }
 };
 
-const warnIfMissingAssetResponse = (url, response, context) => {
+const warnIf404 = (url, { response, context, hint } = {}) => {
   if (response?.status === 404) {
-    warnOnce(url, '[asset] 404 detected for asset URL.', buildContext(url, response, context));
+    warnOnce(url, '[asset] 404 detected for asset URL.', buildContext(url, response, context, hint));
   }
 };
 
@@ -58,8 +73,8 @@ const diagnoseAssetResponse = async (url, context) => {
     if (response.status === 405 || response.status === 501) {
       response = await fetch(resolvedUrl, { method: 'GET', cache: 'no-store' });
     }
-    warnIfHtmlAssetResponse(resolvedUrl, response, context);
-    warnIfMissingAssetResponse(resolvedUrl, response, context);
+    warnIfHtmlAssetResponse(resolvedUrl, { response, context });
+    warnIf404(resolvedUrl, { response, context });
   } catch (error) {
     warnOnce(resolvedUrl, '[asset] Request failed for asset URL.', {
       requestedUrl: resolvedUrl,
@@ -70,4 +85,4 @@ const diagnoseAssetResponse = async (url, context) => {
   }
 };
 
-export { diagnoseAssetResponse, warnIfHtmlAssetResponse, warnIfMissingAssetResponse };
+export { diagnoseAssetResponse, warnIfHtmlAssetResponse, warnIf404 };

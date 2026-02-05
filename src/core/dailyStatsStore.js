@@ -4,7 +4,7 @@ import {
   LEGACY_MIGRATION_KEYS,
   STORE_NAMES,
   DEFAULT_PROFILE_ID,
-  makeKey,
+  makeStoreKey,
   resolveProfileId,
 } from './storageKeys.js';
 const LEGACY_STORAGE_KEYS = LEGACY_KEYS.daily;
@@ -76,7 +76,7 @@ const readLegacy = (storageKeys) => {
 
 const readAll = (profileId) => {
   const resolvedProfileId = resolveProfileId(profileId);
-  const storageKey = makeKey(STORE_NAMES.daily, resolvedProfileId);
+  const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.daily);
   const current = readFromStorage(storageKey);
   if (current) {
     return current;
@@ -106,7 +106,7 @@ const dailyStatsStore = {
   },
   upsert(dateKey, sessionStats, profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
-    const storageKey = makeKey(STORE_NAMES.daily, resolvedProfileId);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.daily);
     const all = readAll(resolvedProfileId);
     const current = normalizeRecord(all[dateKey]);
     const wrongByMode = {
@@ -148,7 +148,7 @@ const dailyStatsStore = {
   },
   reset(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
-    localStorage.removeItem(makeKey(STORE_NAMES.daily, resolvedProfileId));
+    localStorage.removeItem(makeStoreKey(resolvedProfileId, STORE_NAMES.daily));
   },
 };
 

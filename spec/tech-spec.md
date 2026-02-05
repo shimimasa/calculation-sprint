@@ -13,7 +13,7 @@ SSoT（正本）として、以後の参照は本ファイルを優先する（A
 
 - アセット URL で `text/html` が返った場合は URL ごとに 1 回だけ warn する。
 - 404 も URL ごとに 1 回だけ warn する。
-- ログには `requestedUrl` / `status` / `contentType` / `appPath` を含め、basepath/rewrites を疑えるヒントを出す。
+- ログには `requestedUrl` / `status` / `contentType` / `appPath` / `baseHref` / `viteBase` を含め、basepath/rewrites を疑えるヒントを出す。
 
 ## 2. 起動（正本）
 
@@ -65,7 +65,7 @@ Action層は `src/core/inputActions.js` を正とし、画面は Action を購�
 ### 5.2 画面イベントの登録規約（ADR-009）
 
 - 画面イベントは `src/core/eventRegistry.js` に集約し、重複登録を防ぐ。
-- 画面 exit 時に `events.clear()` を必ず呼ぶ。
+- 画面 exit 時に `events.clear()` を必ず呼ぶ。必要に応じて `clearTarget`/`clearAll` を使う。
 
 ## 6. Debug / Test（実装と一致する名称のみ）
 

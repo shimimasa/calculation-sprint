@@ -4,7 +4,7 @@ import {
   LEGACY_MIGRATION_KEYS,
   STORE_NAMES,
   DEFAULT_PROFILE_ID,
-  makeKey,
+  makeStoreKey,
   resolveProfileId,
 } from './storageKeys.js';
 const LEGACY_STORAGE_KEYS = LEGACY_KEYS.stageProgress;
@@ -58,7 +58,7 @@ const readLegacyRaw = (storageKeys) => {
 const stageProgressStore = {
   getProgress(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
-    const storageKey = makeKey(STORE_NAMES.stageProgress, resolvedProfileId);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.stageProgress);
     try {
       const raw = window.localStorage.getItem(storageKey);
       const parsed = parseProgress(raw);
@@ -81,7 +81,7 @@ const stageProgressStore = {
       return;
     }
     const resolvedProfileId = resolveProfileId(profileId);
-    const storageKey = makeKey(STORE_NAMES.stageProgress, resolvedProfileId);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.stageProgress);
     const progress = this.getProgress(resolvedProfileId);
     const clearedStageIds = progress.clearedStageIds.includes(stageId)
       ? progress.clearedStageIds
@@ -98,7 +98,7 @@ const stageProgressStore = {
       return;
     }
     const resolvedProfileId = resolveProfileId(profileId);
-    const storageKey = makeKey(STORE_NAMES.stageProgress, resolvedProfileId);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.stageProgress);
     const progress = this.getProgress(resolvedProfileId);
     const updated = {
       ...progress,
@@ -117,7 +117,7 @@ const stageProgressStore = {
   reset(profileId) {
     try {
       const resolvedProfileId = resolveProfileId(profileId);
-      window.localStorage.removeItem(makeKey(STORE_NAMES.stageProgress, resolvedProfileId));
+      window.localStorage.removeItem(makeStoreKey(resolvedProfileId, STORE_NAMES.stageProgress));
     } catch (error) {
       // ignore storage failures
     }
