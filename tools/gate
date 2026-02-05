@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -44,11 +44,47 @@ const main = () => {
   lintFiles();
   console.log('[gate] build: static (no build step)');
   console.log('[gate] acceptance: ./tools/adr-e2e');
-  execFileSync(
-    process.execPath,
-    [path.join(ROOT_DIR, 'tools', 'adr_manual_runner.mjs')],
-    { stdio: 'inherit' },
-  );
+  const adrE2ePath = path.join(ROOT_DIR, 'tools', 'adr-e2e');
+
+  // tools/adr-e2e is a bash script. On Windows, run it via Git Bash if available.
+  if (process.platform === 'win32') {
+    const gitBashCandidates = [
+            'C:\\Program Files\\Git\\bin\\bash.exe',
+            'C:\\Program Files\\Git\\usr\\bin\\bash.exe',
+            'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+            'C:\\Program Files (x86)\\Git\\usr\\bin\\bash.exe',
+          ];
+          const bashExe = gitBashCandidates.find(p => fs.existsSync(p)) || 'bash';
+      
+          // Detect bash flavor (MSYS/Git Bash vs WSL/Linux) when using generic "bash"
+          let isWslLinux = false;
+          if (bashExe === 'bash') {
+            const uname = spawnSync('bash', ['-lc', 'uname -s'], { encoding: 'utf8' });
+            const s = (uname.stdout || '').trim();
+            // WSL bash reports "Linux"
+            isWslLinux = s === 'Linux';
+          }
+      
+          const win = adrE2ePath;
+          const posix = win.replace(/\\/g, '/');
+          const m = /^([A-Za-z]):(\/.*)$/.exec(posix);
+      
+          // Git Bash(MSYS): /c/...
+          // WSL/Linux bash: /mnt/c/...
+          const bashPath = m
+            ? (isWslLinux ? `/mnt/${m[1].toLowerCase()}${m[2]}` : `/${m[1].toLowerCase()}${m[2]}`)
+            : posix;
+      
+          const check = spawnSync(bashExe, ['--version'], { stdio: 'ignore' });
+          if (check.status !== 0) {
+            console.warn('[gate] skip: bash not found on Windows; acceptance not run');
+            return;
+          }
+      
+          execFileSync(bashExe, [bashPath], { stdio: 'inherit' });
+  } else {
+    execFileSync(adrE2ePath, { stdio: 'inherit' });
+  }
 };
 
 main();

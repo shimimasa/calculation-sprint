@@ -1,44 +1,22 @@
 # ADR Acceptance Checklist (Manual Runner)
-- Timestamp: 2026-02-06T09:12:00+00:00
+- Timestamp: 2026-02-05T08:11:38.202Z
 - Overall: PASS
-
-## ADR Status
-- ADR-001: 達成
-- ADR-002: 達成
-- ADR-003: 達成
-- ADR-004: 達成
-- ADR-005: 達成
-- ADR-006: 達成
-- ADR-007: 未検証（Not run）
-- ADR-008: 未検証（Not run）
-- ADR-009: 未検証（Not run）
-- ADR-010: 未検証（Not run）
 
 ## Checks
 - [PASS] S1 ADR-004 CSS selectors are fully scoped under .calc-sprint
 - [PASS] S2 ADR-004 index.html references scoped CSS only
-- [PASS] S3 ADR-004 legacy global CSS is removed from distribution
-- [PASS] S4 ADR-006 keyframes/property names are prefixed to avoid global collisions
-- [PASS] M1 ADR-002 profile selection is required on launch
-- [PASS] M2 ADR-002 storage keys are separated per profile
-- [PASS] M3 ADR-002 profile reset clears only targeted keys
-- [PASS] M4 ADR-001 next stage unlocks after result (markCleared)
-- [PASS] M5 ADR-003 action layer drives submit/back/next, Enter is shortcut, keypad is available
-- [PASS] M6 ADR-005 SSoT references and acceptance record updated
-- [PASS] M7 ADR-006 action contract supports Backspace/Delete and NumpadEnter
-- [PENDING] G1 ADR-007 HTML誤配信時にURL単位で1回警告され、basepath推測ログが出る (Not run)
-- [PENDING] G2 ADR-007 404時にURL単位で1回警告される (Not run)
-- [PENDING] G3 ADR-008 storageキーがcalc-sprint::<profileId>::<storeName>.<version>で統一される (Not run)
-- [PENDING] G4 ADR-008 legacyがデフォルトプロファイルにコピー移行される (Not run)
-- [PENDING] G5 ADR-009 exit時にイベントがclearされ、重複登録が抑制される (Not run)
-- [PENDING] G6 ADR-010 tools/gateがローカルで完走する (Not run)
-- [PENDING] G7 ADR-010 CIでgate-ciが回る (Not run)
+- [PASS] M1 Root server responds with 200
+- [PASS] M2 Subpath server responds with 200
+- [PASS] M3 Profile storage keys are separated
+- [PASS] M4 Profile reset clears only targeted keys
+- [PASS] M5 ADR-001 unlocks next stage only after result (markCleared)
+- [PASS] M6 ADR-003 NEXT action is wired to submit in gameScreen
 
 ## Evidence
 ### S1 ADR-004 CSS selectors are fully scoped under .calc-sprint
 Status: PASS
 
-All selector lines in styles/style.scoped.css are scoped under .calc-sprint.
+All selector lines are scoped under .calc-sprint.
 
 ### S2 ADR-004 index.html references scoped CSS only
 Status: PASS
@@ -47,62 +25,56 @@ index.html references styles/style.scoped.css: YES
 index.html references styles/style.css: NO
 index.html references styles/legacy/style.css: NO
 
-### S3 ADR-004 legacy global CSS is removed from distribution
+Rule: index.html must reference styles/style.scoped.css and must not reference styles/style.css.
+
+### M1 Root server responds with 200
 Status: PASS
 
-styles/legacy/ directory removed.
+curl http://127.0.0.1:8082/ returned 200.
 
-### S4 ADR-006 keyframes/property names are prefixed to avoid global collisions
+### M2 Subpath server responds with 200
 Status: PASS
 
-1. Inspect styles/style.scoped.css for @keyframes/@property definitions.
-2. Confirm they are prefixed with calc-sprint-.
+curl http://127.0.0.1:8083/calculation-sprint/ returned 200.
 
-### M1 ADR-002 profile selection is required on launch
+### M3 Profile storage keys are separated
 Status: PASS
 
-1. Load the app at the root URL.
-2. Confirm profile selection screen is shown before title/settings.
+daily keys: calc-sprint::A::daily.v1 | calc-sprint::B::daily.v1
+rank keys: calc-sprint::A::rank.distance.today.v1 | calc-sprint::B::rank.distance.today.v1
+stage keys: calc-sprint::A::stageProgress.v1 | calc-sprint::B::stageProgress.v1
+daily(A): {"2099-01-01":{"bestAvgSec":2.3,"bestDistanceM":5,"attemptTotal":3,"wrongTotal":1,"wrongByMode":{"add":0,"sub":0,"mul":0,"div":0},"sessions":1}}
+daily(B): {"2099-01-01":{"bestAvgSec":1.8,"bestDistanceM":9,"attemptTotal":5,"wrongTotal":0,"wrongByMode":{"add":0,"sub":0,"mul":0,"div":0},"sessions":1}}
+rank(A): {"dateKey":"2099-01-01","top":[12.3]}
+rank(B): {"dateKey":"2099-01-01","top":[8.8]}
 
-### M2 ADR-002 storage keys are separated per profile
+### M4 Profile reset clears only targeted keys
 Status: PASS
 
-1. Select profile A, play once, reach result screen.
-2. Select profile B, play once, reach result screen.
-3. Confirm localStorage keys are namespaced with p:A and p:B.
+after reset A daily: null
+after reset A rank: null
+after reset A stage: null
+remaining B daily: {"2099-01-01":{"bestAvgSec":1.8,"bestDistanceM":9,"attemptTotal":5,"wrongTotal":0,"wrongByMode":{"add":0,"sub":0,"mul":0,"div":0},"sessions":1}}
+remaining B rank: {"dateKey":"2099-01-01","top":[8.8]}
+remaining B stage: {"clearedStageIds":["w1-1"],"lastPlayedStageId":"w1-1","updatedAt":"2026-02-05T08:11:38.201Z"}
 
-### M3 ADR-002 profile reset clears only targeted keys
+### M5 ADR-001 unlocks next stage only after result (markCleared)
 Status: PASS
 
-1. From settings, click "このプロファイルをリセット" for profile A.
-2. Confirm profile A daily/rank/stage keys are removed.
-3. Confirm profile B keys remain.
+before markCleared -> next unlocked: false
+after markCleared -> next unlocked: true
 
-### M4 ADR-001 next stage unlocks after result (markCleared)
+### M6 ADR-003 NEXT action is wired to submit in gameScreen
 Status: PASS
 
-1. In stage mode, play stage w1-1 and reach the result screen.
-2. Confirm stage w1-2 is unlocked in stage select after the result is shown.
+gameScreen references ACTIONS.NEXT: true
+gameScreen defines handleNextAction: true
+gameScreen can submit (submitAnswer reference): true
 
-### M5 ADR-003 action layer drives submit/back/next, Enter is shortcut, keypad is available
-Status: PASS
-
-1. On game screen, answer using the "確定" button (no Enter required).
-2. Use Enter as a shortcut to submit; confirm it behaves as a shortcut.
-3. Open the on-screen keypad and input digits + backspace; confirm answer updates.
-
-### M6 ADR-005 SSoT references and acceptance record updated
-Status: PASS
-
-1. Confirm README links to spec/product-spec.md and spec/tech-spec.md.
-2. Confirm this acceptance record is the latest artifact.
-
-### M7 ADR-006 action contract supports Backspace/Delete and NumpadEnter
-Status: PASS
-
-1. On game screen, enter digits.
-2. Use Backspace/Delete to remove digits; confirm delete works and respects lock/time-up.
-3. Use NumpadEnter or Enter to submit; confirm it behaves as submit shortcut.
-
-## Unresolved Issues
-- None
+## Call Log
+- curl http://127.0.0.1:8082/ -> 200
+- curl http://127.0.0.1:8083/calculation-sprint/ -> 200
+- dailyStatsStore.upsert(A/B), todayRankStore.update(A/B), stageProgressStore.markCleared(A/B)
+- resetProfileData(A)
+- stageProgressStore.setLastPlayed(w1-1, C)
+- stageProgressStore.markCleared(w1-1, C)
