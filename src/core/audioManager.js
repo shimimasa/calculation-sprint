@@ -29,6 +29,28 @@ const SFX_URLS = {
 const SILENT_WAV_DATA_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const warnedUnknownBgmIds = new Set();
+const warnedUnknownSfxIds = new Set();
+const warnUnknownBgmId = (id) => {
+  if (!id || BGM_URLS[id]) {
+    return;
+  }
+  if (warnedUnknownBgmIds.has(id)) {
+    return;
+  }
+  warnedUnknownBgmIds.add(id);
+  console.warn(`[audio] unknown bgmId "${id}" -> fallback to bgm_free`);
+};
+const warnUnknownSfxId = (id) => {
+  if (!id || SFX_URLS[id]) {
+    return;
+  }
+  if (warnedUnknownSfxIds.has(id)) {
+    return;
+  }
+  warnedUnknownSfxIds.add(id);
+  console.warn(`[audio] unknown sfxId "${id}" -> ignored`);
+};
 const resolveBgmId = (id) => {
   if (!id) {
     return null;
@@ -134,6 +156,7 @@ class AudioManager {
   }
 
   setBgm(id, opts = {}) {
+    warnUnknownBgmId(id);
     const resolvedId = resolveBgmId(id);
     if (resolvedId === this.currentBgmId) {
       return;
@@ -230,6 +253,7 @@ class AudioManager {
     const fadeOutMs = opts.fadeOutMs ?? 0;
     const fadeInMs = opts.fadeInMs ?? 0;
 
+    warnUnknownBgmId(nextId);
     const resolvedId = resolveBgmId(nextId);
     if (resolvedId === this.currentBgmId && resolvedId) {
       return;
@@ -302,6 +326,7 @@ class AudioManager {
     }
     const url = SFX_URLS[id];
     if (!url) {
+      warnUnknownSfxId(id);
       return;
     }
     const audio = new Audio(url);

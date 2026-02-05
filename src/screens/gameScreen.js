@@ -20,6 +20,7 @@ const BG_NEAR_SPEED_FACTOR = 1.1;
 const BG_BOOST_DURATION_MS = 400; // 300-500ms window for noticeable boost without overstaying.
 const BG_BOOST_NEAR_DELTA = 0.3; // Near layer needs stronger bump to feel acceleration.
 const BG_BOOST_FAR_DELTA = 0.25; // Far layer bump kept subtle to avoid seam emphasis.
+const COUNTDOWN_SFX_THRESHOLDS = Object.freeze([10, 5, 3, 2, 1]);
 const EFFECT_BY_LEVEL = {
   0: { glow: 0.8, line: 0.9, boost: 0.95 },
   1: { glow: 1.0, line: 1.0, boost: 1.0 },
@@ -415,13 +416,16 @@ const gameScreen = {
     this.stumbleTimeoutId = timeoutIds;
   },
   startTimer() {
-    this.hasCountdownSfxPlayed = false;
+    this.countdownSfxFired = new Set();
     timer.start(
       gameState.timeLimit,
       (timeLeft) => {
         gameState.timeLeft = timeLeft;
-        if (!gameState.isReviewMode && timeLeft <= 10 && !this.hasCountdownSfxPlayed) {
-          this.hasCountdownSfxPlayed = true;
+        if (gameState.isReviewMode) {
+          return;
+        }
+        if (COUNTDOWN_SFX_THRESHOLDS.includes(timeLeft) && !this.countdownSfxFired.has(timeLeft)) {
+          this.countdownSfxFired.add(timeLeft);
           audioManager.playSfx('sfx_countdown');
         }
       },
