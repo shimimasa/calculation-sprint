@@ -292,12 +292,12 @@ const resultScreen = {
     }
     if (domRefs.result.stageStatus) {
       domRefs.result.stageStatus.textContent = currentStage
-        ? (isClearedNow ? 'ステージクリア！' : 'もうすこしでクリア！')
+        ? (isClearedNow ? 'ステージプレイ完了！' : 'ステージ記録を保存！')
         : '';
     }
     if (domRefs.result.stageMessage) {
       domRefs.result.stageMessage.textContent = currentStage
-        ? (isClearedNow ? 'やったね！この調子で次も挑戦しよう。' : 'あとちょっと！つぎこそクリアを目指そう。')
+        ? (isClearedNow ? '今回の記録を確認して、次の課題へ進もう。' : '今回はここまで。記録を残して次の課題へ。')
         : '';
     }
     if (domRefs.result.stageUnlock) {
