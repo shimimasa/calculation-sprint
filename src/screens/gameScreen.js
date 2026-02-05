@@ -177,7 +177,6 @@ const gameScreen = {
       if (stage) {
         applyStageSettings(stage, gameState);
         gameState.selectedStage = stage;
-        stageProgressStore.setLastPlayed(stage.id);
       } else {
         gameState.playMode = 'free';
         gameState.selectedStageId = null;
