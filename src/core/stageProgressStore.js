@@ -46,7 +46,7 @@ const saveProgress = (storageKey, progress) => {
 };
 
 const stageProgressStore = {
-  getProgress(profileId = DEFAULT_PROFILE_ID) {
+  getProgress(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     const storageKey = makeKey(STORE_NAMES.stageProgress, resolvedProfileId);
     try {
@@ -66,7 +66,7 @@ const stageProgressStore = {
       return buildDefaultProgress();
     }
   },
-  markCleared(stageId, profileId = DEFAULT_PROFILE_ID) {
+  markCleared(stageId, profileId) {
     if (!stageId) {
       return;
     }
@@ -83,7 +83,7 @@ const stageProgressStore = {
     };
     saveProgress(storageKey, updated);
   },
-  setLastPlayed(stageId, profileId = DEFAULT_PROFILE_ID) {
+  setLastPlayed(stageId, profileId) {
     if (!stageId) {
       return;
     }
@@ -97,14 +97,14 @@ const stageProgressStore = {
     };
     saveProgress(storageKey, updated);
   },
-  isCleared(stageId, profileId = DEFAULT_PROFILE_ID) {
+  isCleared(stageId, profileId) {
     if (!stageId) {
       return false;
     }
     const progress = this.getProgress(resolveProfileId(profileId));
     return progress.clearedStageIds.includes(stageId);
   },
-  reset(profileId = DEFAULT_PROFILE_ID) {
+  reset(profileId) {
     try {
       const resolvedProfileId = resolveProfileId(profileId);
       window.localStorage.removeItem(makeKey(STORE_NAMES.stageProgress, resolvedProfileId));

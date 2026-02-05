@@ -41,7 +41,7 @@ const writeToStorage = (storageKey, data) => {
 };
 
 const todayRankStore = {
-  get(dateKey, profileId = DEFAULT_PROFILE_ID) {
+  get(dateKey, profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     const storageKey = makeKey(STORE_NAMES.todayRankDistance, resolvedProfileId);
     let stored = readFromStorage(storageKey);
@@ -61,7 +61,7 @@ const todayRankStore = {
     }
     return { dateKey, top: stored.top };
   },
-  update(dateKey, distanceM, profileId = DEFAULT_PROFILE_ID) {
+  update(dateKey, distanceM, profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     const storageKey = makeKey(STORE_NAMES.todayRankDistance, resolvedProfileId);
     const current = this.get(dateKey, resolvedProfileId);
@@ -73,7 +73,7 @@ const todayRankStore = {
     writeToStorage(storageKey, next);
     return next;
   },
-  reset(profileId = DEFAULT_PROFILE_ID) {
+  reset(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     try {
       localStorage.removeItem(makeKey(STORE_NAMES.todayRankDistance, resolvedProfileId));
