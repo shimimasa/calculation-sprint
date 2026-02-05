@@ -1140,6 +1140,52 @@ body {
   color: #e74c3c;
 }
 
+.game-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.game-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.game-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
+  gap: 10px;
+  width: min(320px, 90vw);
+  margin: 0 auto;
+}
+
+.game-keypad .keypad-button {
+  font-size: 20px;
+  padding: 10px 0;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 103, 255, 0.2);
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow: 0 8px 16px rgba(29, 36, 51, 0.12);
+}
+
+.game-keypad .keypad-button:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.game-keypad .keypad-button--wide {
+  grid-column: span 2;
+}
+
+.game-keypad .keypad-button--action {
+  background: #f4f6ff;
+}
+
 .run-world {
   position: relative;
   height: 100%;

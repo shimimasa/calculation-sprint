@@ -803,6 +803,38 @@
   color: #2ecc71;
 }.calc-sprint .feedback.is-wrong {
   color: #e74c3c;
+}.calc-sprint .game-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}.calc-sprint .game-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}.calc-sprint .game-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
+  gap: 10px;
+  width: min(320px, 90vw);
+  margin: 0 auto;
+}.calc-sprint .game-keypad .keypad-button {
+  font-size: 20px;
+  padding: 10px 0;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 103, 255, 0.2);
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow: 0 8px 16px rgba(29, 36, 51, 0.12);
+}.calc-sprint .game-keypad .keypad-button:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}.calc-sprint .game-keypad .keypad-button--wide {
+  grid-column: span 2;
+}.calc-sprint .game-keypad .keypad-button--action {
+  background: #f4f6ff;
 }.calc-sprint .run-world {
   position: relative;
   height: 100%;

@@ -8,6 +8,7 @@ import buildReviewSummary from '../core/reviewSummary.js';
 import stageProgressStore from '../core/stageProgressStore.js';
 import { applyStageSettings, findStageById } from '../features/stages.js';
 import audioManager from '../core/audioManager.js';
+import inputActions from '../core/inputActions.js';
 
 const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
@@ -118,6 +119,57 @@ const gameScreen = {
     domRefs.game.runWorld?.style.setProperty('--world-brightness', tuneValue(base.brightness));
     domRefs.game.runWorld?.style.setProperty('--world-clarity', tuneValue(base.clarity));
   },
+  isScreenActive() {
+    return Boolean(domRefs.screens.game?.classList.contains('is-active'));
+  },
+  setLocked(nextLocked) {
+    this.isLocked = nextLocked;
+    if (domRefs.game.submitButton) {
+      domRefs.game.submitButton.disabled = nextLocked;
+      domRefs.game.submitButton.setAttribute('aria-disabled', String(nextLocked));
+    }
+    if (domRefs.game.keypadButtons) {
+      domRefs.game.keypadButtons.forEach((button) => {
+        button.disabled = nextLocked;
+        button.setAttribute('aria-disabled', String(nextLocked));
+      });
+    }
+  },
+  canAcceptInput() {
+    return this.isScreenActive() && !this.isLocked && gameState.timeLeft > 0;
+  },
+  canSubmit() {
+    return this.canAcceptInput() && Boolean(gameState.currentQuestion);
+  },
+  toggleKeypad() {
+    const keypad = domRefs.game.keypad;
+    if (!keypad) {
+      return;
+    }
+    keypad.hidden = !keypad.hidden;
+    keypad.setAttribute('aria-hidden', String(keypad.hidden));
+    domRefs.game.keypadToggle?.setAttribute('aria-expanded', String(!keypad.hidden));
+  },
+  appendKeypadDigit(digit) {
+    if (!this.canAcceptInput()) {
+      return;
+    }
+    if (!domRefs.game.answerInput) {
+      return;
+    }
+    domRefs.game.answerInput.focus();
+    domRefs.game.answerInput.value = `${domRefs.game.answerInput.value}${digit}`;
+  },
+  handleBackspace() {
+    if (!this.canAcceptInput()) {
+      return;
+    }
+    if (!domRefs.game.answerInput) {
+      return;
+    }
+    domRefs.game.answerInput.focus();
+    domRefs.game.answerInput.value = domRefs.game.answerInput.value.slice(0, -1);
+  },
   enter() {
     uiRenderer.showScreen('game');
     if (gameState.playMode === 'stage') {
@@ -168,7 +220,7 @@ const gameScreen = {
     uiRenderer.clearFeedback();
     this.feedbackTimeoutId = null;
     this.effectTimeoutIds = [];
-    this.isLocked = false;
+    this.setLocked(false);
     this.bgOffsetFarPx = 0;
     this.bgOffsetNearPx = 0;
     this.bgBoostRemainingMs = 0;
@@ -181,17 +233,62 @@ const gameScreen = {
       : false;
     this.applyWorldTuning();
 
-    this.handleKeyDown = (event) => {
-      if (event.key !== 'Enter') {
+    if (domRefs.game.keypad) {
+      domRefs.game.keypad.hidden = true;
+      domRefs.game.keypad.setAttribute('aria-hidden', 'true');
+    }
+    domRefs.game.keypadToggle?.setAttribute('aria-expanded', 'false');
+
+    this.handleSubmitAction = () => {
+      if (!this.canSubmit()) {
         return;
       }
       this.submitAnswer();
     };
+    this.handleBackAction = () => {
+      this.handleBackspace();
+    };
+    this.handleToggleKeypadAction = () => {
+      if (!this.isScreenActive()) {
+        return;
+      }
+      this.toggleKeypad();
+    };
 
-    domRefs.game.answerInput.addEventListener('keydown', this.handleKeyDown);
+    inputActions.on(inputActions.ACTIONS.SUBMIT, this.handleSubmitAction);
+    inputActions.on(inputActions.ACTIONS.BACK, this.handleBackAction);
+    inputActions.on(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
+
+    this.handleKeyDown = inputActions.createKeyHandler();
+    domRefs.game.answerInput?.addEventListener('keydown', this.handleKeyDown);
+
+    this.handleSubmitClick = () => {
+      inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
+    };
+    domRefs.game.submitButton?.addEventListener('click', this.handleSubmitClick);
+
+    this.handleKeypadToggleClick = () => {
+      inputActions.dispatch(inputActions.ACTIONS.TOGGLE_KEYPAD, { source: 'button' });
+    };
+    domRefs.game.keypadToggle?.addEventListener('click', this.handleKeypadToggleClick);
+
+    this.handleKeypadClick = (event) => {
+      const button = event.target.closest('[data-keypad-key]');
+      if (!button || button.disabled) {
+        return;
+      }
+      const key = button.dataset.keypadKey;
+      if (key === 'back') {
+        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keypad' });
+        return;
+      }
+      this.appendKeypadDigit(key);
+    };
+    domRefs.game.keypad?.addEventListener('click', this.handleKeypadClick);
+
     this.loadNextQuestion();
     this.startTimer();
-    domRefs.game.answerInput.focus();
+    domRefs.game.answerInput?.focus();
     this.stumbleTimeoutId = null;
     this.runnerSpeedTier = null;
   },
@@ -319,7 +416,7 @@ const gameScreen = {
     );
   },
   handleTimeUp() {
-    this.isLocked = true;
+    this.setLocked(true);
     if (this.feedbackTimeoutId) {
       window.clearTimeout(this.feedbackTimeoutId);
       this.feedbackTimeoutId = null;
@@ -339,12 +436,10 @@ const gameScreen = {
     gameState.questionStartAtMs = performance.now();
   },
   submitAnswer() {
-    if (this.isLocked) {
+    if (!this.canSubmit()) {
       return;
     }
-    if (!gameState.currentQuestion) {
-      return;
-    }
+    this.setLocked(true);
     const elapsedMs = performance.now() - gameState.questionStartAtMs;
     const rawValue = domRefs.game.answerInput.value.trim();
     const answerValue = Number(rawValue);
@@ -397,7 +492,6 @@ const gameScreen = {
     }
 
     if (gameState.isReviewMode && gameState.reviewAnsweredCount >= gameState.reviewQuestionLimit) {
-      this.isLocked = true;
       if (this.feedbackTimeoutId) {
         window.clearTimeout(this.feedbackTimeoutId);
         this.feedbackTimeoutId = null;
@@ -419,10 +513,9 @@ const gameScreen = {
     this.feedbackTimeoutId = window.setTimeout(() => {
       uiRenderer.clearFeedback();
       this.loadNextQuestion();
-      this.isLocked = false;
-      domRefs.game.answerInput.focus();
+      this.setLocked(false);
+      domRefs.game.answerInput?.focus();
     }, 500);
-    this.isLocked = true;
   },
   update(dtMs) {
     if (gameState.isReviewMode) {
@@ -579,6 +672,24 @@ const gameScreen = {
     if (this.handleKeyDown) {
       domRefs.game.answerInput.removeEventListener('keydown', this.handleKeyDown);
     }
+    if (this.handleSubmitClick) {
+      domRefs.game.submitButton?.removeEventListener('click', this.handleSubmitClick);
+    }
+    if (this.handleKeypadToggleClick) {
+      domRefs.game.keypadToggle?.removeEventListener('click', this.handleKeypadToggleClick);
+    }
+    if (this.handleKeypadClick) {
+      domRefs.game.keypad?.removeEventListener('click', this.handleKeypadClick);
+    }
+    if (this.handleSubmitAction) {
+      inputActions.off(inputActions.ACTIONS.SUBMIT, this.handleSubmitAction);
+    }
+    if (this.handleBackAction) {
+      inputActions.off(inputActions.ACTIONS.BACK, this.handleBackAction);
+    }
+    if (this.handleToggleKeypadAction) {
+      inputActions.off(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
+    }
     if (this.feedbackTimeoutId) {
       window.clearTimeout(this.feedbackTimeoutId);
     }
@@ -586,7 +697,7 @@ const gameScreen = {
     this.clearEffectTimeouts();
     this.clearStumbleTimeout();
     this.resetEffects();
-    this.isLocked = false;
+    this.setLocked(false);
   },
 };
 
