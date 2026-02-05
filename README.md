@@ -4,7 +4,25 @@
 
 > **注意**: `file://` 直開きだと ES Modules が動かない場合があります。必ずローカルサーバー経由で起動してください。
 
-### 方法1（推奨）: Python の簡易サーバー
+### 方法1（推奨）: `tools/serve`（直下/サブパスの両方を再現できる）
+
+```bash
+./tools/serve
+```
+
+- URL: `http://localhost:8000/`
+
+サブパス配信の再現（ポータル統合想定）:
+
+```bash
+./tools/serve --subpath
+```
+
+- URL: `http://localhost:8000/<repo-name>/`
+
+起動/配信の正本は `spec/tech-spec.md` を参照してください（SSoT）。
+
+### 方法2: Python の簡易サーバー（手動）
 
 ```bash
 python -m http.server 8000
@@ -12,7 +30,7 @@ python -m http.server 8000
 
 ブラウザで `http://localhost:8000/` を開きます。
 
-### 方法2: npx serve
+### 方法3: npx serve（手動）
 
 ```bash
 npx serve .
@@ -24,8 +42,9 @@ npx serve .
 
 - 画面遷移一式（タイトル → ルール → ゲーム → 結果 → タイトル）が一通り行える。
 - フィードバック（正誤表示）中に問題が切り替わらない。
-- `timeLeft=1` の状態で次の tick を待つと time-up 画面へ遷移する。
-  - 例: ブラウザ開発者ツールのコンソールで `window.app?.debug?.setTimeLeft?.(1)` を実行し、1秒待って time-up に遷移することを確認する。
+- 「タイムアップ近傍」でもクラッシュしない（二重送信/遷移競合が起きない）。
+  - 60秒待たずに再現したい場合は、URLでタイムリミットを短縮する:
+    - 例: `http://localhost:8000/?test=1&timeLimit=5`
 - `carry=false` の 2桁加算で `a+b<100` を満たす。
   - 例: `node -e "for(let i=0;i<1000;i++){const a=10+Math.floor(Math.random()*90);const b=10+Math.floor(Math.random()*90);const ones=(a%10)+(b%10);if(ones<10 && a+b>=100){console.log('NG',a,b);process.exit(1)}}console.log('OK')"`
 
@@ -40,4 +59,4 @@ npx serve .
   - 最短手順: 復習完了バナー表示 → `review` を押す → バナーが非表示になることを確認。
   - 最短手順: 復習完了バナー表示 → `back` でタイトルへ戻る → バナーが非表示になることを確認。
 - [ ] time-up 競合でもアプリが落ちない。
-  - 最短手順: 残り時間が 1 秒になるよう調整（`window.app?.debug?.setTimeLeft?.(1)`）→ 復習完了バナーが表示される直前に time-up が発生する状況を作る → クラッシュせず、画面が正しく遷移することを確認。
+  - 最短手順: `?test=1&timeLimit=5` で起動 → 終了直前に「確定」を連打してもクラッシュせず結果へ遷移することを確認。
