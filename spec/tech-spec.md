@@ -9,6 +9,12 @@ SSoT（正本）として、以後の参照は本ファイルを優先する（A
 - 画面遷移はアプリ内状態で完結しており、クライアントルーティングのパスは増えないため **SPA の rewrite は不要**。
 - サブパス配信（例: `/calculation-sprint/`）は相対パス参照により対応する（ADR-004 を遵守）。
 
+### 1.1 アセット/ルーティング診断（ADR-007）
+
+- アセット URL で `text/html` が返った場合は URL ごとに 1 回だけ warn する。
+- 404 も URL ごとに 1 回だけ warn する。
+- ログには `requestedUrl` / `status` / `contentType` / `appPath` を含め、basepath/rewrites を疑えるヒントを出す。
+
 ## 2. 起動（正本）
 
 起動は `tools/serve` のみを正本とする（直下/サブパスの両方を再現可能）。
@@ -29,12 +35,14 @@ SSoT（正本）として、以後の参照は本ファイルを優先する（A
 
 ## 4. storage（名前空間 / プロファイル分離 / 移行）
 
-- 名前空間（prefix）: `portal.calcSprint`（`src/core/storageKeys.js`）
+- 名前空間（prefix）: `calc-sprint`（`src/core/storageKeys.js`）
 - キー形式（例）:
-  - `portal.calcSprint.daily.v1.p:A`
-  - `portal.calcSprint.rank.distance.today.v1.p:B`
-  - `portal.calcSprint.stageProgress.v1.p:C`
+  - `calc-sprint::A::daily.v1`
+  - `calc-sprint::B::rank.distance.today.v1`
+  - `calc-sprint::C::stageProgress.v1`
+- メタキーは `calc-sprint::meta::<key>` に固定する。
 - 旧キー（legacy）からの移行は **default プロファイルのみ**、かつ **コピー移行（非破壊）** とする（`src/core/*Store.js`）。
+
 
 ## 5. 入力I/F（Action層）
 
@@ -53,6 +61,11 @@ Action層は `src/core/inputActions.js` を正とし、画面は Action を購�
 | `back` | 1文字削除 | テンキーの⌫ / Backspace / Delete | gameScreen | ロック中・時間切れ |
 | `next` | 画面の「次へ」を示す抽象アクション（gameScreenでは`submit`相当） | Space / ArrowRight | gameScreen | ロック中・時間切れ・未出題時 |
 | `toggle_keypad` | オンスクリーンテンキーの表示切替 | テンキー切替ボタン | gameScreen | 画面非表示時 |
+
+### 5.2 画面イベントの登録規約（ADR-009）
+
+- 画面イベントは `src/core/eventRegistry.js` に集約し、重複登録を防ぐ。
+- 画面 exit 時に `events.clear()` を必ず呼ぶ。
 
 ## 6. Debug / Test（実装と一致する名称のみ）
 
@@ -83,3 +96,8 @@ URLクエリで `test=1` を有効化する（`src/core/testFlags.js`）。
    - 画面上の「確定」操作で回答確定できる（Enter 依存ではない）。
    - オンスクリーンテンキー/ボタン操作で回答確定まで完結できる。
    - 「戻る」「次へ」などのアクション操作が入力デバイス差に依存しない。
+
+## 8. 品質ゲート（ADR-010）
+
+- リリース前の正本コマンドは `./tools/gate`。
+- CI の最小ゲートは `./tools/gate-ci`（lint のみ）。

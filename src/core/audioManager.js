@@ -1,3 +1,5 @@
+import { diagnoseAssetResponse } from './assetDiagnostics.js';
+
 // ADR-004: Use relative asset paths so subpath hosting works (avoid absolute `/assets/...`).
 const BGM_URLS = {
   bgm_title: 'assets/audio/bgm/title.mp3',
@@ -136,6 +138,7 @@ class AudioManager {
     nextAudio.preload = 'auto';
     nextAudio.volume = this.muted ? 0 : this.bgmVolume;
     nextAudio.addEventListener('error', () => {
+      diagnoseAssetResponse(url, `bgm:${id}`);
       console.warn(`BGM failed to load: ${id}`);
     });
 
@@ -238,6 +241,7 @@ class AudioManager {
       nextAudio.preload = 'auto';
       nextAudio.volume = this.muted ? 0 : this.bgmVolume;
       nextAudio.addEventListener('error', () => {
+        diagnoseAssetResponse(url, `bgm:${nextId}`);
         console.warn(`BGM failed to load: ${nextId}`);
       });
 
@@ -291,6 +295,7 @@ class AudioManager {
     const volume = clamp(opts.volume ?? 1, 0, 1);
     audio.volume = this.muted ? 0 : volume;
     audio.addEventListener('error', () => {
+      diagnoseAssetResponse(url, `sfx:${id}`);
       console.warn(`SFX failed to load: ${id}`);
     });
     const playPromise = audio.play();

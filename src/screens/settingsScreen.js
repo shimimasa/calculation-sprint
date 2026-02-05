@@ -5,6 +5,7 @@ import gameState from '../core/gameState.js';
 import { PRESETS } from '../features/presets.js';
 import audioManager from '../core/audioManager.js';
 import { resetAllData, resetProfileData } from '../core/dataReset.js';
+import { createEventRegistry } from '../core/eventRegistry.js';
 
 const CUSTOM_PRESET_VALUE = 'custom';
 const CUSTOM_PRESET_DESCRIPTION = 'こまかく設定で自分で作れるよ。';
@@ -38,6 +39,7 @@ const updatePresetDescription = (presetKey) => {
 const settingsScreen = {
   enter() {
     uiRenderer.showScreen('settings');
+    this.events = createEventRegistry('settings');
     gameState.playMode = 'free';
     gameState.selectedStageId = null;
     this.isSyncing = true;
@@ -134,53 +136,28 @@ const settingsScreen = {
       screenManager.changeScreen('profile-select');
     };
 
-    domRefs.settings.presetSelect.addEventListener('change', this.handlePresetChange);
+    this.events.on(domRefs.settings.presetSelect, 'change', this.handlePresetChange);
     domRefs.settings.modeInputs.forEach((input) => {
-      input.addEventListener('change', this.handleManualChange);
+      this.events.on(input, 'change', this.handleManualChange);
     });
     domRefs.settings.digitInputs.forEach((input) => {
-      input.addEventListener('change', this.handleManualChange);
+      this.events.on(input, 'change', this.handleManualChange);
     });
-    domRefs.settings.carryCheckbox.addEventListener('change', this.handleManualChange);
-    domRefs.settings.playButton.addEventListener('click', this.handlePlay);
-    domRefs.settings.profileButton.addEventListener('click', this.handleProfileChange);
-    domRefs.settings.profileResetButton.addEventListener('click', this.handleProfileReset);
+    this.events.on(domRefs.settings.carryCheckbox, 'change', this.handleManualChange);
+    this.events.on(domRefs.settings.playButton, 'click', this.handlePlay);
+    this.events.on(domRefs.settings.profileButton, 'click', this.handleProfileChange);
+    this.events.on(domRefs.settings.profileResetButton, 'click', this.handleProfileReset);
     if (domRefs.settings.title) {
-      domRefs.settings.title.addEventListener('click', this.handleAdminResetToggle);
+      this.events.on(domRefs.settings.title, 'click', this.handleAdminResetToggle);
     }
     if (domRefs.settings.adminResetButton) {
-      domRefs.settings.adminResetButton.addEventListener('click', this.handleAdminReset);
+      this.events.on(domRefs.settings.adminResetButton, 'click', this.handleAdminReset);
     }
   },
   render() {},
   exit() {
-    if (this.handlePlay) {
-      domRefs.settings.playButton.removeEventListener('click', this.handlePlay);
-    }
-    if (this.handleProfileChange) {
-      domRefs.settings.profileButton.removeEventListener('click', this.handleProfileChange);
-    }
-    if (this.handleProfileReset) {
-      domRefs.settings.profileResetButton.removeEventListener('click', this.handleProfileReset);
-    }
-    if (this.handleAdminResetToggle && domRefs.settings.title) {
-      domRefs.settings.title.removeEventListener('click', this.handleAdminResetToggle);
-    }
-    if (this.handleAdminReset && domRefs.settings.adminResetButton) {
-      domRefs.settings.adminResetButton.removeEventListener('click', this.handleAdminReset);
-    }
-    if (this.handlePresetChange) {
-      domRefs.settings.presetSelect.removeEventListener('change', this.handlePresetChange);
-    }
-    if (this.handleManualChange) {
-      domRefs.settings.modeInputs.forEach((input) => {
-        input.removeEventListener('change', this.handleManualChange);
-      });
-      domRefs.settings.digitInputs.forEach((input) => {
-        input.removeEventListener('change', this.handleManualChange);
-      });
-      domRefs.settings.carryCheckbox.removeEventListener('change', this.handleManualChange);
-    }
+    this.events?.clear();
+    this.events = null;
     this.isSyncing = false;
     this.isAdminVisible = false;
     if (domRefs.settings.adminResetWrap) {
