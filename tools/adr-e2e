@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+port="${PORT:-8082}"
+base_url="http://127.0.0.1:${port}/"
+
+./tools/serve --port "${port}" >/tmp/adr-e2e-serve.log 2>&1 &
+serve_pid=$!
+
+cleanup() {
+  kill "${serve_pid}" >/dev/null 2>&1 || true
+}
+
+trap cleanup EXIT
+
+python tools/adr_e2e.py --base-url "${base_url}"
