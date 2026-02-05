@@ -196,72 +196,64 @@ const renderReport = async (results, callLog) => {
   return overallPass;
 };
 
-const countBraces = (text) => {
-  let open = 0;
-  let close = 0;
-  for (const ch of text) {
-    if (ch === '{') {
-      open += 1;
-    } else if (ch === '}') {
-      close += 1;
-    }
-  }
-  return { open, close };
-};
-
-// ADR-004 static check (CSS non-invasive):
-// - Evaluate "selector lines" only: after stripping leading '}' and whitespace, the text contains '{'
-// - Allow at-rule lines themselves (@media/@supports/@property/@font-face/@layer/etc.)
-// - Ignore @keyframes blocks and their internal from/to/xx% steps
 const checkScopedCssSelectors = async () => {
   const cssPath = resolve('styles/style.scoped.css');
   const raw = await fs.readFile(cssPath, 'utf8');
-  const lines = raw.split(/\r?\n/);
+  const cleaned = raw.replace(/\/\*[\s\S]*?\*\//g, '');
 
   const offenders = [];
-  let keyframesDepth = 0;
+  const stack = [];
+  let buffer = '';
+  let line = 1;
 
-  for (let i = 0; i < lines.length; i += 1) {
-    const originalLine = lines[i];
-    const trimmed = originalLine.trim();
-    if (!trimmed) {
-      continue;
+  const isInDeclarations = () => stack.some((frame) => frame.type === 'rule' || frame.type === 'ignore');
+  const isInKeyframes = () => stack.some((frame) => frame.type === 'keyframes');
+
+  const evaluateSelector = (selectorText, selectorLine) => {
+    const parts = selectorText.split(',').map((part) => part.trim()).filter(Boolean);
+    for (const part of parts) {
+      if (part.startsWith('.calc-sprint')) {
+        continue;
+      }
+      offenders.push({ line: selectorLine, text: part.slice(0, 160) });
+    }
+  };
+
+  for (let idx = 0; idx < cleaned.length; idx += 1) {
+    const ch = cleaned[idx];
+
+    if (ch === '\n') {
+      line += 1;
     }
 
-    const withoutLead = trimmed.replace(/^[}\s]+/, '');
-
-    // Track keyframes block depth to ignore from/to/xx% selectors.
-    if (withoutLead.startsWith('@keyframes')) {
-      const { open, close } = countBraces(withoutLead);
-      keyframesDepth += Math.max(1, open) - close;
-      continue;
-    }
-    if (keyframesDepth > 0) {
-      const { open, close } = countBraces(trimmed);
-      keyframesDepth += open - close;
-      if (keyframesDepth <= 0) {
-        keyframesDepth = 0;
+    if (ch === '{') {
+      const token = buffer.trim();
+      buffer = '';
+      if (token.startsWith('@')) {
+        const name = token.slice(1).trim().split(/\s+/)[0]?.toLowerCase();
+        if (name === 'keyframes') {
+          stack.push({ type: 'keyframes' });
+        } else if (name === 'property' || name === 'font-face') {
+          stack.push({ type: 'ignore' });
+        } else {
+          stack.push({ type: 'container' });
+        }
+      } else if (token) {
+        if (!isInKeyframes()) {
+          evaluateSelector(token, line);
+        }
+        stack.push({ type: 'rule' });
       }
       continue;
     }
 
-    // At-rule lines are allowed as-is.
-    if (withoutLead.startsWith('@')) {
+    if (ch === '}') {
+      stack.pop();
       continue;
     }
 
-    // Selector line heuristic: must contain '{' after stripping leading braces/spaces.
-    if (!withoutLead.includes('{')) {
-      continue;
-    }
-
-    // Keyframe step lines are selector-like but exempt.
-    if (/^(from|to|\d+%)(\s*,\s*(from|to|\d+%))*\s*\{/.test(withoutLead)) {
-      continue;
-    }
-
-    if (!withoutLead.startsWith('.calc-sprint')) {
-      offenders.push({ line: i + 1, text: withoutLead.slice(0, 160) });
+    if (!isInDeclarations()) {
+      buffer += ch;
     }
   }
 
@@ -276,9 +268,10 @@ const checkScopedCssSelectors = async () => {
         ...offenders.slice(0, 10).map((o) => `- L${o.line}: ${o.text}`),
         '',
         'Rules:',
-        '- Check only selector lines (contains "{", after stripping leading "}" and whitespace).',
-        '- Allow at-rule lines: @media/@supports/@property/@font-face/@layer/etc.',
+        '- Parse selectors outside declaration blocks.',
+        '- Allow at-rule blocks: @media/@supports/@layer/etc.',
         '- Ignore @keyframes blocks and their from/to/xx% steps.',
+        '- Ignore @property/@font-face declaration blocks.',
       ].join('\n'),
   };
 };
