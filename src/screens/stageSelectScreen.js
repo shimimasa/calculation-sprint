@@ -60,10 +60,10 @@ const buildStageMarkup = (stage, { unlocked, cleared, current }) => {
         <span class="stage-select-description">${stage.description}</span>
         ${
           cleared
-            ? `<span class="stage-select-clear">${stageSelectIcons.clear}<span>クリア</span> <span class="stage-select-star">★</span></span>`
+            ? `<span class="stage-select-clear">${stageSelectIcons.clear}<span>実施済み</span> <span class="stage-select-star">★</span></span>`
             : ''
         }
-        ${unlocked ? '' : `<span class="stage-select-lock">${stageSelectIcons.lock}<span>クリアで開放</span></span>`}
+        ${unlocked ? '' : `<span class="stage-select-lock">${stageSelectIcons.lock}<span>1回実施で開放</span></span>`}
       </button>
     </div>
   `;
@@ -75,7 +75,7 @@ const buildWorldMarkup = (world, progress) => {
   return `
     <section class="stage-world">
       <div class="stage-world-header">
-        <h3>${formatWorldLabel(world.worldId)} <span class="stage-world-progress">(${clearedCount} / ${totalCount} クリア)</span></h3>
+        <h3>${formatWorldLabel(world.worldId)} <span class="stage-world-progress">(${clearedCount} / ${totalCount} 実施済み)</span></h3>
       </div>
       <div class="stage-map">
         ${world.stages

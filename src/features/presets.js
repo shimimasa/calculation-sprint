@@ -1,7 +1,7 @@
 export const PRESETS = {
   'p3-basic': {
     label: '🟢 はじめてラン',
-    description: 'たし算・ひき算の1けたをゆっくりれんしゅう。',
+    description: 'ねらい: 1けたのたし算・ひき算に慣れる / 目安: ゆっくり',
     mode: 'mix',
     allowedModes: ['add', 'sub'],
     digit: 1,
@@ -9,7 +9,7 @@ export const PRESETS = {
   },
   'p4-nocarry': {
     label: '🔵 ふつうラン',
-    description: '2けたのたし算・ひき算をくり上がりなしで。',
+    description: 'ねらい: 2けたのたし算・ひき算 / 傾向: くり上がりなし',
     mode: 'mix',
     allowedModes: ['add', 'sub'],
     digit: 2,
@@ -17,7 +17,7 @@ export const PRESETS = {
   },
   'p4-carry': {
     label: '🟠 ちょうせんラン',
-    description: '2けたのたし算・ひき算をくり上がりありで。',
+    description: 'ねらい: 2けたのたし算・ひき算 / 傾向: くり上がりあり',
     mode: 'mix',
     allowedModes: ['add', 'sub'],
     digit: 2,
@@ -25,7 +25,7 @@ export const PRESETS = {
   },
   'p5-mul': {
     label: '🟣 きゅうきゅうラン',
-    description: '九九の1けたかけ算にチャレンジ！',
+    description: 'ねらい: 九九の1けたかけ算 / 目安: じっくり',
     mode: 'mul',
     digit: 1,
     carry: true,
