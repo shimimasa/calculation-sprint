@@ -37,6 +37,10 @@ const domRefs = {
     carryCheckbox: byId('settings-carry'),
     playButton: byId('settings-play-button'),
     profileButton: byId('settings-profile-button'),
+    title: byId('settings-title'),
+    profileResetButton: byId('settings-profile-reset'),
+    adminResetWrap: byId('settings-admin-reset'),
+    adminResetButton: byId('settings-admin-reset-button'),
   },
   game: {
     hud: qs('.game-hud'),

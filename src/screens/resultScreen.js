@@ -587,7 +587,7 @@ const resultScreen = {
       if (!domRefs.result.dailyResetButton) {
         return;
       }
-      const shouldReset = window.confirm('記録をリセットしますか？');
+      const shouldReset = window.confirm('今日の記録をリセットしますか？');
       if (!shouldReset) {
         return;
       }
