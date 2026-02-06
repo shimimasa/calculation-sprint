@@ -152,6 +152,7 @@ const dashGameScreen = {
     if (isCorrect) {
       gameState.dash.correctCount += 1;
       gameState.dash.streak += 1;
+      this.maxStreak = Math.max(this.maxStreak, gameState.dash.streak);
       this.playerSpeed += speedIncrementPerCorrect;
       this.enemySpeed = enemyBaseSpeed + enemySpeedIncrementPerStreak * gameState.dash.streak;
       if (gameState.dash.streak === streakAttack) {
@@ -219,7 +220,14 @@ const dashGameScreen = {
     }
     this.hasEnded = true;
     this.stopLoop();
-    screenManager.changeScreen('title');
+    gameState.dash.result = {
+      distanceM: gameState.dash.distanceM,
+      correctCount: gameState.dash.correctCount,
+      wrongCount: gameState.dash.wrongCount,
+      maxStreak: this.maxStreak,
+      timeLeftMs: Math.max(0, this.timeLeftMs),
+    };
+    screenManager.changeScreen('dash-result');
   },
   enter() {
     uiRenderer.showScreen('dash-game');
@@ -231,14 +239,16 @@ const dashGameScreen = {
     this.lastTickTs = window.performance.now();
     this.currentQuestion = null;
     this.hasEnded = false;
+    this.maxStreak = 0;
     gameState.dash.distanceM = 0;
     gameState.dash.correctCount = 0;
     gameState.dash.wrongCount = 0;
     gameState.dash.streak = 0;
+    gameState.dash.result = null;
     this.updateHud();
     this.handleBack = () => {
       audioManager.playSfx('sfx_cancel');
-      screenManager.changeScreen('title');
+      this.endSession();
     };
     this.events.on(domRefs.dashGame.backButton, 'click', this.handleBack);
 

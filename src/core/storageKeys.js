@@ -22,6 +22,7 @@ export const makeKey = (storeName, profileId = DEFAULT_PROFILE_ID, version = DEF
 );
 
 export const STORE_NAMES = Object.freeze({
+  dashSession: 'dash.session',
   daily: 'daily',
   todayRankDistance: 'rank.distance.today',
   stageProgress: 'stageProgress',
