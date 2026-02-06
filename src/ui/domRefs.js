@@ -49,6 +49,7 @@ const domRefs = {
     correctCount: byId('dash-result-correct'),
     wrongCount: byId('dash-result-wrong'),
     accuracy: byId('dash-result-accuracy'),
+    missRate: byId('dash-result-miss-rate'),
     maxStreak: byId('dash-result-max-streak'),
     timeRemaining: byId('dash-result-time'),
   },

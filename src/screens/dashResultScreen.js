@@ -16,6 +16,9 @@ const dashResultScreen = {
       const accuracy = totalAnswered > 0
         ? Math.round((result.correctCount / totalAnswered) * 1000) / 10
         : 0;
+      const missRate = totalAnswered > 0
+        ? Math.round((result.wrongCount / totalAnswered) * 1000) / 10
+        : 0;
       const timeSeconds = Math.max(0, Math.ceil((result.timeLeftMs || 0) / 1000));
       if (domRefs.dashResult.record) {
         domRefs.dashResult.record.hidden = false;
@@ -36,6 +39,9 @@ const dashResultScreen = {
       }
       if (domRefs.dashResult.accuracy) {
         domRefs.dashResult.accuracy.textContent = accuracy.toFixed(1);
+      }
+      if (domRefs.dashResult.missRate) {
+        domRefs.dashResult.missRate.textContent = missRate.toFixed(1);
       }
       if (domRefs.dashResult.maxStreak) {
         domRefs.dashResult.maxStreak.textContent = String(result.maxStreak || 0);
