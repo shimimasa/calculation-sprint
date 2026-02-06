@@ -21,6 +21,7 @@ const BG_BOOST_DURATION_MS = 400; // 300-500ms window for noticeable boost witho
 const BG_BOOST_NEAR_DELTA = 0.3; // Near layer needs stronger bump to feel acceleration.
 const BG_BOOST_FAR_DELTA = 0.25; // Far layer bump kept subtle to avoid seam emphasis.
 const COUNTDOWN_SFX_THRESHOLDS = Object.freeze([10, 5, 3, 2, 1]);
+const isReviewModeActive = (state) => Boolean(state?.isReviewMode);
 const EFFECT_BY_LEVEL = {
   0: { glow: 0.8, line: 0.9, boost: 0.95 },
   1: { glow: 1.0, line: 1.0, boost: 1.0 },
@@ -214,7 +215,7 @@ const gameScreen = {
     Object.keys(gameState.attemptByMode).forEach((key) => {
       gameState.attemptByMode[key] = 0;
     });
-    if (!gameState.isReviewMode) {
+    if (!isReviewModeActive(gameState)) {
       gameState.reviewAnsweredCount = 0;
       gameState.speedMps = 2.0;
       gameState.distanceM = 0;
@@ -394,7 +395,7 @@ const gameScreen = {
     domRefs.game.speed?.classList.remove('glow');
     domRefs.game.runner.classList.add('stumble');
     const timeoutIds = [];
-    if (!gameState.isReviewMode) {
+    if (!isReviewModeActive(gameState)) {
       domRefs.game.runWorld?.classList.add('stumble-freeze');
       domRefs.game.runBgFar?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetFarPx}px`);
       domRefs.game.runBgNear?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetNearPx}px`);
@@ -421,13 +422,15 @@ const gameScreen = {
       gameState.timeLimit,
       (timeLeft) => {
         gameState.timeLeft = timeLeft;
-        if (gameState.isReviewMode) {
+        if (isReviewModeActive(gameState)) {
           return;
         }
-        if (COUNTDOWN_SFX_THRESHOLDS.includes(timeLeft) && !this.countdownSfxFired.has(timeLeft)) {
-          this.countdownSfxFired.add(timeLeft);
-          audioManager.playSfx('sfx_countdown');
-        }
+        COUNTDOWN_SFX_THRESHOLDS.forEach((threshold) => {
+          if (timeLeft <= threshold && !this.countdownSfxFired.has(threshold)) {
+            this.countdownSfxFired.add(threshold);
+            audioManager.playSfx('sfx_countdown');
+          }
+        });
       },
       () => this.handleTimeUp(),
     );
@@ -447,7 +450,7 @@ const gameScreen = {
   loadNextQuestion() {
     gameState.currentQuestion = questionGenerator.next({
       ...gameState.settings,
-      reviewModes: gameState.isReviewMode ? gameState.reviewModes : [],
+      reviewModes: isReviewModeActive(gameState) ? gameState.reviewModes : [],
     });
     domRefs.game.answerInput.value = '';
     gameState.questionStartAtMs = performance.now();
@@ -473,7 +476,7 @@ const gameScreen = {
     gameState.totalAnswerTimeMs += elapsedMs;
     gameState.answeredCountForTiming += 1;
     gameState.totalAnswered += 1;
-    if (gameState.isReviewMode) {
+    if (isReviewModeActive(gameState)) {
       gameState.reviewAnsweredCount += 1;
     }
     if (isCorrect) {
@@ -498,7 +501,7 @@ const gameScreen = {
     this.updateScalingHud();
     this.applyWorldTuning();
 
-    if (!gameState.isReviewMode) {
+    if (!isReviewModeActive(gameState)) {
       if (isCorrect) {
         gameState.speedMps = Math.min(gameState.maxSpeedMps, gameState.speedMps + gameState.speedUp);
         this.triggerBoostEffect();
@@ -508,7 +511,7 @@ const gameScreen = {
       }
     }
 
-    if (gameState.isReviewMode && gameState.reviewAnsweredCount >= gameState.reviewQuestionLimit) {
+    if (isReviewModeActive(gameState) && gameState.reviewAnsweredCount >= gameState.reviewQuestionLimit) {
       if (this.feedbackTimeoutId) {
         window.clearTimeout(this.feedbackTimeoutId);
         this.feedbackTimeoutId = null;
@@ -535,7 +538,7 @@ const gameScreen = {
     }, 500);
   },
   update(dtMs) {
-    if (gameState.isReviewMode) {
+    if (isReviewModeActive(gameState)) {
       return;
     }
     const dtSec = dtMs / 1000;
@@ -595,29 +598,29 @@ const gameScreen = {
     domRefs.game.correctCount.textContent = String(gameState.correctCount);
     domRefs.game.wrongCount.textContent = String(gameState.wrongCount);
     if (domRefs.game.distance) {
-      const distanceValue = gameState.isReviewMode ? 0 : gameState.distanceM;
+      const distanceValue = isReviewModeActive(gameState) ? 0 : gameState.distanceM;
       domRefs.game.distance.textContent = distanceValue.toFixed(1);
     }
     if (domRefs.game.speed) {
-      const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
+      const speedValue = isReviewModeActive(gameState) ? 0 : gameState.speedMps;
       domRefs.game.speed.textContent = speedValue.toFixed(1);
     }
     if (domRefs.game.runBgFar) {
-      const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetFarPx;
+      const bgOffset = isReviewModeActive(gameState) ? 0 : this.bgOffsetFarPx;
       const parallaxFar = this.worldParallax?.far ?? 1;
       domRefs.game.runBgFar.style.backgroundPositionX = `${(bgOffset * parallaxFar).toFixed(2)}px`;
     }
     if (domRefs.game.runBgNear) {
-      const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetNearPx;
+      const bgOffset = isReviewModeActive(gameState) ? 0 : this.bgOffsetNearPx;
       const parallaxNear = this.worldParallax?.near ?? 1;
       domRefs.game.runBgNear.style.backgroundPositionX = `${(bgOffset * parallaxNear).toFixed(2)}px`;
     }
     if (domRefs.game.speedLines) {
-      const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
+      const speedValue = isReviewModeActive(gameState) ? 0 : gameState.speedMps;
       const maxSpeed = gameState.maxSpeedMps || 1;
       const speedRatio = Math.max(0, Math.min(speedValue / maxSpeed, 1));
       let lineOpacity = Math.max(0.05, Math.min(speedRatio, 0.65));
-      if (gameState.isReviewMode) {
+      if (isReviewModeActive(gameState)) {
         lineOpacity = 0;
       }
       if (domRefs.game.speedLines.classList.contains('boost-lines')) {
@@ -634,18 +637,18 @@ const gameScreen = {
     }
     if (domRefs.game.timeProgressBar && domRefs.game.timeProgressRunner) {
       const totalTime = gameState.timeLimit || 60;
-      const timeLeft = gameState.isReviewMode ? totalTime : gameState.timeLeft;
+      const timeLeft = isReviewModeActive(gameState) ? totalTime : gameState.timeLeft;
       const elapsedSec = Math.max(0, totalTime - timeLeft);
       const progressRatio = Math.max(0, Math.min(elapsedSec / totalTime, 1));
       domRefs.game.timeProgressBar.style.width = `${(progressRatio * 100).toFixed(1)}%`;
       domRefs.game.timeProgressRunner.style.left = `${(progressRatio * 100).toFixed(1)}%`;
-      domRefs.game.hud?.classList.toggle('final-phase', !gameState.isReviewMode && timeLeft <= 10);
+      domRefs.game.hud?.classList.toggle('final-phase', !isReviewModeActive(gameState) && timeLeft <= 10);
     }
     if (domRefs.game.runLayer) {
-      domRefs.game.runLayer.hidden = gameState.isReviewMode;
+      domRefs.game.runLayer.hidden = isReviewModeActive(gameState);
     }
     if (domRefs.game.reviewProgress) {
-      if (gameState.isReviewMode) {
+      if (isReviewModeActive(gameState)) {
         domRefs.game.reviewProgress.hidden = false;
         domRefs.game.reviewProgress.textContent = `復習: ${gameState.reviewAnsweredCount}/${gameState.reviewQuestionLimit}`;
       } else {
@@ -653,7 +656,7 @@ const gameScreen = {
       }
     }
     if (domRefs.game.runner) {
-      if (gameState.isReviewMode) {
+      if (isReviewModeActive(gameState)) {
         domRefs.game.runner.classList.remove(
           'runner-speed-low',
           'runner-speed-mid',
@@ -680,7 +683,7 @@ const gameScreen = {
       }
     }
     if (domRefs.game.runnerWrap) {
-      const translateX = gameState.isReviewMode ? 0 : this.runnerX;
+      const translateX = isReviewModeActive(gameState) ? 0 : this.runnerX;
       domRefs.game.runnerWrap.style.transform = `translateX(${translateX.toFixed(2)}px)`;
     }
   },

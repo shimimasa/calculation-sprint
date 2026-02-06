@@ -24,17 +24,24 @@ const parseProgress = (raw) => {
   }
   try {
     const parsed = JSON.parse(raw);
-    const clearedStageIds = Array.isArray(parsed.clearedStageIds)
-      ? parsed.clearedStageIds.filter((id) => typeof id === 'string')
+    const base = parsed && typeof parsed === 'object' ? parsed : {};
+    const clearedStageIds = Array.isArray(base.clearedStageIds)
+      ? base.clearedStageIds.filter((id) => typeof id === 'string')
       : [];
-    const lastPlayedStageId = typeof parsed.lastPlayedStageId === 'string'
-      ? parsed.lastPlayedStageId
+    const lastPlayedStageId = typeof base.lastPlayedStageId === 'string'
+      ? base.lastPlayedStageId
       : null;
-    const updatedAt = typeof parsed.updatedAt === 'string'
-      ? parsed.updatedAt
+    const updatedAt = typeof base.updatedAt === 'string'
+      ? base.updatedAt
       : new Date().toISOString();
-    const schemaVersion = Number.isInteger(parsed.schemaVersion) ? parsed.schemaVersion : 1;
-    return { clearedStageIds, lastPlayedStageId, updatedAt, schemaVersion };
+    const schemaVersion = Number.isInteger(base.schemaVersion) ? base.schemaVersion : 1;
+    return {
+      ...base,
+      clearedStageIds,
+      lastPlayedStageId,
+      updatedAt,
+      schemaVersion,
+    };
   } catch (error) {
     return buildDefaultProgress();
   }
@@ -63,7 +70,9 @@ const migrateSchemaIfNeeded = (storageKey, progress) => {
     return progress;
   }
   const migrated = {
-    ...buildDefaultProgress(),
+    ...progress,
+    clearedStageIds: [],
+    schemaVersion: STAGE_SCHEMA_VERSION,
     updatedAt: new Date().toISOString(),
   };
   saveProgress(storageKey, migrated);
@@ -104,6 +113,7 @@ const stageProgressStore = {
       ? progress.clearedStageIds
       : [...progress.clearedStageIds, stageId];
     const updated = {
+      ...progress,
       clearedStageIds,
       lastPlayedStageId: stageId,
       updatedAt: new Date().toISOString(),
