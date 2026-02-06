@@ -150,6 +150,7 @@ const dashGameScreen = {
     }
     const isCorrect = numericValue === this.currentQuestion.answer;
     if (isCorrect) {
+      audioManager.playSfx('sfx_correct');
       gameState.dash.correctCount += 1;
       gameState.dash.streak += 1;
       this.maxStreak = Math.max(this.maxStreak, gameState.dash.streak);
@@ -159,6 +160,7 @@ const dashGameScreen = {
         this.enemyGapM += collisionThreshold;
       }
       if (gameState.dash.streak === streakDefeat) {
+        audioManager.playSfx('sfx_levelup', { volume: 0.8 });
         this.timeLeftMs += timeBonusOnDefeat;
         this.enemyGapM = collisionThreshold * 2;
         this.enemySpeed = enemyBaseSpeed;
@@ -166,6 +168,7 @@ const dashGameScreen = {
       }
       this.setFeedback('○', 'correct');
     } else {
+      audioManager.playSfx('sfx_wrong');
       gameState.dash.wrongCount += 1;
       gameState.dash.streak = 0;
       this.enemySpeed = enemyBaseSpeed;
@@ -181,6 +184,7 @@ const dashGameScreen = {
     gameState.dash.distanceM += this.playerSpeed * dtSeconds;
     this.enemyGapM -= (this.enemySpeed - this.playerSpeed) * dtSeconds;
     if (this.enemyGapM <= collisionThreshold) {
+      audioManager.playSfx('sfx_wrong', { volume: 0.7 });
       this.timeLeftMs -= timePenaltyOnCollision;
       this.enemyGapM = collisionThreshold * 2;
     }
