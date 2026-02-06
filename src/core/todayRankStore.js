@@ -1,4 +1,14 @@
-const STORAGE_KEY = 'calcSprint.rank.distance.today.v1';
+// ADR-004, ADR-002 Phase0補修: Centralized key generation (Phase1 will inject profileId).
+import {
+  LEGACY_KEYS,
+  LEGACY_MIGRATION_KEYS,
+  STORE_NAMES,
+  DEFAULT_PROFILE_ID,
+  makeStoreKey,
+  resolveProfileId,
+} from './storageKeys.js';
+const LEGACY_STORAGE_KEYS = LEGACY_KEYS.todayRankDistance;
+const LEGACY_MIGRATION_KEY = LEGACY_MIGRATION_KEYS.todayRankDistance;
 
 const normalizeTop = (top) => {
   if (!Array.isArray(top)) {
@@ -7,9 +17,9 @@ const normalizeTop = (top) => {
   return top.filter((value) => Number.isFinite(value) && value > 0);
 };
 
-const read = () => {
+const readFromStorage = (storageKey) => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) {
       return null;
     }
@@ -26,27 +36,60 @@ const read = () => {
   }
 };
 
-const write = (data) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+const writeToStorage = (storageKey, data) => {
+  localStorage.setItem(storageKey, JSON.stringify(data));
+};
+
+const readLegacy = (storageKeys) => {
+  for (const storageKey of storageKeys) {
+    const legacy = readFromStorage(storageKey);
+    if (legacy) {
+      return legacy;
+    }
+  }
+  return null;
 };
 
 const todayRankStore = {
-  get(dateKey) {
-    const stored = read();
+  get(dateKey, profileId) {
+    const resolvedProfileId = resolveProfileId(profileId);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.todayRankDistance);
+    let stored = readFromStorage(storageKey);
+    if (!stored) {
+      if (resolvedProfileId === DEFAULT_PROFILE_ID && !localStorage.getItem(LEGACY_MIGRATION_KEY)) {
+        const legacy = readLegacy(LEGACY_STORAGE_KEYS);
+        if (legacy) {
+          // ADR-004: Best-effort, non-destructive migration (copy only).
+          writeToStorage(storageKey, legacy);
+          localStorage.setItem(LEGACY_MIGRATION_KEY, '1');
+          stored = legacy;
+        }
+      }
+    }
     if (!stored || stored.dateKey !== dateKey) {
       return { dateKey, top: [] };
     }
     return { dateKey, top: stored.top };
   },
-  update(dateKey, distanceM) {
-    const current = this.get(dateKey);
+  update(dateKey, distanceM, profileId) {
+    const resolvedProfileId = resolveProfileId(profileId);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.todayRankDistance);
+    const current = this.get(dateKey, resolvedProfileId);
     const nextTop = [...current.top, distanceM]
       .filter((value) => Number.isFinite(value) && value > 0)
       .sort((a, b) => b - a)
       .slice(0, 3);
     const next = { dateKey, top: nextTop };
-    write(next);
+    writeToStorage(storageKey, next);
     return next;
+  },
+  reset(profileId) {
+    const resolvedProfileId = resolveProfileId(profileId);
+    try {
+      localStorage.removeItem(makeStoreKey(resolvedProfileId, STORE_NAMES.todayRankDistance));
+    } catch (error) {
+      // ignore storage failures
+    }
   },
 };
 

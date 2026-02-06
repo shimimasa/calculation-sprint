@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+port="${PORT:-8000}"
+subpath=false
+
+usage() {
+  cat <<'USAGE'
+Usage: ./tools/serve [--port <port>] [--subpath]
+
+Options:
+  --port <port>   Port to listen on (default: 8000, or $PORT)
+  --subpath       Serve from the parent directory to emulate /<repo-name>/
+  -h, --help      Show this help
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --port)
+      port="$2"
+      shift 2
+      ;;
+    --subpath)
+      subpath=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+repo_root=$(git rev-parse --show-toplevel)
+repo_name=$(basename "$repo_root")
+
+if [[ "$subpath" == "true" ]]; then
+  serve_root=$(dirname "$repo_root")
+  base_url="http://localhost:${port}/${repo_name}/"
+else
+  serve_root="$repo_root"
+  base_url="http://localhost:${port}/"
+fi
+
+cd "$serve_root"
+
+echo "Serving static files from: $serve_root"
+echo "Open: $base_url"
+python -m http.server "$port"

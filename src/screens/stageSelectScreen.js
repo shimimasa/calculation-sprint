@@ -4,6 +4,7 @@ import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import stageProgressStore from '../core/stageProgressStore.js';
 import audioManager from '../core/audioManager.js';
+import { createEventRegistry } from '../core/eventRegistry.js';
 import {
   STAGES,
   applyStageSettings,
@@ -60,10 +61,10 @@ const buildStageMarkup = (stage, { unlocked, cleared, current }) => {
         <span class="stage-select-description">${stage.description}</span>
         ${
           cleared
-            ? `<span class="stage-select-clear">${stageSelectIcons.clear}<span>クリア</span> <span class="stage-select-star">★</span></span>`
+            ? `<span class="stage-select-clear">${stageSelectIcons.clear}<span>実施済み</span> <span class="stage-select-star">★</span></span>`
             : ''
         }
-        ${unlocked ? '' : `<span class="stage-select-lock">${stageSelectIcons.lock}<span>クリアで開放</span></span>`}
+        ${unlocked ? '' : `<span class="stage-select-lock">${stageSelectIcons.lock}<span>1回実施で開放</span></span>`}
       </button>
     </div>
   `;
@@ -75,7 +76,7 @@ const buildWorldMarkup = (world, progress) => {
   return `
     <section class="stage-world">
       <div class="stage-world-header">
-        <h3>${formatWorldLabel(world.worldId)} <span class="stage-world-progress">(${clearedCount} / ${totalCount} クリア)</span></h3>
+        <h3>${formatWorldLabel(world.worldId)} <span class="stage-world-progress">(${clearedCount} / ${totalCount} 実施済み)</span></h3>
       </div>
       <div class="stage-map">
         ${world.stages
@@ -119,6 +120,7 @@ const resolveStageSelectTheme = (progress) => {
 const stageSelectScreen = {
   enter() {
     uiRenderer.showScreen('stage-select');
+    this.events = createEventRegistry('stage-select');
     const stageSelectElement = domRefs.screens['stage-select'];
     const progress = stageProgressStore.getProgress();
     if (stageSelectElement) {
@@ -141,13 +143,12 @@ const stageSelectScreen = {
         return;
       }
       audioManager.unlock();
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_decide');
       const stageId = button.dataset.stageId;
       const stage = findStageById(stageId);
       if (!stage) {
         return;
       }
-      stageProgressStore.setLastPlayed(stage.id);
       gameState.playMode = 'stage';
       gameState.selectedStageId = stage.id;
       applyStageSettings(stage, gameState);
@@ -156,33 +157,26 @@ const stageSelectScreen = {
 
     this.handleBack = () => {
       audioManager.unlock();
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_cancel');
       screenManager.changeScreen('title');
     };
 
     this.handleFreePlay = () => {
       audioManager.unlock();
-      audioManager.playSfx('sfx_click');
+      audioManager.playSfx('sfx_decide');
       gameState.playMode = 'free';
       gameState.selectedStageId = null;
       screenManager.changeScreen('settings');
     };
 
-    domRefs.stageSelect.list?.addEventListener('click', this.handleStageClick);
-    domRefs.stageSelect.backButton?.addEventListener('click', this.handleBack);
-    domRefs.stageSelect.freeButton?.addEventListener('click', this.handleFreePlay);
+    this.events.on(domRefs.stageSelect.list, 'click', this.handleStageClick);
+    this.events.on(domRefs.stageSelect.backButton, 'click', this.handleBack);
+    this.events.on(domRefs.stageSelect.freeButton, 'click', this.handleFreePlay);
   },
   render() {},
   exit() {
-    if (this.handleStageClick) {
-      domRefs.stageSelect.list?.removeEventListener('click', this.handleStageClick);
-    }
-    if (this.handleBack) {
-      domRefs.stageSelect.backButton?.removeEventListener('click', this.handleBack);
-    }
-    if (this.handleFreePlay) {
-      domRefs.stageSelect.freeButton?.removeEventListener('click', this.handleFreePlay);
-    }
+    this.events?.clear();
+    this.events = null;
   },
 };
 

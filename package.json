@@ -1,0 +1,10 @@
+{
+  "name": "calculation-sprint",
+  "private": true,
+  "scripts": {
+    "gate": "node tools/gate",
+    "gate-ci": "node tools/gate-ci",
+    "lint": "node tools/lint.js",
+    "build": "node tools/build.js"
+  }
+}

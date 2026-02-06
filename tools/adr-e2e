@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+port="${PORT:-8082}"
+base_url="http://127.0.0.1:${port}/"
+
+has_playwright() {
+  python - <<'PY'
+import importlib.util
+import sys
+
+sys.exit(0 if importlib.util.find_spec("playwright") else 1)
+PY
+}
+
+if has_playwright; then
+  ./tools/serve --port "${port}" >/tmp/adr-e2e-serve.log 2>&1 &
+  serve_pid=$!
+
+  cleanup() {
+    kill "${serve_pid}" >/dev/null 2>&1 || true
+  }
+
+  trap cleanup EXIT
+
+  python tools/adr_e2e.py --base-url "${base_url}" | tee /tmp/adr-e2e-results.json
+  python - <<'PY'
+import json
+from datetime import datetime
+from pathlib import Path
+
+results_path = Path("/tmp/adr-e2e-results.json")
+report_path = Path("spec/test-results/adr-acceptance-latest.md")
+report_path.parent.mkdir(parents=True, exist_ok=True)
+
+results = json.loads(results_path.read_text())
+overall = all(item.get("pass") for item in results)
+
+lines = [
+  "# ADR Acceptance Checklist (Playwright)",
+  f"- Timestamp: {datetime.utcnow().isoformat()}Z",
+  f"- Overall: {'PASS' if overall else 'FAIL'}",
+  "",
+  "## Results",
+]
+for item in results:
+  status = "PASS" if item.get("pass") else "FAIL"
+  lines.append(f"- [{status}] {item.get('id')}")
+lines.extend([
+  "",
+  "## Raw Output",
+  "```json",
+  json.dumps(results, ensure_ascii=False, indent=2),
+  "```",
+  "",
+])
+report_path.write_text("\n".join(lines), encoding="utf-8")
+PY
+else
+  node tools/adr_manual_runner.mjs
+fi

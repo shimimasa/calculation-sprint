@@ -1,12 +1,15 @@
 import screenManager from './core/screenManager.js';
+import profileSelectScreen from './screens/profileSelectScreen.js';
 import titleScreen from './screens/titleScreen.js';
 import stageSelectScreen from './screens/stageSelectScreen.js';
 import settingsScreen from './screens/settingsScreen.js';
 import gameScreen from './screens/gameScreen.js';
 import resultScreen from './screens/resultScreen.js';
 import gameState from './core/gameState.js';
+import { applyTestOverrides } from './core/testFlags.js';
 
 const screens = {
+  'profile-select': profileSelectScreen,
   title: titleScreen,
   'stage-select': stageSelectScreen,
   settings: settingsScreen,
@@ -16,7 +19,8 @@ const screens = {
 
 const init = () => {
   screenManager.registerScreens(screens);
-  screenManager.changeScreen('title');
+  const testConfig = applyTestOverrides(gameState);
+  screenManager.changeScreen('profile-select');
   // Debug-only helpers for Playwright smoke screenshots.
   // This is intentionally minimal and only used when called explicitly.
   window.__debug = window.__debug || {};
@@ -28,6 +32,9 @@ const init = () => {
     gameState.selectedStageId = 'w1-1';
     screenManager.changeScreen('result');
   };
+  if (testConfig?.enabled) {
+    window.__testConfig = testConfig;
+  }
 };
 
 let lastTime = performance.now();

@@ -1,4 +1,14 @@
-const STORAGE_KEY = 'calcSprint.daily.v1';
+// ADR-004, ADR-002 Phase0補修: Centralized key generation (Phase1 will inject profileId).
+import {
+  LEGACY_KEYS,
+  LEGACY_MIGRATION_KEYS,
+  STORE_NAMES,
+  DEFAULT_PROFILE_ID,
+  makeStoreKey,
+  resolveProfileId,
+} from './storageKeys.js';
+const LEGACY_STORAGE_KEYS = LEGACY_KEYS.daily;
+const LEGACY_MIGRATION_KEY = LEGACY_MIGRATION_KEYS.daily;
 
 const DEFAULT_WRONG_BY_MODE = Object.freeze({
   add: 0,
@@ -34,39 +44,70 @@ const normalizeRecord = (record) => {
   };
 };
 
-const readAll = () => {
+const readFromStorage = (storageKey) => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) {
-      return {};
+      return null;
     }
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') {
-      return {};
+      return null;
     }
     return parsed;
   } catch (error) {
-    return {};
+    return null;
   }
 };
 
-const writeAll = (data) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+const writeToStorage = (storageKey, data) => {
+  localStorage.setItem(storageKey, JSON.stringify(data));
+};
+
+const readLegacy = (storageKeys) => {
+  for (const storageKey of storageKeys) {
+    const legacy = readFromStorage(storageKey);
+    if (legacy) {
+      return legacy;
+    }
+  }
+  return null;
+};
+
+const readAll = (profileId) => {
+  const resolvedProfileId = resolveProfileId(profileId);
+  const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.daily);
+  const current = readFromStorage(storageKey);
+  if (current) {
+    return current;
+  }
+  if (resolvedProfileId === DEFAULT_PROFILE_ID && !localStorage.getItem(LEGACY_MIGRATION_KEY)) {
+    const legacy = readLegacy(LEGACY_STORAGE_KEYS);
+    if (legacy) {
+      // ADR-004: Best-effort, non-destructive migration (copy only).
+      writeToStorage(storageKey, legacy);
+      localStorage.setItem(LEGACY_MIGRATION_KEY, '1');
+      return legacy;
+    }
+  }
+  return {};
 };
 
 const dailyStatsStore = {
-  getAll() {
-    return readAll();
+  getAll(profileId) {
+    return readAll(profileId);
   },
-  get(dateKey) {
-    const all = readAll();
+  get(dateKey, profileId) {
+    const all = readAll(profileId);
     if (!all[dateKey]) {
       return null;
     }
     return normalizeRecord(all[dateKey]);
   },
-  upsert(dateKey, sessionStats) {
-    const all = readAll();
+  upsert(dateKey, sessionStats, profileId) {
+    const resolvedProfileId = resolveProfileId(profileId);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.daily);
+    const all = readAll(resolvedProfileId);
     const current = normalizeRecord(all[dateKey]);
     const wrongByMode = {
       ...DEFAULT_WRONG_BY_MODE,
@@ -102,11 +143,12 @@ const dailyStatsStore = {
     }
 
     all[dateKey] = updated;
-    writeAll(all);
+    writeToStorage(storageKey, all);
     return updated;
   },
-  reset() {
-    localStorage.removeItem(STORAGE_KEY);
+  reset(profileId) {
+    const resolvedProfileId = resolveProfileId(profileId);
+    localStorage.removeItem(makeStoreKey(resolvedProfileId, STORE_NAMES.daily));
   },
 };
 

@@ -8,6 +8,8 @@ import buildReviewSummary from '../core/reviewSummary.js';
 import stageProgressStore from '../core/stageProgressStore.js';
 import { applyStageSettings, findStageById } from '../features/stages.js';
 import audioManager from '../core/audioManager.js';
+import inputActions from '../core/inputActions.js';
+import { createEventRegistry } from '../core/eventRegistry.js';
 
 const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
@@ -18,6 +20,8 @@ const BG_NEAR_SPEED_FACTOR = 1.1;
 const BG_BOOST_DURATION_MS = 400; // 300-500ms window for noticeable boost without overstaying.
 const BG_BOOST_NEAR_DELTA = 0.3; // Near layer needs stronger bump to feel acceleration.
 const BG_BOOST_FAR_DELTA = 0.25; // Far layer bump kept subtle to avoid seam emphasis.
+const COUNTDOWN_SFX_THRESHOLDS = Object.freeze([10, 5, 3, 2, 1]);
+const isReviewModeActive = (state) => Boolean(state?.isReviewMode);
 const EFFECT_BY_LEVEL = {
   0: { glow: 0.8, line: 0.9, boost: 0.95 },
   1: { glow: 1.0, line: 1.0, boost: 1.0 },
@@ -118,14 +122,65 @@ const gameScreen = {
     domRefs.game.runWorld?.style.setProperty('--world-brightness', tuneValue(base.brightness));
     domRefs.game.runWorld?.style.setProperty('--world-clarity', tuneValue(base.clarity));
   },
+  isScreenActive() {
+    return Boolean(domRefs.screens.game?.classList.contains('is-active'));
+  },
+  setLocked(nextLocked) {
+    this.isLocked = nextLocked;
+    if (domRefs.game.submitButton) {
+      domRefs.game.submitButton.disabled = nextLocked;
+      domRefs.game.submitButton.setAttribute('aria-disabled', String(nextLocked));
+    }
+    if (domRefs.game.keypadButtons) {
+      domRefs.game.keypadButtons.forEach((button) => {
+        button.disabled = nextLocked;
+        button.setAttribute('aria-disabled', String(nextLocked));
+      });
+    }
+  },
+  canAcceptInput() {
+    return this.isScreenActive() && !this.isLocked && gameState.timeLeft > 0;
+  },
+  canSubmit() {
+    return this.canAcceptInput() && Boolean(gameState.currentQuestion);
+  },
+  toggleKeypad() {
+    const keypad = domRefs.game.keypad;
+    if (!keypad) {
+      return;
+    }
+    keypad.hidden = !keypad.hidden;
+    keypad.setAttribute('aria-hidden', String(keypad.hidden));
+    domRefs.game.keypadToggle?.setAttribute('aria-expanded', String(!keypad.hidden));
+  },
+  appendKeypadDigit(digit) {
+    if (!this.canAcceptInput()) {
+      return;
+    }
+    if (!domRefs.game.answerInput) {
+      return;
+    }
+    domRefs.game.answerInput.focus();
+    domRefs.game.answerInput.value = `${domRefs.game.answerInput.value}${digit}`;
+  },
+  handleBackspace() {
+    if (!this.canAcceptInput()) {
+      return;
+    }
+    if (!domRefs.game.answerInput) {
+      return;
+    }
+    domRefs.game.answerInput.focus();
+    domRefs.game.answerInput.value = domRefs.game.answerInput.value.slice(0, -1);
+  },
   enter() {
     uiRenderer.showScreen('game');
+    this.events = createEventRegistry('game');
     if (gameState.playMode === 'stage') {
       const stage = findStageById(gameState.selectedStageId);
       if (stage) {
         applyStageSettings(stage, gameState);
         gameState.selectedStage = stage;
-        stageProgressStore.setLastPlayed(stage.id);
       } else {
         gameState.playMode = 'free';
         gameState.selectedStageId = null;
@@ -160,7 +215,7 @@ const gameScreen = {
     Object.keys(gameState.attemptByMode).forEach((key) => {
       gameState.attemptByMode[key] = 0;
     });
-    if (!gameState.isReviewMode) {
+    if (!isReviewModeActive(gameState)) {
       gameState.reviewAnsweredCount = 0;
       gameState.speedMps = 2.0;
       gameState.distanceM = 0;
@@ -168,7 +223,7 @@ const gameScreen = {
     uiRenderer.clearFeedback();
     this.feedbackTimeoutId = null;
     this.effectTimeoutIds = [];
-    this.isLocked = false;
+    this.setLocked(false);
     this.bgOffsetFarPx = 0;
     this.bgOffsetNearPx = 0;
     this.bgBoostRemainingMs = 0;
@@ -181,17 +236,69 @@ const gameScreen = {
       : false;
     this.applyWorldTuning();
 
-    this.handleKeyDown = (event) => {
-      if (event.key !== 'Enter') {
+    if (domRefs.game.keypad) {
+      domRefs.game.keypad.hidden = true;
+      domRefs.game.keypad.setAttribute('aria-hidden', 'true');
+    }
+    domRefs.game.keypadToggle?.setAttribute('aria-expanded', 'false');
+
+    this.handleSubmitAction = () => {
+      if (!this.canSubmit()) {
         return;
       }
       this.submitAnswer();
     };
+    this.handleNextAction = () => {
+      if (!this.canSubmit()) {
+        return;
+      }
+      this.submitAnswer();
+    };
+    this.handleBackAction = () => {
+      this.handleBackspace();
+    };
+    this.handleToggleKeypadAction = () => {
+      if (!this.isScreenActive()) {
+        return;
+      }
+      this.toggleKeypad();
+    };
 
-    domRefs.game.answerInput.addEventListener('keydown', this.handleKeyDown);
+    inputActions.on(inputActions.ACTIONS.SUBMIT, this.handleSubmitAction);
+    inputActions.on(inputActions.ACTIONS.NEXT, this.handleNextAction);
+    inputActions.on(inputActions.ACTIONS.BACK, this.handleBackAction);
+    inputActions.on(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
+
+    this.handleKeyDown = inputActions.createKeyHandler();
+    this.events.on(domRefs.game.answerInput, 'keydown', this.handleKeyDown);
+
+    this.handleSubmitClick = () => {
+      inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
+    };
+    this.events.on(domRefs.game.submitButton, 'click', this.handleSubmitClick);
+
+    this.handleKeypadToggleClick = () => {
+      inputActions.dispatch(inputActions.ACTIONS.TOGGLE_KEYPAD, { source: 'button' });
+    };
+    this.events.on(domRefs.game.keypadToggle, 'click', this.handleKeypadToggleClick);
+
+    this.handleKeypadClick = (event) => {
+      const button = event.target.closest('[data-keypad-key]');
+      if (!button || button.disabled) {
+        return;
+      }
+      const key = button.dataset.keypadKey;
+      if (key === 'back') {
+        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keypad' });
+        return;
+      }
+      this.appendKeypadDigit(key);
+    };
+    this.events.on(domRefs.game.keypad, 'click', this.handleKeypadClick);
+
     this.loadNextQuestion();
     this.startTimer();
-    domRefs.game.answerInput.focus();
+    domRefs.game.answerInput?.focus();
     this.stumbleTimeoutId = null;
     this.runnerSpeedTier = null;
   },
@@ -288,7 +395,7 @@ const gameScreen = {
     domRefs.game.speed?.classList.remove('glow');
     domRefs.game.runner.classList.add('stumble');
     const timeoutIds = [];
-    if (!gameState.isReviewMode) {
+    if (!isReviewModeActive(gameState)) {
       domRefs.game.runWorld?.classList.add('stumble-freeze');
       domRefs.game.runBgFar?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetFarPx}px`);
       domRefs.game.runBgNear?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetNearPx}px`);
@@ -310,16 +417,26 @@ const gameScreen = {
     this.stumbleTimeoutId = timeoutIds;
   },
   startTimer() {
+    this.countdownSfxFired = new Set();
     timer.start(
       gameState.timeLimit,
       (timeLeft) => {
         gameState.timeLeft = timeLeft;
+        if (isReviewModeActive(gameState)) {
+          return;
+        }
+        COUNTDOWN_SFX_THRESHOLDS.forEach((threshold) => {
+          if (timeLeft <= threshold && !this.countdownSfxFired.has(threshold)) {
+            this.countdownSfxFired.add(threshold);
+            audioManager.playSfx('sfx_countdown');
+          }
+        });
       },
       () => this.handleTimeUp(),
     );
   },
   handleTimeUp() {
-    this.isLocked = true;
+    this.setLocked(true);
     if (this.feedbackTimeoutId) {
       window.clearTimeout(this.feedbackTimeoutId);
       this.feedbackTimeoutId = null;
@@ -333,18 +450,16 @@ const gameScreen = {
   loadNextQuestion() {
     gameState.currentQuestion = questionGenerator.next({
       ...gameState.settings,
-      reviewModes: gameState.isReviewMode ? gameState.reviewModes : [],
+      reviewModes: isReviewModeActive(gameState) ? gameState.reviewModes : [],
     });
     domRefs.game.answerInput.value = '';
     gameState.questionStartAtMs = performance.now();
   },
   submitAnswer() {
-    if (this.isLocked) {
+    if (!this.canSubmit()) {
       return;
     }
-    if (!gameState.currentQuestion) {
-      return;
-    }
+    this.setLocked(true);
     const elapsedMs = performance.now() - gameState.questionStartAtMs;
     const rawValue = domRefs.game.answerInput.value.trim();
     const answerValue = Number(rawValue);
@@ -361,7 +476,7 @@ const gameScreen = {
     gameState.totalAnswerTimeMs += elapsedMs;
     gameState.answeredCountForTiming += 1;
     gameState.totalAnswered += 1;
-    if (gameState.isReviewMode) {
+    if (isReviewModeActive(gameState)) {
       gameState.reviewAnsweredCount += 1;
     }
     if (isCorrect) {
@@ -386,7 +501,7 @@ const gameScreen = {
     this.updateScalingHud();
     this.applyWorldTuning();
 
-    if (!gameState.isReviewMode) {
+    if (!isReviewModeActive(gameState)) {
       if (isCorrect) {
         gameState.speedMps = Math.min(gameState.maxSpeedMps, gameState.speedMps + gameState.speedUp);
         this.triggerBoostEffect();
@@ -396,8 +511,7 @@ const gameScreen = {
       }
     }
 
-    if (gameState.isReviewMode && gameState.reviewAnsweredCount >= gameState.reviewQuestionLimit) {
-      this.isLocked = true;
+    if (isReviewModeActive(gameState) && gameState.reviewAnsweredCount >= gameState.reviewQuestionLimit) {
       if (this.feedbackTimeoutId) {
         window.clearTimeout(this.feedbackTimeoutId);
         this.feedbackTimeoutId = null;
@@ -419,13 +533,12 @@ const gameScreen = {
     this.feedbackTimeoutId = window.setTimeout(() => {
       uiRenderer.clearFeedback();
       this.loadNextQuestion();
-      this.isLocked = false;
-      domRefs.game.answerInput.focus();
+      this.setLocked(false);
+      domRefs.game.answerInput?.focus();
     }, 500);
-    this.isLocked = true;
   },
   update(dtMs) {
-    if (gameState.isReviewMode) {
+    if (isReviewModeActive(gameState)) {
       return;
     }
     const dtSec = dtMs / 1000;
@@ -485,29 +598,29 @@ const gameScreen = {
     domRefs.game.correctCount.textContent = String(gameState.correctCount);
     domRefs.game.wrongCount.textContent = String(gameState.wrongCount);
     if (domRefs.game.distance) {
-      const distanceValue = gameState.isReviewMode ? 0 : gameState.distanceM;
+      const distanceValue = isReviewModeActive(gameState) ? 0 : gameState.distanceM;
       domRefs.game.distance.textContent = distanceValue.toFixed(1);
     }
     if (domRefs.game.speed) {
-      const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
+      const speedValue = isReviewModeActive(gameState) ? 0 : gameState.speedMps;
       domRefs.game.speed.textContent = speedValue.toFixed(1);
     }
     if (domRefs.game.runBgFar) {
-      const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetFarPx;
+      const bgOffset = isReviewModeActive(gameState) ? 0 : this.bgOffsetFarPx;
       const parallaxFar = this.worldParallax?.far ?? 1;
       domRefs.game.runBgFar.style.backgroundPositionX = `${(bgOffset * parallaxFar).toFixed(2)}px`;
     }
     if (domRefs.game.runBgNear) {
-      const bgOffset = gameState.isReviewMode ? 0 : this.bgOffsetNearPx;
+      const bgOffset = isReviewModeActive(gameState) ? 0 : this.bgOffsetNearPx;
       const parallaxNear = this.worldParallax?.near ?? 1;
       domRefs.game.runBgNear.style.backgroundPositionX = `${(bgOffset * parallaxNear).toFixed(2)}px`;
     }
     if (domRefs.game.speedLines) {
-      const speedValue = gameState.isReviewMode ? 0 : gameState.speedMps;
+      const speedValue = isReviewModeActive(gameState) ? 0 : gameState.speedMps;
       const maxSpeed = gameState.maxSpeedMps || 1;
       const speedRatio = Math.max(0, Math.min(speedValue / maxSpeed, 1));
       let lineOpacity = Math.max(0.05, Math.min(speedRatio, 0.65));
-      if (gameState.isReviewMode) {
+      if (isReviewModeActive(gameState)) {
         lineOpacity = 0;
       }
       if (domRefs.game.speedLines.classList.contains('boost-lines')) {
@@ -524,18 +637,18 @@ const gameScreen = {
     }
     if (domRefs.game.timeProgressBar && domRefs.game.timeProgressRunner) {
       const totalTime = gameState.timeLimit || 60;
-      const timeLeft = gameState.isReviewMode ? totalTime : gameState.timeLeft;
+      const timeLeft = isReviewModeActive(gameState) ? totalTime : gameState.timeLeft;
       const elapsedSec = Math.max(0, totalTime - timeLeft);
       const progressRatio = Math.max(0, Math.min(elapsedSec / totalTime, 1));
       domRefs.game.timeProgressBar.style.width = `${(progressRatio * 100).toFixed(1)}%`;
       domRefs.game.timeProgressRunner.style.left = `${(progressRatio * 100).toFixed(1)}%`;
-      domRefs.game.hud?.classList.toggle('final-phase', !gameState.isReviewMode && timeLeft <= 10);
+      domRefs.game.hud?.classList.toggle('final-phase', !isReviewModeActive(gameState) && timeLeft <= 10);
     }
     if (domRefs.game.runLayer) {
-      domRefs.game.runLayer.hidden = gameState.isReviewMode;
+      domRefs.game.runLayer.hidden = isReviewModeActive(gameState);
     }
     if (domRefs.game.reviewProgress) {
-      if (gameState.isReviewMode) {
+      if (isReviewModeActive(gameState)) {
         domRefs.game.reviewProgress.hidden = false;
         domRefs.game.reviewProgress.textContent = `復習: ${gameState.reviewAnsweredCount}/${gameState.reviewQuestionLimit}`;
       } else {
@@ -543,7 +656,7 @@ const gameScreen = {
       }
     }
     if (domRefs.game.runner) {
-      if (gameState.isReviewMode) {
+      if (isReviewModeActive(gameState)) {
         domRefs.game.runner.classList.remove(
           'runner-speed-low',
           'runner-speed-mid',
@@ -570,14 +683,25 @@ const gameScreen = {
       }
     }
     if (domRefs.game.runnerWrap) {
-      const translateX = gameState.isReviewMode ? 0 : this.runnerX;
+      const translateX = isReviewModeActive(gameState) ? 0 : this.runnerX;
       domRefs.game.runnerWrap.style.transform = `translateX(${translateX.toFixed(2)}px)`;
     }
   },
   exit() {
     timer.stop();
-    if (this.handleKeyDown) {
-      domRefs.game.answerInput.removeEventListener('keydown', this.handleKeyDown);
+    this.events?.clear();
+    this.events = null;
+    if (this.handleSubmitAction) {
+      inputActions.off(inputActions.ACTIONS.SUBMIT, this.handleSubmitAction);
+    }
+    if (this.handleNextAction) {
+      inputActions.off(inputActions.ACTIONS.NEXT, this.handleNextAction);
+    }
+    if (this.handleBackAction) {
+      inputActions.off(inputActions.ACTIONS.BACK, this.handleBackAction);
+    }
+    if (this.handleToggleKeypadAction) {
+      inputActions.off(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
     }
     if (this.feedbackTimeoutId) {
       window.clearTimeout(this.feedbackTimeoutId);
@@ -586,7 +710,7 @@ const gameScreen = {
     this.clearEffectTimeouts();
     this.clearStumbleTimeout();
     this.resetEffects();
-    this.isLocked = false;
+    this.setLocked(false);
   },
 };
 

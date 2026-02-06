@@ -4,11 +4,38 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>計算スプリント</title>
-    <link rel="stylesheet" href="styles/style.css" />
+    <!-- ADR-004: Use scoped CSS and keep asset paths relative so subpath hosting works. -->
+    <link rel="stylesheet" href="styles/style.scoped.css" />
   </head>
   <body>
-    <main class="app">
-      <section id="title-screen" class="screen screen-title is-active">
+    <!-- ADR-004: Scope styles under a dedicated app root to avoid collisions when embedded in a portal. -->
+    <main class="calc-sprint">
+      <div class="app">
+      <section id="profile-select-screen" class="screen screen-profile-select is-active">
+        <header class="screen-header">
+          <p class="screen-kicker">PROFILE</p>
+          <h1 class="screen__title">プロファイルをえらぼう</h1>
+          <p class="screen__description">なまえは入れずに、番号だけえらんでね</p>
+        </header>
+        <div class="screen-main stage-card">
+          <div class="profile-select-grid" role="group" aria-label="プロファイル一覧">
+            <button class="profile-select-button" data-profile-id="A" type="button" aria-pressed="false">A</button>
+            <button class="profile-select-button" data-profile-id="B" type="button" aria-pressed="false">B</button>
+            <button class="profile-select-button" data-profile-id="C" type="button" aria-pressed="false">C</button>
+            <button class="profile-select-button" data-profile-id="D" type="button" aria-pressed="false">D</button>
+            <button class="profile-select-button" data-profile-id="E" type="button" aria-pressed="false">E</button>
+            <button class="profile-select-button" data-profile-id="F" type="button" aria-pressed="false">F</button>
+            <button class="profile-select-button" data-profile-id="G" type="button" aria-pressed="false">G</button>
+            <button class="profile-select-button" data-profile-id="H" type="button" aria-pressed="false">H</button>
+          </div>
+          <p class="profile-select-current">現在の選択: <strong id="profile-select-current">A</strong></p>
+        </div>
+        <footer class="screen-footer">
+          <button id="profile-select-continue" class="primary-button primary-button--xl">タイトルへすすむ</button>
+        </footer>
+      </section>
+
+      <section id="title-screen" class="screen screen-title" hidden>
         <header class="screen-header">
           <p class="screen-kicker">STAGE 01</p>
           <h1 class="screen__title">計算スプリント</h1>
@@ -47,7 +74,7 @@
         <header class="screen-header">
           <p class="screen-kicker">STAGE SELECT</p>
           <h2 class="screen__title">ステージであそぶ</h2>
-          <p class="screen__description">ミッションをえらんで挑戦しよう</p>
+          <p class="screen__description">おすすめ課題をえらぼう</p>
         </header>
         <div class="screen-main stage-card">
           <div id="stage-select-list" class="stage-select-list"></div>
@@ -61,7 +88,7 @@
       <section id="settings-screen" class="screen screen-settings" hidden>
         <header class="screen-header">
           <p class="screen-kicker">STAGE 02</p>
-          <h2 class="screen__title">設定</h2>
+          <h2 class="screen__title" id="settings-title">設定</h2>
           <p class="screen__description">ミッションに合わせてルールをえらぼう</p>
         </header>
         <div class="screen-main stage-card">
@@ -111,10 +138,22 @@
                 <span>繰り上がり/繰り下がり</span>
               </label>
             </div>
+            <div class="settings-section">
+              <p class="section-title">🧹 リセット</p>
+              <p class="settings-note">選択中プロファイルの記録を消去します。</p>
+              <button id="settings-profile-reset" class="secondary-button">このプロファイルをリセット</button>
+              <div id="settings-admin-reset" hidden>
+                <p class="settings-note">管理者用: すべての記録を消去します。</p>
+                <button id="settings-admin-reset-button" class="secondary-button">全データ消去</button>
+              </div>
+            </div>
           </details>
         </div>
         <footer class="screen-footer">
-          <button id="settings-play-button" class="primary-button primary-button--xl">プレイ</button>
+          <div class="title-actions">
+            <button id="settings-play-button" class="primary-button primary-button--xl">プレイ</button>
+            <button id="settings-profile-button" class="secondary-button">プロファイル変更</button>
+          </div>
         </footer>
       </section>
 
@@ -161,6 +200,41 @@
             <input id="game-answer-input" type="number" class="answer-input" autocomplete="off" />
           </div>
           <div id="game-feedback" class="feedback" aria-live="polite"></div>
+          <div class="game-actions" aria-label="入力操作">
+            <div class="game-action-row">
+              <button id="game-submit-button" class="primary-button primary-button--xl" type="button">確定</button>
+              <button
+                id="game-keypad-toggle"
+                class="secondary-button"
+                type="button"
+                aria-expanded="false"
+                aria-controls="game-keypad"
+              >
+                テンキー
+              </button>
+            </div>
+            <div id="game-keypad" class="game-keypad" hidden aria-hidden="true">
+              <button class="keypad-button" type="button" data-keypad-key="7">7</button>
+              <button class="keypad-button" type="button" data-keypad-key="8">8</button>
+              <button class="keypad-button" type="button" data-keypad-key="9">9</button>
+              <button class="keypad-button" type="button" data-keypad-key="4">4</button>
+              <button class="keypad-button" type="button" data-keypad-key="5">5</button>
+              <button class="keypad-button" type="button" data-keypad-key="6">6</button>
+              <button class="keypad-button" type="button" data-keypad-key="1">1</button>
+              <button class="keypad-button" type="button" data-keypad-key="2">2</button>
+              <button class="keypad-button" type="button" data-keypad-key="3">3</button>
+              <button
+                class="keypad-button keypad-button--wide"
+                type="button"
+                data-keypad-key="0"
+              >
+                0
+              </button>
+              <button class="keypad-button keypad-button--action" type="button" data-keypad-key="back">
+                ⌫
+              </button>
+            </div>
+          </div>
         </div>
         <div class="run-layer" aria-hidden="true">
           <div class="run-world">
@@ -170,10 +244,11 @@
             <div class="speed-lines"></div>
             <div class="runner-wrap">
               <span class="runner-shadow"></span>
+              <!-- ADR-004: Use relative asset paths so subpath hosting works. -->
               <img
                 id="runner-sprite"
                 class="runner-bob"
-                src="/assets/runner/runner.png"
+                src="assets/runner/runner.png"
                 alt="runner"
                 onerror="this.style.display='none'; document.documentElement.classList.add('runner-missing');"
               />
@@ -207,7 +282,7 @@
             <p class="result-stage__label">ステージ</p>
             <p id="result-stage-name" class="result-stage__name">---</p>
             <div class="result-stage__status">
-              <p id="result-stage-status" class="result-stage__headline">クリア！</p>
+              <p id="result-stage-status" class="result-stage__headline">プレイ完了！</p>
               <p id="result-stage-message" class="result-stage__message"></p>
               <p id="result-stage-unlock" class="result-stage__unlock" hidden></p>
             </div>
@@ -298,7 +373,7 @@
                   <p>ミス: <strong id="diff-wrong">0</strong></p>
                 </div>
 
-                <button id="daily-reset-button" class="secondary-button">記録をリセット</button>
+                <button id="daily-reset-button" class="secondary-button">今日の記録をリセット</button>
               </div>
               <div class="daily-history">
                 <h3>直近7日</h3>
@@ -332,6 +407,7 @@
           </div>
         </footer>
       </section>
+      </div>
     </main>
 
     <script type="module" src="src/main.js"></script>
