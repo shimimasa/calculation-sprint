@@ -159,10 +159,22 @@
       </section>
 
       <section id="dash-game-screen" class="screen screen-dash" hidden>
-        <header class="screen-header">
+        <header class="screen-header dash-header">
           <p class="screen-kicker">DASH RUN</p>
           <h2 class="screen__title">ダッシュラン</h2>
           <p class="screen__description">できるだけ速く計算して走り抜けよう。</p>
+          <div class="dash-stats dash-stats--header" aria-label="ダッシュ状況">
+            <div class="dash-stat-card">
+              <span class="dash-stat-label">距離</span>
+              <strong id="dash-game-distance" class="dash-stat-value">0.0</strong>
+              <span class="dash-stat-unit">m</span>
+            </div>
+            <div class="dash-stat-card">
+              <span class="dash-stat-label">残り時間</span>
+              <strong id="dash-game-time" class="dash-stat-value">30</strong>
+              <span class="dash-stat-unit">s</span>
+            </div>
+          </div>
         </header>
         <div class="screen-main stage-card">
           <div class="game-focus">
@@ -208,7 +220,21 @@
             </div>
           </div>
         </div>
-        <footer class="screen-footer">
+        <footer class="screen-footer dash-footer">
+          <div class="dash-stats dash-stats--footer" aria-label="ダッシュ状況">
+            <div class="dash-stat-card">
+              <span class="dash-stat-label">連続正解</span>
+              <strong id="dash-game-streak" class="dash-stat-value">0</strong>
+              <span class="dash-stat-unit">問</span>
+            </div>
+            <div id="dash-game-enemy" class="dash-proximity" data-state="safe">
+              <span class="dash-stat-label">敵の接近</span>
+              <div class="dash-proximity-bar" role="presentation">
+                <div id="dash-game-enemy-bar" class="dash-proximity-fill"></div>
+              </div>
+              <span id="dash-game-enemy-text" class="dash-proximity-text">安全 (0%)</span>
+            </div>
+          </div>
           <div class="title-actions">
             <button id="dash-game-back-button" class="secondary-button primary-button--xl">タイトルにもどる</button>
           </div>
