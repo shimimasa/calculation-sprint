@@ -44,6 +44,12 @@ const gameState = {
     mul: 0,
     div: 0,
   },
+  dash: {
+    distanceM: 0,
+    correctCount: 0,
+    wrongCount: 0,
+    streak: 0,
+  },
   settings: {
     mode: 'add',
     digit: 1,
