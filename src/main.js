@@ -3,6 +3,8 @@ import profileSelectScreen from './screens/profileSelectScreen.js';
 import titleScreen from './screens/titleScreen.js';
 import stageSelectScreen from './screens/stageSelectScreen.js';
 import settingsScreen from './screens/settingsScreen.js';
+import dashGameScreen from './screens/dashGameScreen.js';
+import dashResultScreen from './screens/dashResultScreen.js';
 import gameScreen from './screens/gameScreen.js';
 import resultScreen from './screens/resultScreen.js';
 import gameState from './core/gameState.js';
@@ -13,6 +15,8 @@ const screens = {
   title: titleScreen,
   'stage-select': stageSelectScreen,
   settings: settingsScreen,
+  'dash-game': dashGameScreen,
+  'dash-result': dashResultScreen,
   game: gameScreen,
   result: resultScreen,
 };

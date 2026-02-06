@@ -10,6 +10,8 @@ const domRefs = {
     title: byId('title-screen'),
     'stage-select': byId('stage-select-screen'),
     settings: byId('settings-screen'),
+    'dash-game': byId('dash-game-screen'),
+    'dash-result': byId('dash-result-screen'),
     game: byId('game-screen'),
     result: byId('result-screen'),
   },
@@ -21,6 +23,13 @@ const domRefs = {
   title: {
     startButton: byId('title-start-button'),
     freeButton: byId('title-free-button'),
+    dashButton: byId('title-dash-button'),
+  },
+  dashGame: {
+    backButton: byId('dash-game-back-button'),
+  },
+  dashResult: {
+    backButton: byId('dash-result-back-button'),
   },
   stageSelect: {
     list: byId('stage-select-list'),
