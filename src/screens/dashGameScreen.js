@@ -91,6 +91,40 @@ const dashGameScreen = {
     domRefs.dashGame.feedback.textContent = '';
     domRefs.dashGame.feedback.classList.remove('is-correct', 'is-wrong');
   },
+  updateHud() {
+    if (domRefs.dashGame.distance) {
+      domRefs.dashGame.distance.textContent = gameState.dash.distanceM.toFixed(1);
+    }
+    if (domRefs.dashGame.timeRemaining) {
+      const timeSeconds = Math.max(0, Math.ceil(this.timeLeftMs / 1000));
+      domRefs.dashGame.timeRemaining.textContent = String(timeSeconds);
+    }
+    if (domRefs.dashGame.streak) {
+      domRefs.dashGame.streak.textContent = String(gameState.dash.streak);
+    }
+    const maxGap = collisionThreshold * 2;
+    const clampedGap = Math.max(0, Math.min(this.enemyGapM, maxGap));
+    const proximityRatio = 1 - clampedGap / maxGap;
+    const proximityPercent = Math.round(proximityRatio * 100);
+    let proximityState = 'safe';
+    let proximityLabel = '安全';
+    if (proximityRatio >= 0.7) {
+      proximityState = 'danger';
+      proximityLabel = '危険';
+    } else if (proximityRatio >= 0.4) {
+      proximityState = 'caution';
+      proximityLabel = '注意';
+    }
+    if (domRefs.dashGame.enemyWrap) {
+      domRefs.dashGame.enemyWrap.dataset.state = proximityState;
+    }
+    if (domRefs.dashGame.enemyBar) {
+      domRefs.dashGame.enemyBar.style.width = `${proximityPercent}%`;
+    }
+    if (domRefs.dashGame.enemyText) {
+      domRefs.dashGame.enemyText.textContent = `${proximityLabel} (${proximityPercent}%)`;
+    }
+  },
   loadNextQuestion() {
     this.currentQuestion = questionGenerator.next(gameState.settings);
     if (domRefs.dashGame.question) {
@@ -153,6 +187,7 @@ const dashGameScreen = {
     if (this.timeLeftMs <= 0) {
       this.endSession();
     }
+    this.updateHud();
   },
   startLoop() {
     this.stopLoop();
@@ -200,6 +235,7 @@ const dashGameScreen = {
     gameState.dash.correctCount = 0;
     gameState.dash.wrongCount = 0;
     gameState.dash.streak = 0;
+    this.updateHud();
     this.handleBack = () => {
       audioManager.playSfx('sfx_cancel');
       screenManager.changeScreen('title');

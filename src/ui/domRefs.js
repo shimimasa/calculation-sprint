@@ -27,6 +27,12 @@ const domRefs = {
   },
   dashGame: {
     backButton: byId('dash-game-back-button'),
+    distance: byId('dash-game-distance'),
+    timeRemaining: byId('dash-game-time'),
+    streak: byId('dash-game-streak'),
+    enemyWrap: byId('dash-game-enemy'),
+    enemyBar: byId('dash-game-enemy-bar'),
+    enemyText: byId('dash-game-enemy-text'),
     question: byId('dash-game-question'),
     answerInput: byId('dash-game-answer-input'),
     feedback: byId('dash-game-feedback'),
