@@ -239,6 +239,14 @@ const dashGameScreen = {
 
     this.handleKeyDown = inputActions.createKeyHandler();
     this.events.on(domRefs.dashGame.answerInput, 'keydown', this.handleKeyDown);
+    this.handleEnterKeyDown = (event) => {
+      if (event.key !== 'Enter' || !this.isScreenActive()) {
+        return;
+      }
+      event.preventDefault();
+      inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'keyboard' });
+    };
+    this.events.on(window, 'keydown', this.handleEnterKeyDown);
 
     this.handleSubmitClick = () => {
       inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
@@ -295,6 +303,7 @@ const dashGameScreen = {
     this.handleBackAction = null;
     this.handleToggleKeypadAction = null;
     this.handleKeyDown = null;
+    this.handleEnterKeyDown = null;
     this.handleSubmitClick = null;
     this.handleKeypadToggleClick = null;
     this.handleKeypadClick = null;
