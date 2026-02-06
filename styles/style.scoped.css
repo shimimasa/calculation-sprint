@@ -834,6 +834,44 @@
   background: #e06b5f;
 }
 
+.calc-sprint .screen-dash-result .dash-result-header {
+  gap: 12px;
+}
+.calc-sprint .screen-dash-result .dash-result-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.calc-sprint .screen-dash-result .dash-result-message {
+  font-size: 18px;
+  font-weight: 600;
+  color: #3d4658;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 103, 255, 0.12);
+}
+.calc-sprint .screen-dash-result .dash-result-record {
+  width: min(920px, 92vw);
+}
+.calc-sprint .screen-dash-result .dash-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  justify-items: stretch;
+}
+.calc-sprint .screen-dash-result .dash-result-footer {
+  margin-top: 8px;
+}
+.calc-sprint .screen-dash-result .dash-stat-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.calc-sprint .screen-dash-result .dash-stat-card:hover {
+  box-shadow: 0 10px 20px rgba(29, 36, 51, 0.16);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 640px) {
   .calc-sprint .screen-dash .dash-stat-card {
     min-width: 120px;
@@ -846,6 +884,12 @@
 @media (prefers-reduced-motion: reduce) {
   .calc-sprint .screen-dash .dash-proximity-fill {
     transition: none;
+  }
+  .calc-sprint .screen-dash-result .dash-stat-card {
+    transition: none;
+  }
+  .calc-sprint .screen-dash-result .dash-stat-card:hover {
+    transform: none;
   }
 }.calc-sprint .question-area {
   display: flex;

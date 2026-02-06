@@ -43,6 +43,14 @@ const domRefs = {
   },
   dashResult: {
     backButton: byId('dash-result-back-button'),
+    message: byId('dash-result-message'),
+    record: byId('dash-result-record'),
+    distance: byId('dash-result-distance'),
+    correctCount: byId('dash-result-correct'),
+    wrongCount: byId('dash-result-wrong'),
+    accuracy: byId('dash-result-accuracy'),
+    maxStreak: byId('dash-result-max-streak'),
+    timeRemaining: byId('dash-result-time'),
   },
   stageSelect: {
     list: byId('stage-select-list'),
