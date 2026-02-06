@@ -102,7 +102,7 @@ const dashGameScreen = {
     if (domRefs.dashGame.streak) {
       domRefs.dashGame.streak.textContent = String(gameState.dash.streak);
     }
-    const maxGap = collisionThreshold * 2;
+    const maxGap = Math.max(0.001, collisionThreshold * 2);
     const clampedGap = Math.max(0, Math.min(this.enemyGapM, maxGap));
     const proximityRatio = 1 - clampedGap / maxGap;
     const proximityPercent = Math.round(proximityRatio * 100);
@@ -198,7 +198,8 @@ const dashGameScreen = {
       if (!this.isRunning) {
         return;
       }
-      const dtMs = Math.max(0, now - this.lastTickTs);
+      const rawDt = Math.max(0, now - this.lastTickTs);
+      const dtMs = Math.min(rawDt, 50);
       this.lastTickTs = now;
       this.updateFrame(dtMs);
       if (this.isRunning) {

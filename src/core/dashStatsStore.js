@@ -22,7 +22,11 @@ const readFromStorage = (storageKey) => {
 };
 
 const writeToStorage = (storageKey, data) => {
-  localStorage.setItem(storageKey, JSON.stringify(data));
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(data));
+  } catch (error) {
+    return null;
+  }
 };
 
 const normalizeSession = (session) => ({
@@ -41,7 +45,7 @@ const dashStatsStore = {
   getSession(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.dashSession);
-    return readFromStorage(storageKey);
+    return normalizeSession(readFromStorage(storageKey));
   },
   saveSession(session, profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
