@@ -162,12 +162,50 @@
         <header class="screen-header">
           <p class="screen-kicker">DASH RUN</p>
           <h2 class="screen__title">ダッシュラン</h2>
-          <p class="screen__description">ただいま準備中です。</p>
+          <p class="screen__description">できるだけ速く計算して走り抜けよう。</p>
         </header>
         <div class="screen-main stage-card">
-          <div class="mission-card">
-            <p class="mission-label">COMING SOON</p>
-            <p class="mission-text">ダッシュランは次回の更新で追加されます。</p>
+          <div class="game-focus">
+            <div class="question-area">
+              <div id="dash-game-question" class="question-text">1 + 1</div>
+              <input id="dash-game-answer-input" type="number" class="answer-input" autocomplete="off" />
+            </div>
+            <div id="dash-game-feedback" class="feedback" aria-live="polite"></div>
+            <div class="game-actions" aria-label="入力操作">
+              <div class="game-action-row">
+                <button id="dash-game-submit-button" class="primary-button primary-button--xl" type="button">確定</button>
+                <button
+                  id="dash-game-keypad-toggle"
+                  class="secondary-button"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="dash-game-keypad"
+                >
+                  テンキー
+                </button>
+              </div>
+              <div id="dash-game-keypad" class="game-keypad" hidden aria-hidden="true">
+                <button class="keypad-button" type="button" data-keypad-key="7">7</button>
+                <button class="keypad-button" type="button" data-keypad-key="8">8</button>
+                <button class="keypad-button" type="button" data-keypad-key="9">9</button>
+                <button class="keypad-button" type="button" data-keypad-key="4">4</button>
+                <button class="keypad-button" type="button" data-keypad-key="5">5</button>
+                <button class="keypad-button" type="button" data-keypad-key="6">6</button>
+                <button class="keypad-button" type="button" data-keypad-key="1">1</button>
+                <button class="keypad-button" type="button" data-keypad-key="2">2</button>
+                <button class="keypad-button" type="button" data-keypad-key="3">3</button>
+                <button
+                  class="keypad-button keypad-button--wide"
+                  type="button"
+                  data-keypad-key="0"
+                >
+                  0
+                </button>
+                <button class="keypad-button keypad-button--action" type="button" data-keypad-key="back">
+                  ⌫
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <footer class="screen-footer">

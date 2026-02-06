@@ -27,6 +27,13 @@ const domRefs = {
   },
   dashGame: {
     backButton: byId('dash-game-back-button'),
+    question: byId('dash-game-question'),
+    answerInput: byId('dash-game-answer-input'),
+    feedback: byId('dash-game-feedback'),
+    submitButton: byId('dash-game-submit-button'),
+    keypadToggle: byId('dash-game-keypad-toggle'),
+    keypad: byId('dash-game-keypad'),
+    keypadButtons: qsa('#dash-game-keypad [data-keypad-key]'),
   },
   dashResult: {
     backButton: byId('dash-result-back-button'),
