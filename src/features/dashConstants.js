@@ -1,0 +1,9 @@
+export const baseSpeed = 0;
+export const speedIncrementPerCorrect = 0;
+export const enemyBaseSpeed = 0;
+export const enemySpeedIncrementPerStreak = 0;
+export const collisionThreshold = 0;
+export const timePenaltyOnCollision = 0;
+export const timeBonusOnDefeat = 0;
+export const streakAttack = 3;
+export const streakDefeat = 5;
