@@ -186,6 +186,22 @@ const dashGameScreen = {
     } else if (type === 'wrong') {
       domRefs.dashGame.feedback.classList.add('is-wrong');
     }
+    const problemMain = domRefs.dashGame.screen?.querySelector('.dash-problem-main');
+    if (problemMain) {
+      if (this.feedbackFxTimeout) {
+        window.clearTimeout(this.feedbackFxTimeout);
+        this.feedbackFxTimeout = null;
+      }
+      problemMain.classList.remove('is-attack', 'is-hit');
+      if (type === 'correct') {
+        problemMain.classList.add('is-attack');
+      } else if (type === 'wrong') {
+        problemMain.classList.add('is-hit');
+      }
+      this.feedbackFxTimeout = window.setTimeout(() => {
+        problemMain.classList.remove('is-attack', 'is-hit');
+      }, 160);
+    }
   },
   clearFeedback() {
     if (!domRefs.dashGame.feedback) {
@@ -193,6 +209,8 @@ const dashGameScreen = {
     }
     domRefs.dashGame.feedback.textContent = '';
     domRefs.dashGame.feedback.classList.remove('is-correct', 'is-wrong');
+    const problemMain = domRefs.dashGame.screen?.querySelector('.dash-problem-main');
+    problemMain?.classList.remove('is-attack', 'is-hit');
   },
   showStreakCue(message) {
     if (!domRefs.dashGame.streakCue) {
@@ -229,13 +247,22 @@ const dashGameScreen = {
       domRefs.dashGame.timeRemaining.textContent = String(timeSeconds);
     }
     const isLowTime = this.timeLeftMs <= LOW_TIME_THRESHOLD_MS;
-    const timeCard = domRefs.dashGame.timeRemaining?.closest('.dash-stat-card');
-    if (timeCard) {
-      if (isLowTime) {
-        timeCard.dataset.state = 'low';
-      } else {
-        delete timeCard.dataset.state;
+    const timeRatio = (() => {
+      const denom = Math.max(1, Number(this.initialTimeLimitMs) || DEFAULT_TIME_LIMIT_MS);
+      return Math.max(0, Math.min(this.timeLeftMs / denom, 1));
+    })();
+    const timeWrap = domRefs.dashGame.timeWrap;
+    if (timeWrap) {
+      let nextState = 'safe';
+      if (timeRatio <= 0.3) {
+        nextState = 'danger';
+      } else if (timeRatio <= 0.6) {
+        nextState = 'caution';
       }
+      timeWrap.dataset.state = isLowTime ? 'danger' : nextState;
+    }
+    if (domRefs.dashGame.timeBar) {
+      domRefs.dashGame.timeBar.style.width = `${(timeRatio * 100).toFixed(1)}%`;
     }
     if (domRefs.dashGame.timeNote) {
       domRefs.dashGame.timeNote.textContent = isLowTime ? '残りわずか' : '';
@@ -467,6 +494,7 @@ const dashGameScreen = {
     this.enemySpeed = enemyBaseSpeed;
     this.enemyGapM = collisionThreshold * 2;
     this.timeLeftMs = this.getInitialTimeLimitMs();
+    this.initialTimeLimitMs = this.timeLeftMs;
     this.lastTickTs = window.performance.now();
     this.currentQuestion = null;
     this.hasEnded = false;
@@ -599,6 +627,10 @@ const dashGameScreen = {
     this.handleKeypadToggleClick = null;
     this.handleKeypadClick = null;
     this.clearStreakCue();
+    if (this.feedbackFxTimeout) {
+      window.clearTimeout(this.feedbackFxTimeout);
+      this.feedbackFxTimeout = null;
+    }
   },
 };
 

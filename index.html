@@ -173,12 +173,6 @@
               <strong id="dash-game-distance" class="dash-stat-value">0.0</strong>
               <span class="dash-stat-unit">m</span>
             </div>
-            <div class="dash-stat-card">
-              <span class="dash-stat-label">残り時間</span>
-              <strong id="dash-game-time" class="dash-stat-value">30</strong>
-              <span class="dash-stat-unit">s</span>
-              <span id="dash-game-time-note" class="dash-time-note" aria-live="polite"></span>
-            </div>
           </div>
           <p id="dash-game-next-area" class="dash-next-area" aria-live="off"></p>
           <p class="dash-rules-hint">正解で時間＋／まちがいで時間−／ぶつかると終了</p>
@@ -207,6 +201,16 @@
           <div class="game-focus">
             <div class="dash-problem-grid" aria-label="問題入力エリア">
               <div class="dash-problem-main">
+                <div id="dash-game-time-wrap" class="dash-time" aria-label="残り時間">
+                  <div class="dash-timebar" aria-hidden="true">
+                    <div id="dash-game-timebar" class="dash-timebar__fill"></div>
+                  </div>
+                  <div class="dash-timevalue" aria-label="残り秒数">
+                    <strong id="dash-game-time" class="dash-time-seconds">30</strong>
+                    <span class="dash-time-unit">s</span>
+                  </div>
+                  <div id="dash-game-time-note" class="dash-time-note" aria-live="polite"></div>
+                </div>
                 <div class="question-area">
                   <div id="dash-game-question" class="question-text">1 + 1</div>
                   <input id="dash-game-answer-input" type="number" class="answer-input" autocomplete="off" />

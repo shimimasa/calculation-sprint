@@ -944,6 +944,23 @@
 .calc-sprint #dash-game-screen .dash-stats {
   gap: 10px;
 }
+.calc-sprint #dash-game-screen .dash-stats--header .dash-stat-card {
+  padding: 10px 12px;
+  min-width: 120px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 18px rgba(29, 36, 51, 0.1);
+}
+.calc-sprint #dash-game-screen .dash-stats--header .dash-stat-label {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.calc-sprint #dash-game-screen .dash-stats--header .dash-stat-value {
+  font-size: 22px;
+}
+.calc-sprint #dash-game-screen .dash-stats--header .dash-stat-unit {
+  font-size: 13px;
+}
 .calc-sprint #dash-game-screen > .screen-main.dash-playfield {
   max-width: 980px;
   margin: 0 auto;
@@ -968,6 +985,68 @@
   padding: 14px 18px;
   color: #1d2433;
 }
+
+/* Dash: primary time (danger gauge) */
+.calc-sprint #dash-game-screen .dash-time {
+  width: min(520px, 92vw);
+  margin: 0 auto 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "bar value"
+    "note note";
+  gap: 6px 12px;
+  align-items: center;
+}
+.calc-sprint #dash-game-screen .dash-timebar {
+  grid-area: bar;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(29, 36, 51, 0.18);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(29, 36, 51, 0.16);
+}
+.calc-sprint #dash-game-screen .dash-timebar__fill {
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  background: #5fb97a;
+  transition: width 0.12s linear, background-color 0.12s ease;
+}
+.calc-sprint #dash-game-screen #dash-game-time-wrap[data-state="caution"] .dash-timebar__fill {
+  background: #e0a23b;
+}
+.calc-sprint #dash-game-screen #dash-game-time-wrap[data-state="danger"] .dash-timebar__fill {
+  background: #e06b5f;
+}
+.calc-sprint #dash-game-screen .dash-timevalue {
+  grid-area: value;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-weight: 900;
+  color: rgba(29, 36, 51, 0.92);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.calc-sprint #dash-game-screen .dash-time-seconds {
+  font-size: 28px;
+  letter-spacing: 0.02em;
+}
+.calc-sprint #dash-game-screen .dash-time-unit {
+  font-size: 14px;
+  font-weight: 800;
+  opacity: 0.75;
+}
+.calc-sprint #dash-game-screen .dash-time-note {
+  grid-area: note;
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(29, 36, 51, 0.6);
+}
+.calc-sprint #dash-game-screen #dash-game-time-wrap[data-state="danger"] .dash-time-note {
+  color: rgba(224, 107, 95, 0.95);
+}
 .calc-sprint #dash-game-screen .question-area {
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -990,6 +1069,7 @@
 }
 .calc-sprint #dash-game-screen .dash-rules-hint {
   color: rgba(29, 36, 51, 0.58);
+  display: none;
 }
 .calc-sprint #dash-game-screen .primary-button {
   background: rgba(56, 103, 255, 0.86);
@@ -1004,13 +1084,65 @@
   backdrop-filter: blur(10px);
 }
 .calc-sprint #dash-game-screen .game-keypad .keypad-button {
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(29, 36, 51, 0.16);
+  box-shadow: 0 10px 22px rgba(29, 36, 51, 0.18);
+  color: #1d2433;
+  transition: transform 0.06s ease, box-shadow 0.06s ease, background-color 0.06s ease, color 0.06s ease;
+}
+.calc-sprint #dash-game-screen .game-keypad .keypad-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 10px rgba(29, 36, 51, 0.16);
+  background: rgba(56, 103, 255, 0.92);
+  border-color: rgba(56, 103, 255, 0.9);
+  color: #ffffff;
+}
+.calc-sprint #dash-game-screen .game-keypad .keypad-button--action:active {
+  background: rgba(29, 36, 51, 0.88);
+  border-color: rgba(29, 36, 51, 0.9);
 }
 .calc-sprint #dash-game-screen .feedback {
   min-height: 26px;
+}
+
+@keyframes calc-sprint-dash-attack-pop {
+  0% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+  35% {
+    transform: translateY(-1px) scale(1.02);
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes calc-sprint-dash-hit-shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  55% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.calc-sprint #dash-game-screen .dash-problem-main.is-attack .question-area {
+  animation: calc-sprint-dash-attack-pop 0.16s ease-out 1;
+  box-shadow: 0 18px 40px rgba(56, 103, 255, 0.18);
+}
+.calc-sprint #dash-game-screen .dash-problem-main.is-hit .question-area {
+  animation: calc-sprint-dash-hit-shake 0.16s ease-out 1;
+  border-color: rgba(224, 107, 95, 0.55);
+  box-shadow: 0 18px 40px rgba(224, 107, 95, 0.18);
 }
 .calc-sprint #dash-game-screen > .screen-footer {
   margin-top: 8px;
@@ -1101,6 +1233,28 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stats--footer {
+    justify-content: flex-start;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stat-card,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-proximity {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 18px rgba(29, 36, 51, 0.1);
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stat-value {
+    font-size: 22px;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-proximity-text {
+    font-size: 13px;
+  }
+  .calc-sprint #dash-game-screen[data-enemy-state="safe"] .dash-sidehud {
+    opacity: 0.92;
+  }
+  .calc-sprint #dash-game-screen[data-enemy-state="danger"] .dash-sidehud .dash-proximity {
+    border-color: rgba(224, 107, 95, 0.55);
+    box-shadow: 0 12px 24px rgba(224, 107, 95, 0.18);
   }
 }
 
@@ -1232,6 +1386,12 @@
   }
   .calc-sprint #dash-game-screen::before {
     animation: none;
+  }
+  .calc-sprint #dash-game-screen .dash-timebar__fill {
+    transition: none;
+  }
+  .calc-sprint #dash-game-screen .game-keypad .keypad-button {
+    transition: none;
   }
   .calc-sprint .screen-dash-result .dash-stat-card {
     transition: none;

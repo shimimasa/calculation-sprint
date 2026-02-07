@@ -31,6 +31,8 @@ const domRefs = {
     backButton: byId('dash-game-back-button'),
     distance: byId('dash-game-distance'),
     timeRemaining: byId('dash-game-time'),
+    timeWrap: byId('dash-game-time-wrap'),
+    timeBar: byId('dash-game-timebar'),
     timeNote: byId('dash-game-time-note'),
     nextArea: byId('dash-game-next-area'),
     streak: byId('dash-game-streak'),
