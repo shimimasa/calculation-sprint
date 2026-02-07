@@ -785,6 +785,16 @@
   gap: 12px;
   justify-content: center;
   align-items: stretch;
+}.calc-sprint .screen-dash .dash-next-area {
+  margin: 0 auto;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3d4658;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(56, 103, 255, 0.12);
+  border-radius: 999px;
+  padding: 6px 14px;
+  text-align: center;
 }.calc-sprint .screen-dash .dash-stat-card {
   display: grid;
   grid-template-columns: auto auto;
