@@ -799,6 +799,16 @@
 }.calc-sprint .screen-dash .dash-stat-unit {
   font-size: 16px;
   color: #556076;
+}.calc-sprint .screen-dash .dash-streak-cue {
+  grid-column: 1 / -1;
+  min-height: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3648;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}.calc-sprint .screen-dash .dash-streak-cue.is-visible {
+  opacity: 1;
 }.calc-sprint .screen-dash .dash-footer {
   display: flex;
   flex-direction: column;
@@ -883,6 +893,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .calc-sprint .screen-dash .dash-proximity-fill {
+    transition: none;
+  }
+  .calc-sprint .screen-dash .dash-streak-cue {
     transition: none;
   }
   .calc-sprint .screen-dash-result .dash-stat-card {
