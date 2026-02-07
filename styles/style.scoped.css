@@ -945,6 +945,15 @@
 }
 .calc-sprint #dash-game-screen > .screen-main.stage-card {
   padding: 14px 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.74);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 32px rgba(29, 36, 51, 0.14);
+}
+.calc-sprint #dash-game-screen > .screen-main {
+  margin-bottom: -14px;
 }
 .calc-sprint #dash-game-screen .game-focus {
   padding: 0 12px 0;
@@ -962,13 +971,78 @@
   min-height: 26px;
 }
 .calc-sprint #dash-game-screen > .screen-footer {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 .calc-sprint #dash-game-screen .dash-footer {
   gap: 10px;
 }
+.calc-sprint #dash-game-screen .dash-stats--footer {
+  flex-wrap: nowrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: stretch;
+}
+.calc-sprint #dash-game-screen .dash-stats--footer .dash-stat-card {
+  min-width: 120px;
+  padding: 10px 12px;
+}
+.calc-sprint #dash-game-screen .dash-stats--footer .dash-proximity {
+  min-width: 260px;
+}
 .calc-sprint #dash-game-screen .title-actions {
   gap: 10px;
+}
+.calc-sprint #dash-game-screen #dash-game-back-button {
+  max-width: 720px;
+  width: 100%;
+  padding: 12px 18px;
+  min-height: 44px;
+}
+
+/* Dash Run: wide layout (PC) - 2-column header */
+@media (min-width: 901px) {
+  .calc-sprint #dash-game-screen > header.dash-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "kicker stats"
+      "title stats"
+      "desc stats"
+      ". next"
+      "rules rules";
+    column-gap: 18px;
+    row-gap: 8px;
+    align-items: start;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .screen-kicker {
+    grid-area: kicker;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .screen__title {
+    grid-area: title;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .screen__description {
+    grid-area: desc;
+    max-width: 44ch;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
+    grid-area: stats;
+    justify-self: end;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    grid-area: next;
+    justify-self: end;
+    margin: 0;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-rules-hint {
+    grid-area: rules;
+  }
+}
+
+@media (max-width: 900px) {
+  .calc-sprint #dash-game-screen > header.dash-header {
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 @keyframes calc-sprint-dash-chase-shake {
