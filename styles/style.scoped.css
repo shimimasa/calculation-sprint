@@ -799,6 +799,19 @@
 }.calc-sprint .screen-dash .dash-stat-unit {
   font-size: 16px;
   color: #556076;
+}.calc-sprint .screen-dash .dash-time-note {
+  grid-column: 1 / -1;
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7a4a3a;
+}.calc-sprint .screen-dash .dash-stat-card[data-state="low"] {
+  border: 1px solid rgba(224, 107, 95, 0.35);
+  background: rgba(255, 243, 233, 0.95);
+}.calc-sprint .screen-dash .dash-stat-card[data-state="low"] .dash-stat-label {
+  color: #7a4a3a;
+}.calc-sprint .screen-dash .dash-stat-card[data-state="low"] .dash-stat-value {
+  color: #b5563f;
 }.calc-sprint .screen-dash .dash-streak-cue {
   grid-column: 1 / -1;
   min-height: 18px;
