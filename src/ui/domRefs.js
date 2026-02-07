@@ -27,6 +27,7 @@ const domRefs = {
   },
   dashGame: {
     screen: byId('dash-game-screen'),
+    runHost: qs('#dash-game-screen .run-host'),
     backButton: byId('dash-game-back-button'),
     distance: byId('dash-game-distance'),
     timeRemaining: byId('dash-game-time'),

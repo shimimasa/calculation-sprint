@@ -28,8 +28,102 @@ const LOW_TIME_THRESHOLD_MS = 8000;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
+const BG_FAR_SPEED_FACTOR = 0.65;
+const BG_NEAR_SPEED_FACTOR = 1.1;
+const BG_FACTOR_PX_PER_M = 42;
+const BG_LOOP_WIDTH_PX = 1200;
+const EFFECT_MAX_SPEED_MPS = 8;
 
 const dashGameScreen = {
+  ensureRunLayerMounted() {
+    const runLayer = domRefs.game.runLayer;
+    const host = domRefs.dashGame.runHost;
+    if (!runLayer || !host) {
+      return;
+    }
+    if (!this.runLayerOriginalParent) {
+      this.runLayerOriginalParent = runLayer.parentElement;
+      this.runLayerOriginalNextSibling = runLayer.nextElementSibling;
+    }
+    if (runLayer.parentElement !== host) {
+      host.appendChild(runLayer);
+    }
+    runLayer.hidden = false;
+  },
+  restoreRunLayer() {
+    const runLayer = domRefs.game.runLayer;
+    const parent = this.runLayerOriginalParent;
+    if (!runLayer || !parent) {
+      return;
+    }
+    const before = this.runLayerOriginalNextSibling;
+    if (before && before.parentElement === parent) {
+      parent.insertBefore(runLayer, before);
+    } else {
+      parent.appendChild(runLayer);
+    }
+  },
+  updateRunLayerVisuals(dtMs) {
+    const dtSec = dtMs / 1000;
+    if (!Number.isFinite(dtSec) || dtSec <= 0) {
+      return;
+    }
+    if (this.hasEnded) {
+      return;
+    }
+    const runWorld = domRefs.game.runWorld;
+    const runBgFar = domRefs.game.runBgFar;
+    const runBgNear = domRefs.game.runBgNear;
+    const speedLines = domRefs.game.speedLines;
+    const runner = domRefs.game.runner;
+    const runnerWrap = domRefs.game.runnerWrap;
+
+    const speedValue = Math.max(0, Number(this.playerSpeed) || 0);
+    const baseOffset = speedValue * dtSec * BG_FACTOR_PX_PER_M;
+    this.bgOffsetFarPx -= baseOffset * BG_FAR_SPEED_FACTOR;
+    this.bgOffsetNearPx -= baseOffset * BG_NEAR_SPEED_FACTOR;
+    if (this.bgOffsetFarPx <= -BG_LOOP_WIDTH_PX) {
+      this.bgOffsetFarPx += BG_LOOP_WIDTH_PX;
+    }
+    if (this.bgOffsetNearPx <= -BG_LOOP_WIDTH_PX) {
+      this.bgOffsetNearPx += BG_LOOP_WIDTH_PX;
+    }
+
+    if (runBgFar) {
+      runBgFar.style.backgroundPositionX = `${this.bgOffsetFarPx.toFixed(2)}px`;
+    }
+    if (runBgNear) {
+      runBgNear.style.backgroundPositionX = `${this.bgOffsetNearPx.toFixed(2)}px`;
+    }
+
+    const speedRatio = Math.max(0, Math.min(speedValue / EFFECT_MAX_SPEED_MPS, 1));
+    if (speedLines) {
+      let lineOpacity = Math.max(0.05, Math.min(speedRatio, 0.65));
+      speedLines.style.opacity = lineOpacity.toFixed(2);
+      speedLines.classList.toggle('is-fast', speedRatio > 0.45);
+      speedLines.classList.toggle('is-rapid', speedRatio > 0.75);
+    }
+    runWorld?.classList.toggle('is-fast', speedRatio > 0.6);
+    runWorld?.classList.toggle('is-rapid', speedRatio > 0.85);
+    runner?.classList.toggle('speed-glow', speedRatio > 0.7);
+    runnerWrap?.classList.toggle('is-fast', speedRatio > 0.7);
+    runnerWrap?.classList.toggle('is-rapid', speedRatio > 0.85);
+
+    if (runner) {
+      let nextTier = 'runner-speed-high';
+      if (speedValue < 3.0) {
+        nextTier = 'runner-speed-low';
+      } else if (speedValue < 6.0) {
+        nextTier = 'runner-speed-mid';
+      }
+      if (this.runnerSpeedTier !== nextTier) {
+        runner.classList.remove('runner-speed-low', 'runner-speed-mid', 'runner-speed-high');
+        runner.classList.add(nextTier);
+        this.runnerSpeedTier = nextTier;
+      }
+      runner.classList.add('runner-bob');
+    }
+  },
   // State model (local-only, per spec):
   // - playerSpeed (m/s), enemySpeed (m/s), enemyGapM (meters behind), timeLeftMs (ms), lastTickTs (ms)
   // - currentQuestion / inputBuffer are managed locally via questionGenerator + input element.
@@ -164,6 +258,10 @@ const dashGameScreen = {
     }
     if (domRefs.dashGame.enemyWrap) {
       domRefs.dashGame.enemyWrap.dataset.state = proximityState;
+    }
+    const screen = domRefs.dashGame.screen;
+    if (screen) {
+      screen.dataset.enemyState = proximityState;
     }
     if (domRefs.dashGame.enemyBar) {
       domRefs.dashGame.enemyBar.style.width = `${proximityPercent}%`;
@@ -317,6 +415,7 @@ const dashGameScreen = {
     if (this.timeLeftMs <= 0) {
       this.endSession('timeup');
     }
+    this.updateRunLayerVisuals(dtMs);
     this.updateHud();
   },
   startLoop() {
@@ -363,6 +462,7 @@ const dashGameScreen = {
   enter() {
     uiRenderer.showScreen('dash-game');
     this.events = createEventRegistry('dash-game');
+    this.ensureRunLayerMounted();
     this.playerSpeed = baseSpeed;
     this.enemySpeed = enemyBaseSpeed;
     this.enemyGapM = collisionThreshold * 2;
@@ -380,6 +480,11 @@ const dashGameScreen = {
     this.currentArea = null;
     this.lastNextAreaText = null;
     this.lastNextAreaHidden = null;
+    this.runLayerOriginalParent = this.runLayerOriginalParent ?? null;
+    this.runLayerOriginalNextSibling = this.runLayerOriginalNextSibling ?? null;
+    this.bgOffsetFarPx = 0;
+    this.bgOffsetNearPx = 0;
+    this.runnerSpeedTier = null;
     this.updateArea(gameState.dash.distanceM);
     this.updateHud();
     this.handleBack = () => {
@@ -468,6 +573,7 @@ const dashGameScreen = {
     this.events?.clear();
     this.events = null;
     this.stopLoop();
+    this.restoreRunLayer();
     if (domRefs.dashGame.screen) {
       domRefs.dashGame.screen.dataset.area = '1';
     }

@@ -766,6 +766,8 @@
   font-weight: 600;
 }.calc-sprint .screen-dash {
   background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
+  position: relative;
+  overflow: hidden;
 }.calc-sprint .screen-dash[data-area="1"] {
   background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
 }.calc-sprint .screen-dash[data-area="2"] {
@@ -777,7 +779,30 @@
 }.calc-sprint .screen-dash .stage-card {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(56, 103, 255, 0.12);
-}.calc-sprint .screen-dash .dash-header {
+}
+
+.calc-sprint .screen-dash .run-host {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.calc-sprint .screen-dash .run-host .run-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: min(48vh, 420px);
+  transform: none;
+}
+.calc-sprint .screen-dash > .screen-header,
+.calc-sprint .screen-dash > .screen-main,
+.calc-sprint .screen-dash > .screen-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.calc-sprint .screen-dash .dash-header {
   gap: 16px;
 }.calc-sprint .screen-dash .dash-stats {
   display: flex;
@@ -881,6 +906,34 @@
   background: #e06b5f;
 }
 
+@keyframes calc-sprint-dash-chase-shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(0.5px, -0.5px);
+  }
+  45% {
+    transform: translate(-0.8px, 0.4px);
+  }
+  70% {
+    transform: translate(0.6px, 0.6px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.calc-sprint .screen-dash[data-enemy-state="caution"] .run-world::after {
+  opacity: 0.12;
+}
+.calc-sprint .screen-dash[data-enemy-state="danger"] .run-world::after {
+  opacity: 0.22;
+}
+.calc-sprint .screen-dash[data-enemy-state="danger"] .run-world {
+  animation: calc-sprint-dash-chase-shake 0.22s linear infinite;
+}
+
 .calc-sprint .screen-dash-result .dash-result-header {
   gap: 12px;
 }
@@ -941,6 +994,9 @@
   }
   .calc-sprint .screen-dash .dash-streak-cue {
     transition: none;
+  }
+  .calc-sprint .screen-dash[data-enemy-state="danger"] .run-world {
+    animation: none;
   }
   .calc-sprint .screen-dash-result .dash-stat-card {
     transition: none;

@@ -4,19 +4,19 @@ overview: 通常モードで動作済みの`run-layer`（背景スクロール +
 todos:
   - id: locate_and_wrap_run_layer
     content: "`index.html`にDash用`run-host`を追加し、`run-layer`を1個だけ共有できる構造にする（ID重複回避）。"
-    status: pending
+    status: completed
   - id: dash_enter_exit_dom_move
     content: "`dashGameScreen.enter()/exit()`で`run-layer`をDashへDOM移動/復帰する（元親・元位置を保存）。"
-    status: pending
+    status: completed
   - id: dash_background_runner_visuals
     content: "`dashGameScreen.updateFrame()`末尾で背景スクロール+runner tier+speed-linesを通常モード式で更新し、Dashの`playerSpeed`に接続する。"
-    status: pending
+    status: completed
   - id: enemy_chase_css_cues
     content: "`updateHud()`の`proximityState`を`screen.dataset.enemyState`へ同期し、CSSでdanger/caution時の圧迫・揺れ・スピード線強調を付与する（新アセットなし）。"
-    status: pending
+    status: completed
   - id: dash_layering_safety
     content: Dash時のみ`run-layer`を背面固定・`pointer-events:none`・z-index整理し、入力UIの可読性/操作性を維持する。
-    status: pending
+    status: completed
 isProject: false
 ---
 
