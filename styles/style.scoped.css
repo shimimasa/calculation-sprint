@@ -783,10 +783,7 @@
 
 .calc-sprint .screen-dash .run-viewport {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: clamp(220px, 38vh, 420px);
+  inset: 0;
   z-index: 0;
   overflow: hidden;
   border-radius: inherit;
@@ -800,10 +797,9 @@
 }
 .calc-sprint .screen-dash .run-host .run-layer {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: min(58vh, 520px);
+  inset: 0;
+  height: 100%;
+  padding: 0;
   transform: none;
 }
 .calc-sprint .screen-dash > .screen-header,
@@ -814,7 +810,7 @@
 }
 
 .calc-sprint .screen-dash > .screen-main {
-  padding-bottom: clamp(200px, 30vh, 280px);
+  padding-bottom: 0;
 }
 
 .calc-sprint .screen-dash .dash-header {
@@ -929,6 +925,11 @@
   gap: 10px;
   margin-bottom: 12px;
 }
+.calc-sprint #dash-game-screen > header.dash-header .screen-kicker,
+.calc-sprint #dash-game-screen > header.dash-header .screen__title,
+.calc-sprint #dash-game-screen > header.dash-header .screen__description {
+  display: none;
+}
 .calc-sprint #dash-game-screen .dash-header {
   gap: 10px;
 }
@@ -963,7 +964,7 @@
   margin-top: 4px;
 }
 .calc-sprint #dash-game-screen .question-area {
-  transform: translateY(12px);
+  transform: translateY(0);
   padding: 14px 18px;
   color: #1d2433;
 }
@@ -989,6 +990,24 @@
 }
 .calc-sprint #dash-game-screen .dash-rules-hint {
   color: rgba(29, 36, 51, 0.58);
+}
+.calc-sprint #dash-game-screen .primary-button {
+  background: rgba(56, 103, 255, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.calc-sprint #dash-game-screen .secondary-button {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.calc-sprint #dash-game-screen .game-keypad .keypad-button {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 .calc-sprint #dash-game-screen .feedback {
   min-height: 26px;
@@ -1055,25 +1074,13 @@
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-areas:
-      "kicker stats"
-      "title stats"
-      "desc stats"
+      ". stats"
       ". next"
       ". sidehud"
       "rules rules";
     column-gap: 18px;
     row-gap: 8px;
     align-items: start;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .screen-kicker {
-    grid-area: kicker;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .screen__title {
-    grid-area: title;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .screen__description {
-    grid-area: desc;
-    max-width: 44ch;
   }
   .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
     grid-area: stats;
