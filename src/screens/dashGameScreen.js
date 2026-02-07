@@ -25,6 +25,9 @@ const STREAK_CUE_DURATION_MS = 800;
 const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 const LOW_TIME_THRESHOLD_MS = 8000;
+const AREA_2_START_M = 200;
+const AREA_3_START_M = 500;
+const AREA_4_START_M = 1000;
 
 const dashGameScreen = {
   // State model (local-only, per spec):
@@ -168,6 +171,29 @@ const dashGameScreen = {
       domRefs.dashGame.enemyText.textContent = `${proximityLabel} (${proximityPercent}%)`;
     }
   },
+  getAreaForDistance(distanceM) {
+    if (distanceM >= AREA_4_START_M) {
+      return 4;
+    }
+    if (distanceM >= AREA_3_START_M) {
+      return 3;
+    }
+    if (distanceM >= AREA_2_START_M) {
+      return 2;
+    }
+    return 1;
+  },
+  updateArea(distanceM) {
+    const nextArea = this.getAreaForDistance(distanceM);
+    if (nextArea === this.currentArea) {
+      return;
+    }
+    this.currentArea = nextArea;
+    const screen = domRefs.screens['dash-game'];
+    if (screen) {
+      screen.dataset.area = String(nextArea);
+    }
+  },
   loadNextQuestion() {
     this.currentQuestion = questionGenerator.next(gameState.settings);
     if (domRefs.dashGame.question) {
@@ -233,6 +259,7 @@ const dashGameScreen = {
     }
     const dtSeconds = dtMs / 1000;
     gameState.dash.distanceM += this.playerSpeed * dtSeconds;
+    this.updateArea(gameState.dash.distanceM);
     this.enemyGapM -= (this.enemySpeed - this.playerSpeed) * dtSeconds;
     if (this.enemyGapM <= collisionThreshold) {
       audioManager.playSfx('sfx_wrong', { volume: 0.7 });
@@ -305,6 +332,8 @@ const dashGameScreen = {
     gameState.dash.wrongCount = 0;
     gameState.dash.streak = 0;
     gameState.dash.result = null;
+    this.currentArea = null;
+    this.updateArea(gameState.dash.distanceM);
     this.updateHud();
     this.handleBack = () => {
       audioManager.playSfx('sfx_cancel');
