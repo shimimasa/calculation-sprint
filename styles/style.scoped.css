@@ -764,6 +764,415 @@
   gap: 8px;
 }.calc-sprint .form-label {
   font-weight: 600;
+}.calc-sprint .screen-dash {
+  background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
+  position: relative;
+  min-height: 100vh;
+}.calc-sprint .screen-dash[data-area="1"] {
+  background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
+}.calc-sprint .screen-dash[data-area="2"] {
+  background: linear-gradient(180deg, #ebf4f3 0%, #d8e8e7 100%);
+}.calc-sprint .screen-dash[data-area="3"] {
+  background: linear-gradient(180deg, #f1f0f9 0%, #e1e2f3 100%);
+}.calc-sprint .screen-dash[data-area="4"] {
+  background: linear-gradient(180deg, #f5f0e7 0%, #e7decd 100%);
+}.calc-sprint .screen-dash .stage-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(56, 103, 255, 0.12);
+}
+
+.calc-sprint .screen-dash .run-viewport {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(220px, 38vh, 420px);
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.calc-sprint .screen-dash .run-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.calc-sprint .screen-dash .run-host .run-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: min(58vh, 520px);
+  transform: none;
+}
+.calc-sprint .screen-dash > .screen-header,
+.calc-sprint .screen-dash > .screen-main,
+.calc-sprint .screen-dash > .screen-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.calc-sprint .screen-dash > .screen-main {
+  padding-bottom: clamp(200px, 30vh, 280px);
+}
+
+.calc-sprint .screen-dash .dash-header {
+  gap: 16px;
+}.calc-sprint .screen-dash .dash-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: stretch;
+}.calc-sprint .screen-dash .dash-next-area {
+  margin: 0 auto;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3d4658;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(56, 103, 255, 0.12);
+  border-radius: 999px;
+  padding: 6px 14px;
+  text-align: center;
+}.calc-sprint .screen-dash .dash-rules-hint {
+  margin: 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7383;
+  text-align: center;
+}.calc-sprint .screen-dash .dash-stat-card {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 6px 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 18px rgba(29, 36, 51, 0.12);
+  min-width: 150px;
+}.calc-sprint .screen-dash .dash-stat-label {
+  grid-column: 1 / -1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #556076;
+}.calc-sprint .screen-dash .dash-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d2433;
+}.calc-sprint .screen-dash .dash-stat-unit {
+  font-size: 16px;
+  color: #556076;
+}.calc-sprint .screen-dash .dash-time-note {
+  grid-column: 1 / -1;
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7a4a3a;
+}.calc-sprint .screen-dash .dash-stat-card[data-state="low"] {
+  border: 1px solid rgba(224, 107, 95, 0.35);
+  background: rgba(255, 243, 233, 0.95);
+}.calc-sprint .screen-dash .dash-stat-card[data-state="low"] .dash-stat-label {
+  color: #7a4a3a;
+}.calc-sprint .screen-dash .dash-stat-card[data-state="low"] .dash-stat-value {
+  color: #b5563f;
+}.calc-sprint .screen-dash .dash-streak-cue {
+  grid-column: 1 / -1;
+  min-height: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3648;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}.calc-sprint .screen-dash .dash-streak-cue.is-visible {
+  opacity: 1;
+}.calc-sprint .screen-dash .dash-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}.calc-sprint .screen-dash .dash-proximity {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 18px rgba(29, 36, 51, 0.12);
+  min-width: min(320px, 80vw);
+}.calc-sprint .screen-dash .dash-proximity-bar {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(29, 36, 51, 0.12);
+  overflow: hidden;
+}.calc-sprint .screen-dash .dash-proximity-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: #5fb97a;
+  transition: width 0.2s ease, background-color 0.2s ease;
+}.calc-sprint .screen-dash .dash-proximity-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d2433;
+}.calc-sprint .screen-dash .dash-proximity[data-state="caution"] .dash-proximity-fill {
+  background: #e0a23b;
+}.calc-sprint .screen-dash .dash-proximity[data-state="danger"] .dash-proximity-fill {
+  background: #e06b5f;
+}
+
+/* Dash Run: layout density + playfield focus (Dash-scoped overrides) */
+.calc-sprint #dash-game-screen {
+  padding: 18px 18px 14px;
+}
+.calc-sprint #dash-game-screen > .screen-header {
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.calc-sprint #dash-game-screen .dash-header {
+  gap: 10px;
+}
+.calc-sprint #dash-game-screen .screen__title {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+.calc-sprint #dash-game-screen .screen__description {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.calc-sprint #dash-game-screen .dash-stats {
+  gap: 10px;
+}
+.calc-sprint #dash-game-screen > .screen-main.stage-card {
+  padding: 14px 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.74);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 32px rgba(29, 36, 51, 0.14);
+}
+.calc-sprint #dash-game-screen > .screen-main {
+  margin-bottom: -14px;
+}
+.calc-sprint #dash-game-screen .game-focus {
+  padding: 0 12px 0;
+  margin-bottom: -10px;
+  gap: 6px;
+}
+.calc-sprint #dash-game-screen .game-actions {
+  margin-top: 4px;
+}
+.calc-sprint #dash-game-screen .question-area {
+  transform: translateY(12px);
+  padding: 14px 18px;
+}
+.calc-sprint #dash-game-screen .feedback {
+  min-height: 26px;
+}
+.calc-sprint #dash-game-screen > .screen-footer {
+  margin-top: 8px;
+}
+.calc-sprint #dash-game-screen .dash-footer {
+  gap: 10px;
+}
+.calc-sprint #dash-game-screen .dash-stats--footer {
+  flex-wrap: nowrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: stretch;
+}
+.calc-sprint #dash-game-screen .dash-stats--footer .dash-stat-card {
+  min-width: 120px;
+  padding: 10px 12px;
+}
+.calc-sprint #dash-game-screen .dash-stats--footer .dash-proximity {
+  min-width: 260px;
+}
+.calc-sprint #dash-game-screen .title-actions {
+  gap: 10px;
+}
+.calc-sprint #dash-game-screen #dash-game-back-button {
+  max-width: 720px;
+  width: 100%;
+  padding: 12px 18px;
+  min-height: 44px;
+}
+
+/* Dash Run: wide layout (PC) - 2-column header */
+@media (min-width: 901px) {
+  .calc-sprint #dash-game-screen > header.dash-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "kicker stats"
+      "title stats"
+      "desc stats"
+      ". next"
+      "rules rules";
+    column-gap: 18px;
+    row-gap: 8px;
+    align-items: start;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .screen-kicker {
+    grid-area: kicker;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .screen__title {
+    grid-area: title;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .screen__description {
+    grid-area: desc;
+    max-width: 44ch;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
+    grid-area: stats;
+    justify-self: end;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    grid-area: next;
+    justify-self: end;
+    margin: 0;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-rules-hint {
+    grid-area: rules;
+  }
+}
+
+@media (max-width: 900px) {
+  .calc-sprint #dash-game-screen > header.dash-header {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@keyframes calc-sprint-dash-chase-shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(0.5px, -0.5px);
+  }
+  45% {
+    transform: translate(-0.8px, 0.4px);
+  }
+  70% {
+    transform: translate(0.6px, 0.6px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes calc-sprint-dash-playfield-drift {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 120px 0%;
+  }
+}
+
+.calc-sprint #dash-game-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    repeating-linear-gradient(
+      -20deg,
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 4px,
+      rgba(255, 255, 255, 0) 6px,
+      rgba(255, 255, 255, 0) 18px
+    );
+  opacity: 0.05;
+  animation: calc-sprint-dash-playfield-drift 6s linear infinite;
+}
+
+.calc-sprint .screen-dash[data-enemy-state="caution"] .run-world::after {
+  opacity: 0.12;
+}
+.calc-sprint .screen-dash[data-enemy-state="danger"] .run-world::after {
+  opacity: 0.22;
+}
+.calc-sprint .screen-dash[data-enemy-state="danger"] .run-world {
+  animation: calc-sprint-dash-chase-shake 0.22s linear infinite;
+}
+
+.calc-sprint .screen-dash-result .dash-result-header {
+  gap: 12px;
+}
+.calc-sprint .screen-dash-result .dash-result-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.calc-sprint .screen-dash-result .dash-result-message {
+  font-size: 18px;
+  font-weight: 600;
+  color: #3d4658;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 103, 255, 0.12);
+}
+.calc-sprint .screen-dash-result .dash-result-record {
+  width: min(920px, 92vw);
+}
+.calc-sprint .screen-dash-result .dash-result-reason {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3d4658;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.calc-sprint .screen-dash-result .dash-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  justify-items: stretch;
+}
+.calc-sprint .screen-dash-result .dash-result-footer {
+  margin-top: 8px;
+}
+.calc-sprint .screen-dash-result .dash-stat-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.calc-sprint .screen-dash-result .dash-stat-card:hover {
+  box-shadow: 0 10px 20px rgba(29, 36, 51, 0.16);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .calc-sprint .screen-dash .dash-stat-card {
+    min-width: 120px;
+  }
+  .calc-sprint .screen-dash .dash-stat-value {
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calc-sprint .screen-dash .dash-proximity-fill {
+    transition: none;
+  }
+  .calc-sprint .screen-dash .dash-streak-cue {
+    transition: none;
+  }
+  .calc-sprint .screen-dash[data-enemy-state="danger"] .run-world {
+    animation: none;
+  }
+  .calc-sprint #dash-game-screen::before {
+    animation: none;
+  }
+  .calc-sprint .screen-dash-result .dash-stat-card {
+    transition: none;
+  }
+  .calc-sprint .screen-dash-result .dash-stat-card:hover {
+    transform: none;
+  }
 }.calc-sprint .question-area {
   display: flex;
   flex-direction: column;

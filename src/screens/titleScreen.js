@@ -21,8 +21,14 @@ const titleScreen = {
       gameState.selectedStageId = null;
       screenManager.changeScreen('settings');
     };
+    this.handleDashRun = () => {
+      audioManager.unlock();
+      audioManager.playSfx('sfx_click');
+      screenManager.changeScreen('dash-game');
+    };
     this.events.on(domRefs.title.startButton, 'click', this.handleStageStart);
     this.events.on(domRefs.title.freeButton, 'click', this.handleFreePlay);
+    this.events.on(domRefs.title.dashButton, 'click', this.handleDashRun);
   },
   render() {},
   exit() {
