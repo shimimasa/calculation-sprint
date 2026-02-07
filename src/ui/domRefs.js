@@ -45,6 +45,7 @@ const domRefs = {
   },
   dashResult: {
     backButton: byId('dash-result-back-button'),
+    replayButton: byId('dash-result-replay-button'),
     message: byId('dash-result-message'),
     record: byId('dash-result-record'),
     distance: byId('dash-result-distance'),
