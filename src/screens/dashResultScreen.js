@@ -10,8 +10,7 @@ const dashResultScreen = {
   enter() {
     uiRenderer.showScreen('dash-result');
     this.events = createEventRegistry('dash-result');
-    const result = gameState.dash?.result;
-    if (result && typeof result === 'object') {
+    const renderResult = (result) => {
       const totalAnswered = (result.correctCount || 0) + (result.wrongCount || 0);
       const accuracy = totalAnswered > 0
         ? Math.round((result.correctCount / totalAnswered) * 1000) / 10
@@ -49,13 +48,22 @@ const dashResultScreen = {
       if (domRefs.dashResult.timeRemaining) {
         domRefs.dashResult.timeRemaining.textContent = String(timeSeconds);
       }
-      dashStatsStore.saveSession(result);
+    };
+    const inMemoryResult = gameState.dash?.result;
+    if (inMemoryResult && typeof inMemoryResult === 'object') {
+      renderResult(inMemoryResult);
+      dashStatsStore.saveSession(inMemoryResult);
     } else {
-      if (domRefs.dashResult.record) {
-        domRefs.dashResult.record.hidden = true;
-      }
-      if (domRefs.dashResult.message) {
-        domRefs.dashResult.message.hidden = false;
+      const storedResult = dashStatsStore.getSession(gameState.profileId);
+      if (storedResult) {
+        renderResult(storedResult);
+      } else {
+        if (domRefs.dashResult.record) {
+          domRefs.dashResult.record.hidden = true;
+        }
+        if (domRefs.dashResult.message) {
+          domRefs.dashResult.message.hidden = false;
+        }
       }
     }
     this.handleBack = () => {

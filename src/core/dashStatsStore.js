@@ -45,7 +45,11 @@ const dashStatsStore = {
   getSession(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.dashSession);
-    return normalizeSession(readFromStorage(storageKey));
+    const stored = readFromStorage(storageKey);
+    if (!stored) {
+      return null;
+    }
+    return normalizeSession(stored);
   },
   saveSession(session, profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
