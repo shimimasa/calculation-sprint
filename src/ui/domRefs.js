@@ -26,6 +26,7 @@ const domRefs = {
     dashButton: byId('title-dash-button'),
   },
   dashGame: {
+    screen: byId('dash-game-screen'),
     backButton: byId('dash-game-back-button'),
     distance: byId('dash-game-distance'),
     timeRemaining: byId('dash-game-time'),

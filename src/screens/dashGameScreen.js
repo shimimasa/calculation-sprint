@@ -189,7 +189,7 @@ const dashGameScreen = {
       return;
     }
     this.currentArea = nextArea;
-    const screen = domRefs.screens['dash-game'];
+    const screen = domRefs.dashGame.screen;
     if (screen) {
       screen.dataset.area = String(nextArea);
     }
@@ -421,6 +421,9 @@ const dashGameScreen = {
     this.events?.clear();
     this.events = null;
     this.stopLoop();
+    if (domRefs.dashGame.screen) {
+      domRefs.dashGame.screen.dataset.area = '1';
+    }
     if (this.handleSubmitAction) {
       inputActions.off(inputActions.ACTIONS.SUBMIT, this.handleSubmitAction);
     }
