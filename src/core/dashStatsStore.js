@@ -29,12 +29,19 @@ const writeToStorage = (storageKey, data) => {
   }
 };
 
+const VALID_END_REASONS = new Set(['collision', 'timeup', 'manual']);
+
+const normalizeEndReason = (endReason) => (
+  VALID_END_REASONS.has(endReason) ? endReason : 'unknown'
+);
+
 const normalizeSession = (session) => ({
   distanceM: Number.isFinite(session?.distanceM) ? session.distanceM : 0,
   correctCount: Number.isFinite(session?.correctCount) ? session.correctCount : 0,
   wrongCount: Number.isFinite(session?.wrongCount) ? session.wrongCount : 0,
   maxStreak: Number.isFinite(session?.maxStreak) ? session.maxStreak : 0,
   timeLeftMs: Number.isFinite(session?.timeLeftMs) ? session.timeLeftMs : 0,
+  endReason: normalizeEndReason(session?.endReason),
   endedAt: typeof session?.endedAt === 'string' ? session.endedAt : null,
   schemaVersion: typeof session?.schemaVersion === 'string'
     ? session.schemaVersion
