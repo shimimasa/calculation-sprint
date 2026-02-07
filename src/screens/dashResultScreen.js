@@ -70,7 +70,12 @@ const dashResultScreen = {
       audioManager.playSfx('sfx_cancel');
       screenManager.changeScreen('title');
     };
+    this.handleReplay = () => {
+      audioManager.playSfx('sfx_confirm');
+      screenManager.changeScreen('dash-game');
+    };
     this.events.on(domRefs.dashResult.backButton, 'click', this.handleBack);
+    this.events.on(domRefs.dashResult.replayButton, 'click', this.handleReplay);
   },
   render() {},
   exit() {
