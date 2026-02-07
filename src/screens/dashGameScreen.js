@@ -292,7 +292,7 @@ const dashGameScreen = {
       this.setFeedback('×', 'wrong');
     }
     if (this.timeLeftMs <= 0) {
-      this.endSession();
+      this.endSession('timeup');
       return;
     }
     this.loadNextQuestion();
@@ -310,12 +310,12 @@ const dashGameScreen = {
       this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
       this.enemyGapM = collisionThreshold * 2;
       this.updateHud();
-      this.endSession();
+      this.endSession('collision');
       return;
     }
     this.timeLeftMs -= dtMs;
     if (this.timeLeftMs <= 0) {
-      this.endSession();
+      this.endSession('timeup');
     }
     this.updateHud();
   },
@@ -344,7 +344,7 @@ const dashGameScreen = {
       this.rafId = null;
     }
   },
-  endSession() {
+  endSession(endReason = 'unknown') {
     if (this.hasEnded) {
       return;
     }
@@ -356,6 +356,7 @@ const dashGameScreen = {
       wrongCount: gameState.dash.wrongCount,
       maxStreak: this.maxStreak,
       timeLeftMs: Math.max(0, this.timeLeftMs),
+      endReason,
     };
     screenManager.changeScreen('dash-result');
   },
@@ -383,7 +384,7 @@ const dashGameScreen = {
     this.updateHud();
     this.handleBack = () => {
       audioManager.playSfx('sfx_cancel');
-      this.endSession();
+      this.endSession('manual');
     };
     this.events.on(domRefs.dashGame.backButton, 'click', this.handleBack);
 

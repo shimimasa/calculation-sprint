@@ -50,6 +50,7 @@ const domRefs = {
     replayButton: byId('dash-result-replay-button'),
     message: byId('dash-result-message'),
     record: byId('dash-result-record'),
+    reason: byId('dash-result-reason'),
     distance: byId('dash-result-distance'),
     correctCount: byId('dash-result-correct'),
     wrongCount: byId('dash-result-wrong'),

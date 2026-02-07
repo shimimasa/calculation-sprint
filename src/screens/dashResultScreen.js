@@ -11,6 +11,12 @@ const dashResultScreen = {
     uiRenderer.showScreen('dash-result');
     this.events = createEventRegistry('dash-result');
     const renderResult = (result) => {
+      const endReasonTextMap = {
+        collision: 'モンスターにぶつかりました',
+        timeup: '時間が0になりました',
+        manual: '自分で終了しました',
+        unknown: '終了理由：不明',
+      };
       const totalAnswered = (result.correctCount || 0) + (result.wrongCount || 0);
       const accuracy = totalAnswered > 0
         ? Math.round((result.correctCount / totalAnswered) * 1000) / 10
@@ -24,6 +30,11 @@ const dashResultScreen = {
       }
       if (domRefs.dashResult.message) {
         domRefs.dashResult.message.hidden = true;
+      }
+      if (domRefs.dashResult.reason) {
+        const normalizedReason = typeof result.endReason === 'string' ? result.endReason : 'unknown';
+        domRefs.dashResult.reason.textContent = endReasonTextMap[normalizedReason] ?? endReasonTextMap.unknown;
+        domRefs.dashResult.reason.hidden = false;
       }
       if (domRefs.dashResult.distance) {
         domRefs.dashResult.distance.textContent = Number.isFinite(result.distanceM)
@@ -63,6 +74,9 @@ const dashResultScreen = {
         }
         if (domRefs.dashResult.message) {
           domRefs.dashResult.message.hidden = false;
+        }
+        if (domRefs.dashResult.reason) {
+          domRefs.dashResult.reason.hidden = true;
         }
       }
     }
