@@ -32,7 +32,7 @@ const writeToStorage = (storageKey, data) => {
 const VALID_END_REASONS = new Set(['collision', 'timeup', 'manual']);
 
 const normalizeEndReason = (endReason) => (
-  VALID_END_REASONS.has(endReason) ? endReason : 'unknown'
+  typeof endReason === 'string' && VALID_END_REASONS.has(endReason) ? endReason : 'unknown'
 );
 
 const normalizeSession = (session) => ({
