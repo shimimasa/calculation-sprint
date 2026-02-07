@@ -24,6 +24,7 @@ const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
 const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
+const LOW_TIME_THRESHOLD_MS = 8000;
 
 const dashGameScreen = {
   // State model (local-only, per spec):
@@ -128,6 +129,18 @@ const dashGameScreen = {
     if (domRefs.dashGame.timeRemaining) {
       const timeSeconds = Math.max(0, Math.ceil(this.timeLeftMs / 1000));
       domRefs.dashGame.timeRemaining.textContent = String(timeSeconds);
+    }
+    const isLowTime = this.timeLeftMs <= LOW_TIME_THRESHOLD_MS;
+    const timeCard = domRefs.dashGame.timeRemaining?.closest('.dash-stat-card');
+    if (timeCard) {
+      if (isLowTime) {
+        timeCard.dataset.state = 'low';
+      } else {
+        delete timeCard.dataset.state;
+      }
+    }
+    if (domRefs.dashGame.timeNote) {
+      domRefs.dashGame.timeNote.textContent = isLowTime ? '残りわずか' : '';
     }
     if (domRefs.dashGame.streak) {
       domRefs.dashGame.streak.textContent = String(gameState.dash.streak);
