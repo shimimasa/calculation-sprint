@@ -795,6 +795,12 @@
   border-radius: 999px;
   padding: 6px 14px;
   text-align: center;
+}.calc-sprint .screen-dash .dash-rules-hint {
+  margin: 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7383;
+  text-align: center;
 }.calc-sprint .screen-dash .dash-stat-card {
   display: grid;
   grid-template-columns: auto auto;
