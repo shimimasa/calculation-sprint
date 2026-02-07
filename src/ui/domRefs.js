@@ -30,6 +30,7 @@ const domRefs = {
     distance: byId('dash-game-distance'),
     timeRemaining: byId('dash-game-time'),
     streak: byId('dash-game-streak'),
+    streakCue: byId('dash-game-streak-cue'),
     enemyWrap: byId('dash-game-enemy'),
     enemyBar: byId('dash-game-enemy-bar'),
     enemyText: byId('dash-game-enemy-text'),

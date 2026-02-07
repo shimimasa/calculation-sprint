@@ -21,6 +21,9 @@ import {
 import { createEventRegistry } from '../core/eventRegistry.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
+const STREAK_CUE_DURATION_MS = 800;
+const STREAK_ATTACK_CUE_TEXT = 'おした！';
+const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 
 const dashGameScreen = {
   // State model (local-only, per spec):
@@ -93,6 +96,31 @@ const dashGameScreen = {
     domRefs.dashGame.feedback.textContent = '';
     domRefs.dashGame.feedback.classList.remove('is-correct', 'is-wrong');
   },
+  showStreakCue(message) {
+    if (!domRefs.dashGame.streakCue) {
+      return;
+    }
+    if (this.streakCueTimeout) {
+      window.clearTimeout(this.streakCueTimeout);
+      this.streakCueTimeout = null;
+    }
+    domRefs.dashGame.streakCue.textContent = message;
+    domRefs.dashGame.streakCue.classList.add('is-visible');
+    this.streakCueTimeout = window.setTimeout(() => {
+      this.clearStreakCue();
+    }, STREAK_CUE_DURATION_MS);
+  },
+  clearStreakCue() {
+    if (!domRefs.dashGame.streakCue) {
+      return;
+    }
+    domRefs.dashGame.streakCue.textContent = '';
+    domRefs.dashGame.streakCue.classList.remove('is-visible');
+    if (this.streakCueTimeout) {
+      window.clearTimeout(this.streakCueTimeout);
+      this.streakCueTimeout = null;
+    }
+  },
   updateHud() {
     if (domRefs.dashGame.distance) {
       domRefs.dashGame.distance.textContent = gameState.dash.distanceM.toFixed(1);
@@ -161,8 +189,10 @@ const dashGameScreen = {
       this.timeLeftMs += timeBonusOnCorrect;
       if (gameState.dash.streak === streakAttack) {
         this.enemyGapM += collisionThreshold;
+        this.showStreakCue(STREAK_ATTACK_CUE_TEXT);
       }
       if (gameState.dash.streak === streakDefeat) {
+        this.showStreakCue(STREAK_DEFEAT_CUE_TEXT);
         audioManager.playSfx('sfx_levelup', { volume: 0.8 });
         this.timeLeftMs += timeBonusOnDefeat;
         this.enemyGapM = collisionThreshold * 2;
@@ -256,6 +286,7 @@ const dashGameScreen = {
     this.currentQuestion = null;
     this.hasEnded = false;
     this.maxStreak = 0;
+    this.clearStreakCue();
     gameState.dash.distanceM = 0;
     gameState.dash.correctCount = 0;
     gameState.dash.wrongCount = 0;
@@ -369,6 +400,7 @@ const dashGameScreen = {
     this.handleSubmitClick = null;
     this.handleKeypadToggleClick = null;
     this.handleKeypadClick = null;
+    this.clearStreakCue();
   },
 };
 
