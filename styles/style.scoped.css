@@ -767,6 +767,7 @@
 }.calc-sprint .screen-dash {
   background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
   position: relative;
+  min-height: 100vh;
 }.calc-sprint .screen-dash[data-area="1"] {
   background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
 }.calc-sprint .screen-dash[data-area="2"] {
@@ -782,7 +783,10 @@
 
 .calc-sprint .screen-dash .run-viewport {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(220px, 38vh, 420px);
   z-index: 0;
   overflow: hidden;
   border-radius: inherit;
@@ -807,6 +811,10 @@
 .calc-sprint .screen-dash > .screen-footer {
   position: relative;
   z-index: 1;
+}
+
+.calc-sprint .screen-dash > .screen-main {
+  padding-bottom: clamp(200px, 30vh, 280px);
 }
 
 .calc-sprint .screen-dash .dash-header {
