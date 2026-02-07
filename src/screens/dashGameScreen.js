@@ -129,6 +129,7 @@ const dashGameScreen = {
     if (domRefs.dashGame.distance) {
       domRefs.dashGame.distance.textContent = gameState.dash.distanceM.toFixed(1);
     }
+    this.updateNextAreaIndicator(gameState.dash.distanceM);
     if (domRefs.dashGame.timeRemaining) {
       const timeSeconds = Math.max(0, Math.ceil(this.timeLeftMs / 1000));
       domRefs.dashGame.timeRemaining.textContent = String(timeSeconds);
@@ -193,6 +194,49 @@ const dashGameScreen = {
     if (screen) {
       screen.dataset.area = String(nextArea);
     }
+  },
+  getNextAreaThreshold(distanceM) {
+    const area = this.getAreaForDistance(distanceM);
+    if (area === 1) {
+      return AREA_2_START_M;
+    }
+    if (area === 2) {
+      return AREA_3_START_M;
+    }
+    if (area === 3) {
+      return AREA_4_START_M;
+    }
+    return null;
+  },
+  updateNextAreaIndicator(distanceM) {
+    const indicator = domRefs.dashGame.nextArea;
+    if (!indicator) {
+      return;
+    }
+    if (!Number.isFinite(distanceM)) {
+      if (!this.lastNextAreaHidden) {
+        indicator.hidden = true;
+        indicator.textContent = '';
+        this.lastNextAreaHidden = true;
+        this.lastNextAreaText = '';
+      }
+      return;
+    }
+    const nextThreshold = this.getNextAreaThreshold(distanceM);
+    let nextText = '';
+    if (nextThreshold === null) {
+      nextText = 'さいごのエリアです';
+    } else {
+      const remainingM = Math.max(0, Math.ceil(nextThreshold - distanceM));
+      nextText = `つぎのエリアまで あと${remainingM}m`;
+    }
+    if (this.lastNextAreaText === nextText && this.lastNextAreaHidden === false) {
+      return;
+    }
+    indicator.hidden = false;
+    indicator.textContent = nextText;
+    this.lastNextAreaHidden = false;
+    this.lastNextAreaText = nextText;
   },
   loadNextQuestion() {
     this.currentQuestion = questionGenerator.next(gameState.settings);
@@ -333,6 +377,8 @@ const dashGameScreen = {
     gameState.dash.streak = 0;
     gameState.dash.result = null;
     this.currentArea = null;
+    this.lastNextAreaText = null;
+    this.lastNextAreaHidden = null;
     this.updateArea(gameState.dash.distanceM);
     this.updateHud();
     this.handleBack = () => {
