@@ -943,14 +943,13 @@
 .calc-sprint #dash-game-screen .dash-stats {
   gap: 10px;
 }
-.calc-sprint #dash-game-screen > .screen-main.stage-card {
-  padding: 14px 16px;
-  max-width: 720px;
+.calc-sprint #dash-game-screen > .screen-main.dash-playfield {
+  max-width: 980px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.74);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 16px 32px rgba(29, 36, 51, 0.14);
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 .calc-sprint #dash-game-screen > .screen-main {
   margin-bottom: -14px;
@@ -966,6 +965,30 @@
 .calc-sprint #dash-game-screen .question-area {
   transform: translateY(12px);
   padding: 14px 18px;
+  color: #1d2433;
+}
+.calc-sprint #dash-game-screen .question-area {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 18px 40px rgba(29, 36, 51, 0.18);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.calc-sprint #dash-game-screen .question-area::after {
+  opacity: 0.16;
+}
+.calc-sprint #dash-game-screen .dash-stat-card,
+.calc-sprint #dash-game-screen .dash-proximity {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 10px 22px rgba(29, 36, 51, 0.12);
+}
+.calc-sprint #dash-game-screen .dash-next-area {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.calc-sprint #dash-game-screen .dash-rules-hint {
+  color: rgba(29, 36, 51, 0.58);
 }
 .calc-sprint #dash-game-screen .feedback {
   min-height: 26px;
@@ -999,6 +1022,33 @@
   min-height: 44px;
 }
 
+@media (min-width: 901px) {
+  .calc-sprint #dash-game-screen .dash-problem-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+    align-items: start;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  .calc-sprint #dash-game-screen #dash-game-keypad-toggle {
+    display: none;
+  }
+  /* Always show keypad on wide screens (even if DOM keeps [hidden]). */
+  .calc-sprint #dash-game-screen #dash-game-keypad[hidden] {
+    display: grid !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .calc-sprint #dash-game-screen .dash-problem-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+}
+
 /* Dash Run: wide layout (PC) - 2-column header */
 @media (min-width: 901px) {
   .calc-sprint #dash-game-screen > header.dash-header {
@@ -1009,6 +1059,7 @@
       "title stats"
       "desc stats"
       ". next"
+      ". sidehud"
       "rules rules";
     column-gap: 18px;
     row-gap: 8px;
@@ -1035,6 +1086,14 @@
   }
   .calc-sprint #dash-game-screen > header.dash-header .dash-rules-hint {
     grid-area: rules;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+    grid-area: sidehud;
+    justify-self: end;
+    width: min(360px, 38vw);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 }
 
