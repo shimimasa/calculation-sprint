@@ -1113,7 +1113,7 @@
     top: 0;
     left: 0;
     right: 0;
-    bottom: 50%;
+    bottom: 55%;
     transform: none;
     display: block;
     pointer-events: none;
@@ -1132,18 +1132,21 @@
   /* Step2: increase specificity so desktop grid wins later rules. */
   .calc-sprint #dash-game-screen .dash-hud .dash-problem-grid {
     position: absolute;
-    inset: 0;
+    top: clamp(18px, 6vh, 72px);
+    left: 0;
+    right: 0;
+    bottom: auto;
     display: grid;
     /* Top-half split: left=problem+time, right=keypad+submit */
-    grid-template-columns: 1.1fr 0.9fr;
+    grid-template-columns: minmax(320px, 1fr) minmax(280px, 0.8fr);
     grid-template-rows: auto auto;
     grid-template-areas:
       "problem keypad"
       "problem submit";
     max-width: 1400px;
     margin: 0 auto;
-    padding: clamp(14px, 2vh, 18px) clamp(14px, 2vw, 28px);
-    gap: clamp(10px, 1.8vh, 16px) clamp(14px, 2.2vw, 22px);
+    padding: clamp(8px, 1.6vh, 14px) clamp(18px, 3vw, 36px);
+    gap: clamp(12px, 2vh, 18px) clamp(18px, 3vw, 32px);
     align-items: start;
     justify-items: stretch;
     pointer-events: none;
@@ -1153,8 +1156,8 @@
   .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad {
     grid-area: keypad;
     width: 100%;
-    max-width: min(560px, 42vw);
-    justify-self: end;
+    max-width: min(520px, 40vw);
+    justify-self: start;
     pointer-events: auto;
   }
   .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad.game-keypad {
@@ -1171,8 +1174,8 @@
   .calc-sprint #dash-game-screen .dash-hud .dash-keypad-actions {
     grid-area: submit;
     width: 100%;
-    max-width: min(560px, 42vw);
-    justify-self: end;
+    max-width: min(520px, 40vw);
+    justify-self: start;
     pointer-events: auto;
   }
 
@@ -1191,6 +1194,14 @@
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+    will-change: transform, opacity;
+  }
+
+  /* Hook for future lightweight transitions on problem swaps. */
+  .calc-sprint #dash-game-screen .dash-hud .dash-problem-main.is-transitioning {
+    transform: translateY(-6px);
+    opacity: 0.88;
   }
 
   /* Keep time bar visually tied to problem block. */
