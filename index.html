@@ -239,24 +239,24 @@
                     </div>
                     <div class="dash-keypad-stack" aria-label="テンキー操作">
                       <div id="dash-game-keypad" class="game-keypad" hidden aria-hidden="true">
-                        <button class="keypad-button" type="button" data-keypad-key="7">7</button>
-                        <button class="keypad-button" type="button" data-keypad-key="8">8</button>
-                        <button class="keypad-button" type="button" data-keypad-key="9">9</button>
-                        <button class="keypad-button" type="button" data-keypad-key="4">4</button>
-                        <button class="keypad-button" type="button" data-keypad-key="5">5</button>
-                        <button class="keypad-button" type="button" data-keypad-key="6">6</button>
-                        <button class="keypad-button" type="button" data-keypad-key="1">1</button>
-                        <button class="keypad-button" type="button" data-keypad-key="2">2</button>
-                        <button class="keypad-button" type="button" data-keypad-key="3">3</button>
-                        <button class="keypad-button keypad-button--wide" type="button" data-keypad-key="0">
+                        <button class="keypad-button" type="button" data-digit="7">7</button>
+                        <button class="keypad-button" type="button" data-digit="8">8</button>
+                        <button class="keypad-button" type="button" data-digit="9">9</button>
+                        <button class="keypad-button" type="button" data-digit="4">4</button>
+                        <button class="keypad-button" type="button" data-digit="5">5</button>
+                        <button class="keypad-button" type="button" data-digit="6">6</button>
+                        <button class="keypad-button" type="button" data-digit="1">1</button>
+                        <button class="keypad-button" type="button" data-digit="2">2</button>
+                        <button class="keypad-button" type="button" data-digit="3">3</button>
+                        <button class="keypad-button keypad-button--wide" type="button" data-digit="0">
                           0
                         </button>
-                        <button class="keypad-button keypad-button--action" type="button" data-keypad-key="back">
+                        <button class="keypad-button keypad-button--action" type="button" data-action="backspace">
                           ⌫
                         </button>
                       </div>
                       <div class="dash-keypad-actions" aria-label="確定操作">
-                        <button id="dash-game-submit-button" class="primary-button primary-button--xl dash-submit-button" type="button">
+                        <button id="dash-game-submit-button" class="primary-button primary-button--xl dash-submit-button" type="button" data-action="submit">
                           確定
                         </button>
                       </div>
@@ -370,7 +370,7 @@
           <div id="game-feedback" class="feedback" aria-live="polite"></div>
           <div class="game-actions" aria-label="入力操作">
             <div class="game-action-row">
-              <button id="game-submit-button" class="primary-button primary-button--xl" type="button">確定</button>
+              <button id="game-submit-button" class="primary-button primary-button--xl" type="button" data-action="submit">確定</button>
               <button
                 id="game-keypad-toggle"
                 class="secondary-button"
@@ -382,23 +382,23 @@
               </button>
             </div>
             <div id="game-keypad" class="game-keypad" hidden aria-hidden="true">
-              <button class="keypad-button" type="button" data-keypad-key="7">7</button>
-              <button class="keypad-button" type="button" data-keypad-key="8">8</button>
-              <button class="keypad-button" type="button" data-keypad-key="9">9</button>
-              <button class="keypad-button" type="button" data-keypad-key="4">4</button>
-              <button class="keypad-button" type="button" data-keypad-key="5">5</button>
-              <button class="keypad-button" type="button" data-keypad-key="6">6</button>
-              <button class="keypad-button" type="button" data-keypad-key="1">1</button>
-              <button class="keypad-button" type="button" data-keypad-key="2">2</button>
-              <button class="keypad-button" type="button" data-keypad-key="3">3</button>
+              <button class="keypad-button" type="button" data-digit="7">7</button>
+              <button class="keypad-button" type="button" data-digit="8">8</button>
+              <button class="keypad-button" type="button" data-digit="9">9</button>
+              <button class="keypad-button" type="button" data-digit="4">4</button>
+              <button class="keypad-button" type="button" data-digit="5">5</button>
+              <button class="keypad-button" type="button" data-digit="6">6</button>
+              <button class="keypad-button" type="button" data-digit="1">1</button>
+              <button class="keypad-button" type="button" data-digit="2">2</button>
+              <button class="keypad-button" type="button" data-digit="3">3</button>
               <button
                 class="keypad-button keypad-button--wide"
                 type="button"
-                data-keypad-key="0"
+                data-digit="0"
               >
                 0
               </button>
-              <button class="keypad-button keypad-button--action" type="button" data-keypad-key="back">
+              <button class="keypad-button keypad-button--action" type="button" data-action="backspace">
                 ⌫
               </button>
             </div>
