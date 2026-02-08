@@ -1003,11 +1003,8 @@
   border: none;
   box-shadow: none;
   position: relative;
-  min-height: 100vh;
-  padding-bottom: clamp(220px, 34vh, 360px);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  min-height: 0;
+  height: 100%;
 }
 .calc-sprint #dash-game-screen > .screen-main {
   margin-bottom: -14px;
@@ -1047,58 +1044,87 @@
 +   - Time bar: RIGHT-TOP independent
 +*/
 @media (min-width: 901px) {
-    /* 1) Problem block to LEFT (robust: target actual container) */
-    .calc-sprint #dash-game-screen .dash-problem-grid {
-      position: absolute;
-      left: clamp(20px, 3vw, 52px);
-      bottom: clamp(210px, 24vh, 320px);
-      width: min(440px, 34vw);
-      z-index: 6;
-      align-items: flex-start;
-      pointer-events: none; /* display-only */
-    }
-  
-    /* if dash-problem-main exists, keep it passive (avoid relying on it) */
-    .calc-sprint #dash-game-screen .dash-problem-main {
-      position: static;
-      width: 100%;
-      pointer-events: none;
-    }
-  
-    /* make the card behave when detached */
-    .calc-sprint #dash-game-screen .question-area {
-      transform: none !important;
-      margin: 0 !important;
-      width: 100%;
-      background: #ffffff;
-      box-shadow:
-        0 18px 36px rgba(0, 0, 0, 0.18),
-        0 6px 0 rgba(0, 0, 0, 0.08);
-    }
-  
-    .calc-sprint #dash-game-screen .answer-input {
-      pointer-events: none;
-    }
-  
-    /* 2) Keypad CENTER (already absolute) + ensure above runner axis */
-    .calc-sprint #dash-game-screen .dash-hud {
-      z-index: 5;
-      bottom: clamp(150px, 19vh, 240px);
-    }
-  
-    /* 3) Time bar RIGHT-TOP and never inside/over the question card */
-    .calc-sprint #dash-game-screen #dash-game-time-wrap {
-      position: absolute;
-      top: clamp(18px, 3vh, 36px);
-      right: clamp(18px, 3vw, 36px);
-      z-index: 7;
-      pointer-events: none;
-    }
-  
-    .calc-sprint #dash-game-screen .dash-time {
-      width: min(420px, 30vw);
-    }
+  /* 0) Keep everything within one viewport (no page scroll). */
+  .calc-sprint #dash-game-screen {
+    height: calc(100vh - 32px);
+    max-height: calc(100vh - 32px);
+    overflow: hidden;
   }
+
+  /* 1) Use the playfield as the absolute positioning root. */
+  .calc-sprint #dash-game-screen > .screen-main.dash-playfield {
+    height: 100%;
+  }
+
+  /* 2) Full-screen overlay container for the "control island" layout. */
+  .calc-sprint #dash-game-screen .dash-hud {
+    position: absolute;
+    inset: 0;
+    transform: none;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    display: block;
+    pointer-events: none;
+  }
+  .calc-sprint #dash-game-screen .dash-lane {
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+  }
+  .calc-sprint #dash-game-screen .game-focus {
+    position: static;
+  }
+
+  /* 3) Place elements on a fixed grid: problem above runner (bottom-left), keypad top-center. */
+  .calc-sprint #dash-game-screen .dash-problem-grid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 1fr minmax(320px, 520px) 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      ". keypad ."
+      ". submit ."
+      "problem . .";
+    padding:
+      clamp(76px, 10vh, 120px)
+      clamp(16px, 2vw, 28px)
+      clamp(120px, 18vh, 200px)
+      clamp(16px, 2vw, 28px);
+    gap: 10px 18px;
+    align-items: start;
+    justify-items: center;
+    pointer-events: none;
+  }
+
+  /* keypad: top-center */
+  .calc-sprint #dash-game-screen #dash-game-keypad {
+    grid-area: keypad;
+    width: min(520px, 44vw);
+    pointer-events: auto;
+  }
+  .calc-sprint #dash-game-screen .dash-keypad-actions {
+    grid-area: submit;
+    width: min(520px, 44vw);
+    pointer-events: auto;
+  }
+
+  /* problem: above runner (bottom-left) */
+  .calc-sprint #dash-game-screen .dash-problem-main {
+    grid-area: problem;
+    justify-self: start;
+    align-self: end;
+    width: min(420px, 34vw);
+    pointer-events: auto;
+  }
+
+  /* 4) Time stays attached to the problem block (no floating overlap). */
+  .calc-sprint #dash-game-screen #dash-game-time-wrap {
+    position: static;
+  }
+}
 
 
 .calc-sprint #dash-game-screen .game-focus {
@@ -1660,6 +1686,7 @@
   outline: none;
   transition: border 0.2s ease, box-shadow 0.2s ease;
   -moz-appearance: textfield;
+  appearance: textfield;
 }.calc-sprint .answer-input::-webkit-outer-spin-button,
 .calc-sprint .answer-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
