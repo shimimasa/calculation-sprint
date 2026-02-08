@@ -1180,9 +1180,11 @@
   .calc-sprint #dash-game-screen .dash-hud .dash-problem-main {
     position: absolute;
     top: calc(var(--hud-top) + var(--timebar-h) + var(--hud-gap));
-    left: var(--keypad-right);
-    right: calc(var(--keypad-right) + var(--keypad-w) + var(--hud-gap));
-    width: min(720px, calc(100% - var(--keypad-w) - var(--hud-gap) - (var(--keypad-right) * 2)));
+    left: 50%;
+    right: auto;
+    width: min(720px, calc(100% - (var(--keypad-right) * 2)));
+    max-width: calc(100vw - (var(--keypad-right) + var(--keypad-w) + var(--hud-gap) + 32px));
+    transform: translateX(-50%);
     pointer-events: auto;
     margin-bottom: 0;
     padding: clamp(6px, 1.2vh, 10px) clamp(8px, 1.6vw, 14px);
@@ -1192,13 +1194,14 @@
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    z-index: 2;
     transition: transform 0.18s ease, opacity 0.18s ease;
     will-change: transform, opacity;
   }
 
   /* Hook for future lightweight transitions on problem swaps. */
   .calc-sprint #dash-game-screen .dash-hud .dash-problem-main.is-transitioning {
-    transform: translateY(-6px);
+    transform: translateX(-50%) translateY(-6px);
     opacity: 0.88;
   }
 
