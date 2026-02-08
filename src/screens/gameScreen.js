@@ -200,11 +200,30 @@ const gameScreen = {
     this.resetGroundTiles();
   },
   resetGroundTiles() {
-    this.groundOffset = 0;
     this.groundTileWidth = 0;
+    this.groundTileOffsets = [0, 0];
     if (domRefs.game.runGroundTiles?.length >= 2) {
       domRefs.game.runGroundTiles[0].style.transform = 'translate3d(0px, 0px, 0px)';
       domRefs.game.runGroundTiles[1].style.transform = 'translate3d(0px, 0px, 0px)';
+    }
+    this.updateGroundLayout(true);
+  },
+  updateGroundLayout(force = false) {
+    const runGround = domRefs.game.runGround;
+    const tileA = domRefs.game.runGroundTileA;
+    const tileB = domRefs.game.runGroundTileB;
+    if (!runGround || !tileA || !tileB) {
+      return;
+    }
+    const nextWidth = Math.round(runGround.clientWidth || 0);
+    if (!nextWidth) {
+      return;
+    }
+    if (force || Math.abs(nextWidth - this.groundTileWidth) > 1) {
+      this.groundTileWidth = nextWidth;
+      this.groundTileOffsets = [0, nextWidth];
+      tileA.style.width = `${nextWidth}px`;
+      tileB.style.width = `${nextWidth}px`;
     }
   },
   spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
@@ -681,11 +700,7 @@ const gameScreen = {
       if (worldWidth > 0 && this.skyOffsetPx <= -worldWidth) {
         this.skyOffsetPx += worldWidth;
       }
-      const tileWidth = domRefs.game.runGroundTiles?.[0]?.offsetWidth || 1920;
-      if (tileWidth > 0 && this.groundTileWidth !== tileWidth) {
-        this.groundTileWidth = tileWidth;
-        this.groundOffset = 0;
-      }
+      this.updateGroundLayout();
       if (this.groundTileWidth > 0) {
         this.groundOffset -= groundSpeedPerSec * dtSec;
         if (this.groundOffset <= -this.groundTileWidth) {
@@ -751,8 +766,11 @@ const gameScreen = {
       domRefs.game.runSky.style.backgroundPositionX = `${Math.round(bgOffset * parallaxFar)}px`;
     }
     if (domRefs.game.runGroundTiles?.length >= 2 && this.groundTileWidth > 0) {
-      const offset = isReviewModeActive(gameState) ? 0 : this.groundOffset;
-      domRefs.game.runGroundTiles.forEach((tile) => {
+      const offsets = isReviewModeActive(gameState)
+        ? [0, this.groundTileWidth]
+        : this.groundTileOffsets;
+      domRefs.game.runGroundTiles.forEach((tile, index) => {
+        const offset = offsets[index] ?? 0;
         tile.style.transform = `translate3d(${Math.round(offset)}px, 0px, 0px)`;
       });
     }

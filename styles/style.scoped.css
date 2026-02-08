@@ -2078,7 +2078,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 1920px;
+  width: 100%;
   height: 100%;
   background-image: var(--run-ground-image, url("../assets/bg-ground.png"));
   background-repeat: no-repeat;
