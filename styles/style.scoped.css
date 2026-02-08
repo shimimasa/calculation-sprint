@@ -1094,7 +1094,8 @@
     position: absolute;
     inset: 0;
     display: grid;
-    grid-template-columns: minmax(240px, 420px) minmax(320px, 520px) 1fr;
+    /* Center column is true screen-center; left/right are flexible. */
+    grid-template-columns: 1fr minmax(320px, 520px) 1fr;
     grid-template-rows: auto auto 1fr;
     grid-template-areas:
       ". keypad ."
@@ -1116,15 +1117,23 @@
   /* keypad: top-center */
   .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad {
     grid-area: keypad;
-    width: min(520px, 44vw);
+    width: min(480px, 40vw);
     pointer-events: auto;
+  }
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad.game-keypad {
+    grid-template-columns: repeat(3, minmax(64px, 1fr));
+    gap: 10px;
+  }
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad .keypad-button {
+    font-size: 18px;
+    padding: 8px 0;
   }
   .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad[hidden] {
     display: grid !important;
   }
   .calc-sprint #dash-game-screen .dash-hud .dash-keypad-actions {
     grid-area: submit;
-    width: min(520px, 44vw);
+    width: min(480px, 40vw);
     pointer-events: auto;
   }
 
@@ -1135,6 +1144,8 @@
     align-self: end;
     width: min(420px, 34vw);
     pointer-events: auto;
+    /* Lift problem reliably above the ground/runner lane. */
+    margin-bottom: clamp(120px, 14vh, 200px);
     padding: clamp(10px, 1.4vh, 14px) clamp(12px, 1.8vw, 18px);
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.14);
