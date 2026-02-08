@@ -1051,6 +1051,13 @@
     overflow: hidden;
   }
 
+  /* Hide stat boxes to widen the top UI area. */
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stats--footer {
+    display: none !important;
+  }
+
   /* Step1: take Dash screen out of document flow (no page scroll). */
   .calc-sprint #dash-game-screen.is-active {
     position: fixed;
@@ -1062,19 +1069,52 @@
     overflow: hidden;
   }
 
+  /* Reuse header container as a full-screen anchor for the exit button only. */
+  .calc-sprint #dash-game-screen > header.dash-header {
+    inset: 0;
+    padding: 0;
+    pointer-events: none;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+    position: absolute;
+    inset: auto;
+    right: clamp(12px, 2vw, 24px);
+    bottom: clamp(12px, 2vh, 24px);
+    top: auto;
+    left: auto;
+    width: auto;
+    max-width: min(360px, 32vw);
+    transform: none;
+    pointer-events: auto;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .title-actions {
+    margin: 0;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud #dash-game-back-button {
+    width: auto;
+    max-width: none;
+    padding: 10px 14px;
+    min-height: 44px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
   /* 1) Use the playfield as the absolute positioning root. */
   .calc-sprint #dash-game-screen > .screen-main.dash-playfield {
+    max-width: none;
+    width: 100%;
+    margin: 0;
     height: 100%;
   }
 
   /* 2) Full-screen overlay container for the "control island" layout. */
   .calc-sprint #dash-game-screen .dash-hud {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 50%;
     transform: none;
-    left: auto;
-    right: auto;
-    bottom: auto;
     display: block;
     pointer-events: none;
   }
@@ -1094,34 +1134,31 @@
     position: absolute;
     inset: 0;
     display: grid;
-    /* Center column is true screen-center; left/right are flexible. */
-    grid-template-columns: 1fr minmax(320px, 520px) 1fr;
-    grid-template-rows: auto auto 1fr;
+    /* Top-half split: left=problem+time, right=keypad+submit */
+    grid-template-columns: 1.1fr 0.9fr;
+    grid-template-rows: auto auto;
     grid-template-areas:
-      ". keypad ."
-      ". submit ."
-      "problem . .";
-    padding:
-      /* keep keypad at top-center (Mario-like HUD) */
-      clamp(32px, 4vh, 56px)
-      clamp(16px, 2vw, 28px)
-      /* reserve bottom lane for runner/enemy (no UI overlaps) */
-      clamp(300px, 38vh, 440px)
-      clamp(8px, 1vw, 16px);
-    gap: 10px 18px;
+      "problem keypad"
+      "problem submit";
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: clamp(14px, 2vh, 18px) clamp(14px, 2vw, 28px);
+    gap: clamp(10px, 1.8vh, 16px) clamp(14px, 2.2vw, 22px);
     align-items: start;
-    justify-items: center;
+    justify-items: stretch;
     pointer-events: none;
   }
 
   /* keypad: top-center */
   .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad {
     grid-area: keypad;
-    width: min(480px, 40vw);
+    width: 100%;
+    max-width: min(560px, 42vw);
+    justify-self: end;
     pointer-events: auto;
   }
   .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad.game-keypad {
-    grid-template-columns: repeat(3, minmax(64px, 1fr));
+    grid-template-columns: repeat(3, minmax(60px, 1fr));
     gap: 10px;
   }
   .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad .keypad-button {
@@ -1133,7 +1170,9 @@
   }
   .calc-sprint #dash-game-screen .dash-hud .dash-keypad-actions {
     grid-area: submit;
-    width: min(480px, 40vw);
+    width: 100%;
+    max-width: min(560px, 42vw);
+    justify-self: end;
     pointer-events: auto;
   }
 
@@ -1141,11 +1180,10 @@
   .calc-sprint #dash-game-screen .dash-hud .dash-problem-main {
     grid-area: problem;
     justify-self: start;
-    align-self: end;
-    width: min(420px, 34vw);
+    align-self: start;
+    width: min(720px, 54vw);
     pointer-events: auto;
-    /* Lift problem reliably above the ground/runner lane. */
-    margin-bottom: clamp(120px, 14vh, 200px);
+    margin-bottom: 0;
     padding: clamp(10px, 1.4vh, 14px) clamp(12px, 1.8vw, 18px);
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.14);
