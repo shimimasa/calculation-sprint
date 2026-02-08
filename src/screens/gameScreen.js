@@ -398,7 +398,7 @@ const gameScreen = {
     this.setLocked(false);
     this.skyOffsetPx = 0;
     this.groundTileWidth = 0;
-    this.groundTileOffsets = [0, 0];
+    this.groundOffset = 0;
     this.bgBoostRemainingMs = 0;
     this.runnerX = 0;
     this.runnerXTarget = 0;
@@ -737,14 +737,9 @@ const gameScreen = {
       this.updateGroundLayout();
       this.updateRunnerGroundAlignment();
       if (this.groundTileWidth > 0) {
-        this.groundTileOffsets = this.groundTileOffsets.map(
-          (offset) => offset - groundSpeedPerSec * dtSec,
-        );
-        if (this.groundTileOffsets[0] <= -this.groundTileWidth) {
-          this.groundTileOffsets[0] = this.groundTileOffsets[1] + this.groundTileWidth;
-        }
-        if (this.groundTileOffsets[1] <= -this.groundTileWidth) {
-          this.groundTileOffsets[1] = this.groundTileOffsets[0] + this.groundTileWidth;
+        this.groundOffset -= groundSpeedPerSec * dtSec;
+        if (this.groundOffset <= -this.groundTileWidth) {
+          this.groundOffset += this.groundTileWidth;
         }
       }
       const cloudMotionFactor = this.prefersReducedMotion ? 0.35 : 1;

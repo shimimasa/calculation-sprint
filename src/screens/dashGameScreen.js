@@ -259,14 +259,9 @@ const dashGameScreen = {
     this.updateGroundLayout();
     this.updateRunnerGroundAlignment();
     if (this.groundTileWidth > 0) {
-      this.groundTileOffsets = this.groundTileOffsets.map(
-        (offset) => offset - groundSpeedPerSec * dtSec,
-      );
-      if (this.groundTileOffsets[0] <= -this.groundTileWidth) {
-        this.groundTileOffsets[0] = this.groundTileOffsets[1] + this.groundTileWidth;
-      }
-      if (this.groundTileOffsets[1] <= -this.groundTileWidth) {
-        this.groundTileOffsets[1] = this.groundTileOffsets[0] + this.groundTileWidth;
+      this.groundOffset -= groundSpeedPerSec * dtSec;
+      if (this.groundOffset <= -this.groundTileWidth) {
+        this.groundOffset += this.groundTileWidth;
       }
     }
     this.clouds?.forEach((cloud) => {
@@ -288,9 +283,8 @@ const dashGameScreen = {
       runSky.style.backgroundPositionX = `${Math.round(this.skyOffsetPx)}px`;
     }
     if (domRefs.game.runGroundTiles?.length >= 2 && this.groundTileWidth > 0) {
-      domRefs.game.runGroundTiles.forEach((tile, index) => {
-        const offset = this.groundTileOffsets[index] ?? 0;
-        tile.style.transform = `translate3d(${Math.round(offset)}px, 0px, 0px)`;
+      domRefs.game.runGroundTiles.forEach((tile) => {
+        tile.style.transform = `translate3d(${Math.round(this.groundOffset)}px, 0px, 0px)`;
       });
     }
     if (this.clouds?.length) {
@@ -718,7 +712,7 @@ const dashGameScreen = {
     this.runLayerOriginalNextSibling = this.runLayerOriginalNextSibling ?? null;
     this.skyOffsetPx = 0;
     this.groundTileWidth = 0;
-    this.groundTileOffsets = [0, 0];
+    this.groundOffset = 0;
     this.clouds = [];
     this.runnerSpeedTier = null;
     this.initRunBackgrounds();
