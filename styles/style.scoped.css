@@ -958,12 +958,14 @@
   opacity: 0.6;
 }
 .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
-  top: 54px;
-  right: 0;
+  top: clamp(18px, 3vh, 36px);
+  right: clamp(12px, 2vw, 24px);
   width: min(320px, 36vw);
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transform: scale(0.92);
+  transform-origin: top right;
 }
 .calc-sprint #dash-game-screen .screen__title {
   font-size: 24px;
@@ -1001,59 +1003,94 @@
   border: none;
   box-shadow: none;
   position: relative;
-  min-height: min(78vh, 720px);
-  padding-bottom: clamp(220px, 32vh, 360px);
+  min-height: 100vh;
+  padding-bottom: clamp(220px, 34vh, 360px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 .calc-sprint #dash-game-screen > .screen-main {
   margin-bottom: -14px;
 }
+.calc-sprint #dash-game-screen .dash-hud {
+  position: relative;
+  padding: clamp(12px, 3vh, 24px) clamp(16px, 4vw, 32px) 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex: 0 0 clamp(300px, 65vh, 520px);
+  z-index: 3;
+}
+.calc-sprint #dash-game-screen .dash-hud::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(249, 251, 255, 0.88), rgba(249, 251, 255, 0.58));
+  border-bottom: 1px solid rgba(29, 36, 51, 0.08);
+  box-shadow: 0 16px 40px rgba(29, 36, 51, 0.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.calc-sprint #dash-game-screen .dash-lane {
+  width: min(420px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2vh, 16px);
+  align-items: stretch;
+  position: relative;
+  z-index: 1;
+}
 .calc-sprint #dash-game-screen .game-focus {
-  padding: 0 12px 0;
-  margin-bottom: -10px;
+  padding: 0;
+  margin-bottom: 0;
   gap: 6px;
 }
 .calc-sprint #dash-game-screen .dash-problem-grid {
-  position: absolute;
-  top: clamp(56px, 7vh, 90px);
-  left: clamp(12px, 2vw, 24px);
-  right: clamp(200px, 28vw, 320px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.6vh, 12px);
+  width: 100%;
   z-index: 2;
 }
 .calc-sprint #dash-game-screen .dash-problem-main {
   display: grid;
-  gap: 10px;
+  gap: clamp(10px, 2vh, 14px);
   align-items: start;
 }
 .calc-sprint #dash-game-screen .game-actions {
-  margin-top: 4px;
+  margin-top: 0;
 }
 .calc-sprint #dash-game-screen .game-action-row {
   justify-content: center;
 }
 .calc-sprint #dash-game-screen .question-area {
   transform: translateY(0);
-  padding: 14px 18px;
-  color: #1d2433;
+  padding: clamp(16px, 3vh, 24px) clamp(18px, 4vw, 28px);
+  color: #111826;
+  background: #f9fbff;
+  border: 2px solid rgba(29, 36, 51, 0.18);
+  box-shadow: 0 18px 34px rgba(29, 36, 51, 0.18), 0 8px 0 rgba(29, 36, 51, 0.08);
 }
 
 /* Dash: primary time (danger gauge) */
 .calc-sprint #dash-game-screen .dash-time {
   width: min(520px, 100%);
-  margin: 0 0 10px;
+  margin: 0;
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-areas:
     "bar value"
     "note note";
-  gap: 6px 12px;
+  gap: clamp(6px, 1.4vh, 10px) clamp(10px, 2vw, 16px);
   align-items: center;
 }
 .calc-sprint #dash-game-screen .dash-timebar {
   grid-area: bar;
-  height: 16px;
+  height: clamp(18px, 2.4vh, 24px);
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.32), rgba(29, 36, 51, 0.2));
-  border: 1px solid rgba(29, 36, 51, 0.14);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.65), rgba(29, 36, 51, 0.22));
+  border: 1px solid rgba(29, 36, 51, 0.18);
   overflow: hidden;
   box-shadow: inset 0 1px 2px rgba(29, 36, 51, 0.16);
 }
@@ -1079,16 +1116,16 @@
   align-items: baseline;
   gap: 6px;
   font-weight: 900;
-  color: rgba(29, 36, 51, 0.92);
+  color: rgba(29, 36, 51, 0.96);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .calc-sprint #dash-game-screen .dash-time-seconds {
-  font-size: 28px;
+  font-size: clamp(28px, 4vw, 36px);
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
 }
 .calc-sprint #dash-game-screen .dash-time-unit {
-  font-size: 14px;
+  font-size: clamp(14px, 2.2vw, 18px);
   font-weight: 800;
   opacity: 0.75;
 }
@@ -1103,14 +1140,11 @@
   color: rgba(224, 107, 95, 0.95);
 }
 .calc-sprint #dash-game-screen .question-area {
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 18px 40px rgba(29, 36, 51, 0.18);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 .calc-sprint #dash-game-screen .question-area::after {
-  opacity: 0.16;
+  opacity: 0.2;
 }
 .calc-sprint #dash-game-screen .dash-stat-card,
 .calc-sprint #dash-game-screen .dash-proximity {
@@ -1127,7 +1161,7 @@
   display: none;
 }
 .calc-sprint #dash-game-screen .dash-sidehud {
-  opacity: 0.55;
+  opacity: 0.4;
 }
 .calc-sprint #dash-game-screen .dash-sidehud .dash-stat-card,
 .calc-sprint #dash-game-screen .dash-sidehud .dash-proximity {
@@ -1152,7 +1186,7 @@
   opacity: 1;
 }
 .calc-sprint #dash-game-screen .question-text {
-  font-size: 36px;
+  font-size: clamp(34px, 5vw, 44px);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   letter-spacing: 0.03em;
@@ -1163,15 +1197,16 @@
   pointer-events: none;
   caret-color: transparent;
   color: #1d2433;
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(56, 103, 255, 0.18);
+  background: #eef2ff;
+  border-color: rgba(29, 36, 51, 0.2);
   box-shadow: none;
   font-weight: 700;
   -moz-appearance: textfield;
   appearance: textfield;
-  height: 52px;
-  font-size: 24px;
+  height: clamp(54px, 7vh, 64px);
+  font-size: clamp(24px, 4vw, 30px);
   text-align: center;
+  border-radius: 12px;
 }
 .calc-sprint #dash-game-screen .answer-input::-webkit-outer-spin-button,
 .calc-sprint #dash-game-screen .answer-input::-webkit-inner-spin-button {
@@ -1186,17 +1221,17 @@
   display: flex;
   justify-content: center;
   width: 100%;
-  margin-top: 8px;
+  margin-top: clamp(4px, 1vh, 10px);
 }
 .calc-sprint #dash-game-screen .dash-submit-button {
-  width: min(320px, 100%);
-  min-height: 52px;
-  opacity: 0.9;
+  width: 100%;
+  min-height: clamp(54px, 7vh, 64px);
+  opacity: 0.95;
   box-shadow: none;
 }
 .calc-sprint #dash-game-screen .primary-button {
-  background: rgba(56, 103, 255, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: #3d5afe;
+  border: 1px solid rgba(255, 255, 255, 0.35);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
@@ -1207,10 +1242,12 @@
   backdrop-filter: blur(10px);
 }
 .calc-sprint #dash-game-screen .game-keypad .keypad-button {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(29, 36, 51, 0.16);
-  box-shadow: 0 10px 22px rgba(29, 36, 51, 0.18);
+  background: #ffffff;
+  border: 1px solid rgba(29, 36, 51, 0.18);
+  box-shadow: 0 12px 24px rgba(29, 36, 51, 0.16);
   color: #1d2433;
+  font-size: clamp(20px, 3.5vw, 26px);
+  padding: clamp(12px, 1.8vh, 16px) 0;
   transition: transform 0.06s ease, box-shadow 0.06s ease, background-color 0.06s ease, color 0.06s ease;
 }
 .calc-sprint #dash-game-screen .game-keypad .keypad-button:active {
@@ -1270,6 +1307,12 @@
   border-color: rgba(224, 107, 95, 0.55);
   box-shadow: 0 18px 40px rgba(224, 107, 95, 0.18);
 }
+.calc-sprint #dash-game-screen .game-keypad {
+  width: 100%;
+  margin: 0;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
+  gap: clamp(8px, 1.4vh, 12px);
+}
 .calc-sprint #dash-game-screen > .screen-footer {
   margin-top: 8px;
 }
@@ -1298,12 +1341,11 @@
 
 @media (min-width: 901px) {
   .calc-sprint #dash-game-screen .dash-problem-grid {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 16px;
-    align-items: start;
-    max-width: 980px;
-    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 1.6vh, 14px);
+    max-width: 100%;
+    margin: 0;
   }
   .calc-sprint #dash-game-screen #dash-game-keypad-toggle {
     display: none;
@@ -1313,7 +1355,6 @@
     display: grid !important;
   }
   .calc-sprint #dash-game-screen .dash-keypad-actions {
-    grid-column: 2 / 3;
     justify-self: stretch;
   }
 }
@@ -1322,10 +1363,8 @@
   .calc-sprint #dash-game-screen .dash-problem-grid {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    width: auto;
-    left: clamp(12px, 2vw, 24px);
-    right: clamp(12px, 2vw, 24px);
+    gap: clamp(8px, 1.6vh, 12px);
+    width: 100%;
   }
 }
 
