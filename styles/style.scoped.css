@@ -1046,10 +1046,11 @@
 @media (min-width: 901px) {
   /* 0) Keep everything within one viewport (no page scroll). */
   .calc-sprint #dash-game-screen {
-    --dash-hud-top: clamp(18px, 4vh, 56px);
-    --dash-hud-pad: clamp(16px, 3vw, 40px);
-    --dash-hud-gap: clamp(18px, 3vw, 36px);
-    --dash-keypad-width: min(520px, 40vw);
+    --hud-top: clamp(20px, 4vh, 56px);
+    --hud-gap: clamp(12px, 2vh, 20px);
+    --keypad-w: min(520px, 40vw);
+    --keypad-right: clamp(16px, 3vw, 40px);
+    --timebar-h: clamp(14px, 2vh, 18px);
     height: calc(100vh - 32px);
     max-height: calc(100vh - 32px);
     overflow: hidden;
@@ -1140,16 +1141,16 @@
     display: block;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 var(--dash-hud-pad);
+    padding: 0 var(--keypad-right);
     pointer-events: none;
   }
 
   /* keypad: top-center */
   .calc-sprint #dash-game-screen .dash-hud .dash-keypad-stack {
     position: absolute;
-    top: var(--dash-hud-top);
-    right: var(--dash-hud-pad);
-    width: var(--dash-keypad-width);
+    top: var(--hud-top);
+    right: var(--keypad-right);
+    width: var(--keypad-w);
     display: flex;
     flex-direction: column;
     gap: clamp(10px, 1.8vh, 16px);
@@ -1178,10 +1179,10 @@
   /* problem: above runner (bottom-left) */
   .calc-sprint #dash-game-screen .dash-hud .dash-problem-main {
     position: absolute;
-    top: var(--dash-hud-top);
-    left: var(--dash-hud-pad);
-    right: calc(var(--dash-keypad-width) + var(--dash-hud-gap));
-    width: min(720px, calc(100% - var(--dash-keypad-width) - var(--dash-hud-gap) - var(--dash-hud-pad)));
+    top: calc(var(--hud-top) + var(--timebar-h) + var(--hud-gap));
+    left: var(--keypad-right);
+    right: calc(var(--keypad-right) + var(--keypad-w) + var(--hud-gap));
+    width: min(720px, calc(100% - var(--keypad-w) - var(--hud-gap) - (var(--keypad-right) * 2)));
     pointer-events: auto;
     margin-bottom: 0;
     padding: clamp(6px, 1.2vh, 10px) clamp(8px, 1.6vw, 14px);
@@ -1204,10 +1205,10 @@
   /* Independent time HUD anchored at the top without overlapping the keypad. */
   .calc-sprint #dash-game-screen .dash-hud .dash-time-hud {
     position: absolute;
-    top: var(--dash-hud-top);
-    left: var(--dash-hud-pad);
-    right: calc(var(--dash-keypad-width) + var(--dash-hud-gap));
-    width: min(620px, calc(100% - var(--dash-keypad-width) - var(--dash-hud-gap) - var(--dash-hud-pad)));
+    top: var(--hud-top);
+    left: var(--keypad-right);
+    right: calc(var(--keypad-right) + var(--keypad-w) + var(--hud-gap));
+    width: min(720px, calc(100% - var(--keypad-w) - var(--hud-gap) - (var(--keypad-right) * 2)));
     pointer-events: auto;
   }
 }
@@ -1257,6 +1258,9 @@
   margin-bottom: 0;
   gap: 6px;
 }
+.calc-sprint #dash-game-screen {
+  --timebar-h: clamp(14px, 2vh, 18px);
+}
 .calc-sprint #dash-game-screen .dash-problem-grid {
   position: relative;
   display: flex;
@@ -1301,10 +1305,11 @@
   flex-wrap: wrap;
   gap: clamp(6px, 1.4vh, 10px) clamp(10px, 2vw, 16px);
   align-items: center;
+  justify-content: space-between;
 }
 .calc-sprint #dash-game-screen .dash-timebar {
   flex: 1 1 280px;
-  height: clamp(14px, 2vh, 18px);
+  height: var(--timebar-h);
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.65), rgba(29, 36, 51, 0.22));
   border: 1px solid rgba(29, 36, 51, 0.18);
