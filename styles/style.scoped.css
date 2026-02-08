@@ -1101,9 +1101,11 @@
       ". submit ."
       "problem . .";
     padding:
-      clamp(76px, 10vh, 120px)
+      /* keep keypad near top-center but below top HUD */
+      clamp(84px, 11vh, 132px)
       clamp(16px, 2vw, 28px)
-      clamp(84px, 12vh, 140px)
+      /* reserve bottom lane for runner/enemy (no UI overlaps) */
+      clamp(160px, 22vh, 260px)
       clamp(8px, 1vw, 16px);
     gap: 10px 18px;
     align-items: start;
@@ -1132,6 +1134,12 @@
     pointer-events: auto;
   }
 
+  /* Keep time bar visually tied to problem block. */
+  .calc-sprint #dash-game-screen .dash-hud .dash-problem-main .dash-time {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
   /* 4) Time stays attached to the problem block (no floating overlap). */
   .calc-sprint #dash-game-screen .dash-hud #dash-game-time-wrap {
     position: static;
@@ -1140,6 +1148,25 @@
 
 /* Step4: keep top-right HUD inside viewport (no overflow). */
 @media (min-width: 901px) {
+  /* Force top HUD to be truly top-right and never overflow. */
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    right: 0;
+    left: auto;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
+    top: 0;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+    top: calc(clamp(12px, 3vh, 28px) + 64px);
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    top: calc(clamp(12px, 3vh, 28px) + 8px);
+    opacity: 0.72;
+    text-align: right;
+  }
+
   .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
   .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud,
   .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
