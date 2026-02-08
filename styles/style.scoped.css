@@ -1036,6 +1036,47 @@
   position: relative;
   z-index: 1;
 }
+
+/* Step1-4 (future enemy from right): keep center/right lanes clear on desktop */
+@media (min-width: 901px) {
+  /* Step1: move control island to top-left (safe zone). */
+  .calc-sprint #dash-game-screen .dash-hud {
+    left: clamp(12px, 3vw, 28px);
+    top: clamp(12px, 3vh, 28px);
+    right: auto;
+    bottom: auto;
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  /* Step2: shrink the island footprint slightly. */
+  .calc-sprint #dash-game-screen .dash-lane {
+    width: min(460px, 42vw);
+  }
+
+  /* Step3: pack auxiliary HUD to the top-right. */
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
+    top: 0;
+    right: 0;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    left: auto;
+    right: 0;
+    top: calc(clamp(12px, 3vh, 28px) + 64px);
+    margin: 0;
+    opacity: 0.72;
+    max-width: min(360px, 34vw);
+    text-align: right;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+    top: calc(clamp(12px, 3vh, 28px) + 100px);
+  }
+
+  /* Step4: keep the ground lane clean (avoid UI near bottom). */
+  .calc-sprint #dash-game-screen .dash-submit-button {
+    width: min(460px, 100%);
+  }
+}
 .calc-sprint #dash-game-screen .game-focus {
   padding: 0;
   margin-bottom: 0;
