@@ -146,6 +146,7 @@ const dashGameScreen = {
       domRefs.game.runGroundTiles[1].style.transform = 'translate3d(0px, 0px, 0px)';
     }
     this.updateGroundLayout(true);
+    this.updateRunnerGroundAlignment(true);
   },
   updateGroundLayout(force = false) {
     const runGround = domRefs.game.runGround;
@@ -166,6 +167,37 @@ const dashGameScreen = {
       tileA.style.transform = 'translate3d(0px, 0px, 0px)';
       tileB.style.transform = `translate3d(${nextWidth}px, 0px, 0px)`;
     }
+  },
+  updateRunnerGroundAlignment(force = false) {
+    const runGround = domRefs.game.runGround;
+    const runWorld = domRefs.game.runWorld;
+    const runnerWrap = domRefs.game.runnerWrap;
+    const runner = domRefs.game.runner;
+    if (!runGround || !runWorld || !runnerWrap || !runner) {
+      return;
+    }
+    const groundRect = runGround.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || 0;
+    if (!viewportHeight) {
+      return;
+    }
+    const groundSurfaceY = Math.round(groundRect.top);
+    const groundInset = Math.round(viewportHeight - groundSurfaceY);
+    const runnerRect = runner.getBoundingClientRect();
+    const runnerFootOffset = Math.round((runnerRect.height || 0) * 0.92);
+    if (
+      !force
+      && this.groundSurfaceY === groundSurfaceY
+      && this.runnerFootOffset === runnerFootOffset
+    ) {
+      return;
+    }
+    this.groundSurfaceY = groundSurfaceY;
+    this.runnerFootOffset = runnerFootOffset;
+    gameState.run.groundSurfaceY = groundSurfaceY;
+    gameState.run.groundY = groundSurfaceY;
+    runWorld.style.setProperty('--calc-sprint-ground-inset', `${groundInset}px`);
+    runWorld.style.setProperty('--calc-sprint-runner-foot-offset', `${runnerFootOffset}px`);
   },
   spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
     if (!container) {
@@ -225,6 +257,7 @@ const dashGameScreen = {
       this.skyOffsetPx += worldWidth;
     }
     this.updateGroundLayout();
+    this.updateRunnerGroundAlignment();
     if (this.groundTileWidth > 0) {
       this.groundTileOffsets = this.groundTileOffsets.map(
         (offset) => offset - groundSpeedPerSec * dtSec,
