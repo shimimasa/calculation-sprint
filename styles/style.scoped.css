@@ -1039,13 +1039,13 @@
 
 /* Step1-4 (future enemy from right): keep center/right lanes clear on desktop */
 @media (min-width: 901px) {/*
-  +   * Layout tweak:
-  +   * - Place PROBLEM + ANSWER above the runner (bottom-left).
-  +   * - Place TIME BAR to the right (top-right).
-  +   *
-  +   * We only move the "problem block" (.dash-problem-main).
-  +   * Keypad/submit remain managed by the existing .dash-hud/.dash-lane rules.
-  +   */
+  /*
++   * Desktop layout:
++   * - Problem/answer: LEFT, above runner.
++   * - Keypad/submit: CENTER (keep runner axis clear).
++   * - Time bar: RIGHT-TOP independent.
++   * - Right side stays relatively open for future enemy approach lanes.
++   */
   
     /* ===============================
 +     Problem + Answer
@@ -1084,6 +1084,55 @@
     .dash-problem-main
     .answer-input {
     pointer-events: none;
+  }
+  /* ===============================
++   * 2) Keypad lane (CENTER)
++   *    - move .dash-hud from right-bottom to center-bottom
++   *    - lift it a bit so the runner/ground axis is not blocked
++   * =============================== */
+
+  .calc-sprint #dash-game-screen .dash-hud {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+
+    /* 棒人間の横軸（地面付近）を塞がないよう少し上げる */
+    bottom: clamp(88px, 12vh, 150px);
+  }
+
+  /* lane width tuned for center placement (avoid spanning too wide) */
+  .calc-sprint #dash-game-screen .dash-lane {
+    width: min(520px, 44vw);
+  }
+
+  /* ===============================
++   * 3) Time bar (RIGHT-TOP)
++   *    - detach from lane flow and pin to the upper-right
++   * =============================== */
+
+  .calc-sprint #dash-game-screen #dash-game-time-wrap {
+    position: absolute;
+    top: clamp(18px, 3vh, 36px);
+    right: clamp(18px, 3vw, 36px);
+    z-index: 6;
+
+    /* 操作対象ではない想定（読み取り専用HUD） */
+    pointer-events: none;
+  }
+
+  /* make the time bar compact on the corner */
+  .calc-sprint #dash-game-screen .dash-time {
+    width: min(420px, 30vw);
+  }
+
+  /* ===============================
++   * 4) Safety: keep runner lane visually clear
++   *    - ensure nothing sits on very bottom strip
++   * =============================== */
+
+  .calc-sprint #dash-game-screen > .screen-main.dash-playfield {
+    /* bottom padding already exists; keep it generous for center HUD */
+    padding-bottom: clamp(260px, 36vh, 420px);
   }
 }
 .calc-sprint #dash-game-screen .game-focus {
