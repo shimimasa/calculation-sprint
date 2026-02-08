@@ -42,6 +42,7 @@ const CLOUD_SPEED_MAX = 0.25;
 const CLOUD_GAP_MIN_PX = 80;
 const CLOUD_GAP_MAX_PX = 260;
 const DEFAULT_CLOUD_WIDTH = 220;
+const RUNNER_FOOT_OFFSET_PX = 62;
 const EFFECT_MAX_SPEED_MPS = 8;
 const randomBetween = (min, max) => min + Math.random() * (max - min);
 const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
@@ -140,7 +141,8 @@ const dashGameScreen = {
   },
   resetGroundTiles() {
     this.groundTileWidth = 0;
-    this.groundTileOffsets = [0, 0];
+    this.groundTileX = [0, 0];
+    this.groundDebugLogged = false;
     if (domRefs.game.runGroundTiles?.length >= 2) {
       domRefs.game.runGroundTiles[0].style.transform = 'translate3d(0px, 0px, 0px)';
       domRefs.game.runGroundTiles[1].style.transform = 'translate3d(0px, 0px, 0px)';
@@ -160,13 +162,62 @@ const dashGameScreen = {
       return;
     }
     if (force || Math.abs(nextWidth - this.groundTileWidth) > 1) {
-      this.groundTileWidth = nextWidth;
-      this.groundTileOffsets = [0, nextWidth];
-      tileA.style.width = `${nextWidth}px`;
-      tileB.style.width = `${nextWidth}px`;
-      tileA.style.transform = 'translate3d(0px, 0px, 0px)';
-      tileB.style.transform = `translate3d(${nextWidth}px, 0px, 0px)`;
+      this.initGround(runGround, tileA, tileB);
     }
+  },
+  initGround(groundEl, tileA, tileB) {
+    if (!groundEl || !tileA || !tileB) {
+      return;
+    }
+    const tileW = Math.round(groundEl.getBoundingClientRect().width || 0);
+    if (!tileW) {
+      return;
+    }
+    this.groundTileWidth = tileW;
+    this.groundTileX = [0, tileW];
+    tileA.style.width = `${tileW}px`;
+    tileB.style.width = `${tileW}px`;
+    tileA.style.transform = 'translate3d(0px, 0px, 0px)';
+    tileB.style.transform = `translate3d(${Math.round(tileW)}px, 0px, 0px)`;
+    this.logGroundDebug();
+  },
+  updateGround(dtSec, speedPerSec) {
+    if (!this.groundTileWidth) {
+      return;
+    }
+    const tileA = domRefs.game.runGroundTileA;
+    const tileB = domRefs.game.runGroundTileB;
+    if (!tileA || !tileB) {
+      return;
+    }
+    const tileW = this.groundTileWidth;
+    const nextXA = (this.groundTileX?.[0] ?? 0) - speedPerSec * dtSec;
+    const nextXB = (this.groundTileX?.[1] ?? tileW) - speedPerSec * dtSec;
+    let xA = nextXA;
+    let xB = nextXB;
+    if (xA <= -tileW) {
+      xA = xB + tileW;
+    }
+    if (xB <= -tileW) {
+      xB = xA + tileW;
+    }
+    this.groundTileX = [xA, xB];
+    tileA.style.transform = `translate3d(${Math.round(xA)}px, 0px, 0px)`;
+    tileB.style.transform = `translate3d(${Math.round(xB)}px, 0px, 0px)`;
+  },
+  logGroundDebug() {
+    if (this.groundDebugLogged || !Number.isFinite(this.groundSurfaceY) || !this.groundTileWidth) {
+      return;
+    }
+    const xA = Math.round(this.groundTileX?.[0] ?? 0);
+    const xB = Math.round(this.groundTileX?.[1] ?? 0);
+    console.log('[run-ground] init', {
+      tileW: this.groundTileWidth,
+      xA,
+      xB,
+      groundSurfaceY: this.groundSurfaceY,
+    });
+    this.groundDebugLogged = true;
   },
   updateRunnerGroundAlignment(force = false) {
     const runGround = domRefs.game.runGround;
@@ -177,14 +228,14 @@ const dashGameScreen = {
       return;
     }
     const groundRect = runGround.getBoundingClientRect();
+    const worldRect = runWorld.getBoundingClientRect();
     const viewportHeight = window.innerHeight || 0;
     if (!viewportHeight) {
       return;
     }
     const groundSurfaceY = Math.round(groundRect.top);
     const groundInset = Math.round(viewportHeight - groundSurfaceY);
-    const runnerRect = runner.getBoundingClientRect();
-    const runnerFootOffset = Math.round((runnerRect.height || 0) * 0.92);
+    const runnerFootOffset = RUNNER_FOOT_OFFSET_PX;
     if (
       !force
       && this.groundSurfaceY === groundSurfaceY
@@ -198,6 +249,9 @@ const dashGameScreen = {
     gameState.run.groundY = groundSurfaceY;
     runWorld.style.setProperty('--calc-sprint-ground-inset', `${groundInset}px`);
     runWorld.style.setProperty('--calc-sprint-runner-foot-offset', `${runnerFootOffset}px`);
+    runnerWrap.style.bottom = 'auto';
+    runnerWrap.style.top = `${Math.round(groundSurfaceY - runnerFootOffset - worldRect.top)}px`;
+    this.logGroundDebug();
   },
   spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
     if (!container) {
@@ -258,12 +312,7 @@ const dashGameScreen = {
     }
     this.updateGroundLayout();
     this.updateRunnerGroundAlignment();
-    if (this.groundTileWidth > 0) {
-      this.groundOffset -= groundSpeedPerSec * dtSec;
-      if (this.groundOffset <= -this.groundTileWidth) {
-        this.groundOffset += this.groundTileWidth;
-      }
-    }
+    this.updateGround(dtSec, groundSpeedPerSec);
     this.clouds?.forEach((cloud) => {
       if (!cloud?.el) {
         return;
@@ -283,8 +332,10 @@ const dashGameScreen = {
       runSky.style.backgroundPositionX = `${Math.round(this.skyOffsetPx)}px`;
     }
     if (domRefs.game.runGroundTiles?.length >= 2 && this.groundTileWidth > 0) {
-      domRefs.game.runGroundTiles.forEach((tile) => {
-        tile.style.transform = `translate3d(${Math.round(this.groundOffset)}px, 0px, 0px)`;
+      const offsets = this.groundTileX ?? [0, this.groundTileWidth];
+      domRefs.game.runGroundTiles.forEach((tile, index) => {
+        const offset = offsets[index] ?? 0;
+        tile.style.transform = `translate3d(${Math.round(offset)}px, 0px, 0px)`;
       });
     }
     if (this.clouds?.length) {
@@ -712,7 +763,7 @@ const dashGameScreen = {
     this.runLayerOriginalNextSibling = this.runLayerOriginalNextSibling ?? null;
     this.skyOffsetPx = 0;
     this.groundTileWidth = 0;
-    this.groundOffset = 0;
+    this.groundTileX = [0, 0];
     this.clouds = [];
     this.runnerSpeedTier = null;
     this.initRunBackgrounds();

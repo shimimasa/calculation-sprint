@@ -15,6 +15,7 @@ const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
 const RUNNER_X_FOLLOW_RATE = 0.12;
 const RUNNER_BASE_LEFT_PX = 64;
+const RUNNER_FOOT_OFFSET_PX = 62;
 const BG_BASE_SPEED_PX = 42;
 const SKY_SPEED_FACTOR = 0.08;
 const GROUND_SPEED_FACTOR = 1;
@@ -201,7 +202,8 @@ const gameScreen = {
   },
   resetGroundTiles() {
     this.groundTileWidth = 0;
-    this.groundTileOffsets = [0, 0];
+    this.groundTileX = [0, 0];
+    this.groundDebugLogged = false;
     if (domRefs.game.runGroundTiles?.length >= 2) {
       domRefs.game.runGroundTiles[0].style.transform = 'translate3d(0px, 0px, 0px)';
       domRefs.game.runGroundTiles[1].style.transform = 'translate3d(0px, 0px, 0px)';
@@ -221,13 +223,62 @@ const gameScreen = {
       return;
     }
     if (force || Math.abs(nextWidth - this.groundTileWidth) > 1) {
-      this.groundTileWidth = nextWidth;
-      this.groundTileOffsets = [0, nextWidth];
-      tileA.style.width = `${nextWidth}px`;
-      tileB.style.width = `${nextWidth}px`;
-      tileA.style.transform = 'translate3d(0px, 0px, 0px)';
-      tileB.style.transform = `translate3d(${nextWidth}px, 0px, 0px)`;
+      this.initGround(runGround, tileA, tileB);
     }
+  },
+  initGround(groundEl, tileA, tileB) {
+    if (!groundEl || !tileA || !tileB) {
+      return;
+    }
+    const tileW = Math.round(groundEl.getBoundingClientRect().width || 0);
+    if (!tileW) {
+      return;
+    }
+    this.groundTileWidth = tileW;
+    this.groundTileX = [0, tileW];
+    tileA.style.width = `${tileW}px`;
+    tileB.style.width = `${tileW}px`;
+    tileA.style.transform = 'translate3d(0px, 0px, 0px)';
+    tileB.style.transform = `translate3d(${Math.round(tileW)}px, 0px, 0px)`;
+    this.logGroundDebug();
+  },
+  updateGround(dtSec, speedPerSec) {
+    if (!this.groundTileWidth) {
+      return;
+    }
+    const tileA = domRefs.game.runGroundTileA;
+    const tileB = domRefs.game.runGroundTileB;
+    if (!tileA || !tileB) {
+      return;
+    }
+    const tileW = this.groundTileWidth;
+    const nextXA = (this.groundTileX?.[0] ?? 0) - speedPerSec * dtSec;
+    const nextXB = (this.groundTileX?.[1] ?? tileW) - speedPerSec * dtSec;
+    let xA = nextXA;
+    let xB = nextXB;
+    if (xA <= -tileW) {
+      xA = xB + tileW;
+    }
+    if (xB <= -tileW) {
+      xB = xA + tileW;
+    }
+    this.groundTileX = [xA, xB];
+    tileA.style.transform = `translate3d(${Math.round(xA)}px, 0px, 0px)`;
+    tileB.style.transform = `translate3d(${Math.round(xB)}px, 0px, 0px)`;
+  },
+  logGroundDebug() {
+    if (this.groundDebugLogged || !Number.isFinite(this.groundSurfaceY) || !this.groundTileWidth) {
+      return;
+    }
+    const xA = Math.round(this.groundTileX?.[0] ?? 0);
+    const xB = Math.round(this.groundTileX?.[1] ?? 0);
+    console.log('[run-ground] init', {
+      tileW: this.groundTileWidth,
+      xA,
+      xB,
+      groundSurfaceY: this.groundSurfaceY,
+    });
+    this.groundDebugLogged = true;
   },
   updateRunnerGroundAlignment(force = false) {
     const runGround = domRefs.game.runGround;
@@ -238,14 +289,14 @@ const gameScreen = {
       return;
     }
     const groundRect = runGround.getBoundingClientRect();
+    const worldRect = runWorld.getBoundingClientRect();
     const viewportHeight = window.innerHeight || 0;
     if (!viewportHeight) {
       return;
     }
     const groundSurfaceY = Math.round(groundRect.top);
     const groundInset = Math.round(viewportHeight - groundSurfaceY);
-    const runnerRect = runner.getBoundingClientRect();
-    const runnerFootOffset = Math.round((runnerRect.height || 0) * 0.92);
+    const runnerFootOffset = RUNNER_FOOT_OFFSET_PX;
     if (
       !force
       && this.groundSurfaceY === groundSurfaceY
@@ -259,6 +310,9 @@ const gameScreen = {
     gameState.run.groundY = groundSurfaceY;
     runWorld.style.setProperty('--calc-sprint-ground-inset', `${groundInset}px`);
     runWorld.style.setProperty('--calc-sprint-runner-foot-offset', `${runnerFootOffset}px`);
+    runnerWrap.style.bottom = 'auto';
+    runnerWrap.style.top = `${Math.round(groundSurfaceY - runnerFootOffset - worldRect.top)}px`;
+    this.logGroundDebug();
   },
   spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
     if (!container) {
@@ -398,7 +452,7 @@ const gameScreen = {
     this.setLocked(false);
     this.skyOffsetPx = 0;
     this.groundTileWidth = 0;
-    this.groundOffset = 0;
+    this.groundTileX = [0, 0];
     this.bgBoostRemainingMs = 0;
     this.runnerX = 0;
     this.runnerXTarget = 0;
@@ -736,12 +790,7 @@ const gameScreen = {
       }
       this.updateGroundLayout();
       this.updateRunnerGroundAlignment();
-      if (this.groundTileWidth > 0) {
-        this.groundOffset -= groundSpeedPerSec * dtSec;
-        if (this.groundOffset <= -this.groundTileWidth) {
-          this.groundOffset += this.groundTileWidth;
-        }
-      }
+      this.updateGround(dtSec, groundSpeedPerSec);
       const cloudMotionFactor = this.prefersReducedMotion ? 0.35 : 1;
       this.clouds?.forEach((cloud) => {
         if (!cloud?.el) {
@@ -803,9 +852,9 @@ const gameScreen = {
     if (domRefs.game.runGroundTiles?.length >= 2 && this.groundTileWidth > 0) {
       const offsets = isReviewModeActive(gameState)
         ? [0, this.groundTileWidth]
-        : this.groundTileOffsets;
+        : this.groundTileX;
       domRefs.game.runGroundTiles.forEach((tile, index) => {
-        const offset = offsets[index] ?? 0;
+        const offset = offsets?.[index] ?? 0;
         tile.style.transform = `translate3d(${Math.round(offset)}px, 0px, 0px)`;
       });
     }

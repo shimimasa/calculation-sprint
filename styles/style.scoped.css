@@ -2075,22 +2075,22 @@
   pointer-events: none;
   filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
   opacity: calc(0.94 + (var(--world-clarity) - 1) * 0.25);
+  outline: 2px solid rgba(0, 255, 0, 0.25);
 }.calc-sprint .run-ground__tile {
   position: absolute;
   top: 0;
-  bottom: 0;
   left: 0;
-  width: 100%;
   height: 100%;
   background-image: var(--run-ground-image, url("../assets/bg-ground.png"));
-  background-repeat: no-repeat;
+  background-repeat: repeat-x;
   background-size: auto 100%;
   background-position: left bottom;
   will-change: transform;
+  outline: 1px solid rgba(0, 255, 0, 0.25);
 }.calc-sprint .run-ground__tile--a {
   left: 0;
 }.calc-sprint .run-ground__tile--b {
-  left: 1920px;
+  left: 0;
 }.calc-sprint .speed-lines {
   position: absolute;
   inset: 0;
