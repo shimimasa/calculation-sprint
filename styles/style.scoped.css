@@ -920,12 +920,17 @@
 
 /* Dash Run: layout density + playfield focus (Dash-scoped overrides) */
 .calc-sprint #dash-game-screen {
-  padding: 18px 18px 14px;
+  padding: 12px 18px 14px;
   overflow-x: hidden;
+  position: relative;
 }
 .calc-sprint #dash-game-screen > .screen-header {
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
+  position: absolute;
+  inset: 0 0 auto 0;
+  padding: 12px 18px 0;
+  pointer-events: none;
 }
 .calc-sprint #dash-game-screen > header.dash-header .screen-kicker,
 .calc-sprint #dash-game-screen > header.dash-header .screen__title,
@@ -934,6 +939,31 @@
 }
 .calc-sprint #dash-game-screen .dash-header {
   gap: 10px;
+}
+.calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
+.calc-sprint #dash-game-screen > header.dash-header .dash-next-area,
+.calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+  position: absolute;
+  pointer-events: auto;
+}
+.calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
+  top: 0;
+  right: 0;
+}
+.calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+  top: 0;
+  left: 0;
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.6;
+}
+.calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+  top: 54px;
+  right: 0;
+  width: min(320px, 36vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .calc-sprint #dash-game-screen .screen__title {
   font-size: 24px;
@@ -970,6 +1000,9 @@
   background: transparent;
   border: none;
   box-shadow: none;
+  position: relative;
+  min-height: min(78vh, 720px);
+  padding-bottom: clamp(220px, 32vh, 360px);
 }
 .calc-sprint #dash-game-screen > .screen-main {
   margin-bottom: -14px;
@@ -978,6 +1011,18 @@
   padding: 0 12px 0;
   margin-bottom: -10px;
   gap: 6px;
+}
+.calc-sprint #dash-game-screen .dash-problem-grid {
+  position: absolute;
+  top: clamp(56px, 7vh, 90px);
+  left: clamp(12px, 2vw, 24px);
+  right: clamp(200px, 28vw, 320px);
+  z-index: 2;
+}
+.calc-sprint #dash-game-screen .dash-problem-main {
+  display: grid;
+  gap: 10px;
+  align-items: start;
 }
 .calc-sprint #dash-game-screen .game-actions {
   margin-top: 4px;
@@ -993,8 +1038,8 @@
 
 /* Dash: primary time (danger gauge) */
 .calc-sprint #dash-game-screen .dash-time {
-  width: min(520px, 92vw);
-  margin: 0 auto 10px;
+  width: min(520px, 100%);
+  margin: 0 0 10px;
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-areas:
@@ -1082,7 +1127,7 @@
   display: none;
 }
 .calc-sprint #dash-game-screen .dash-sidehud {
-  opacity: 0.65;
+  opacity: 0.55;
 }
 .calc-sprint #dash-game-screen .dash-sidehud .dash-stat-card,
 .calc-sprint #dash-game-screen .dash-sidehud .dash-proximity {
@@ -1122,6 +1167,16 @@
   border-color: rgba(56, 103, 255, 0.18);
   box-shadow: none;
   font-weight: 700;
+  -moz-appearance: textfield;
+  appearance: textfield;
+  height: 52px;
+  font-size: 24px;
+  text-align: center;
+}
+.calc-sprint #dash-game-screen .answer-input::-webkit-outer-spin-button,
+.calc-sprint #dash-game-screen .answer-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .calc-sprint #dash-game-screen .answer-input:focus {
   border-color: rgba(56, 103, 255, 0.18);
@@ -1268,43 +1323,20 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    width: 100%;
+    width: auto;
+    left: clamp(12px, 2vw, 24px);
+    right: clamp(12px, 2vw, 24px);
   }
 }
 
-/* Dash Run: wide layout (PC) - 2-column header */
+/* Dash Run: wide layout (PC) - HUD positioning */
 @media (min-width: 901px) {
   .calc-sprint #dash-game-screen > header.dash-header {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      ". stats"
-      ". next"
-      ". sidehud"
-      "rules rules";
-    column-gap: 18px;
-    row-gap: 8px;
-    align-items: start;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
-    grid-area: stats;
-    justify-self: end;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
-    grid-area: next;
-    justify-self: end;
-    margin: 0;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .dash-rules-hint {
-    grid-area: rules;
+    display: block;
   }
   .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
-    grid-area: sidehud;
-    justify-self: end;
-    width: min(360px, 38vw);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    width: min(320px, 36vw);
+    gap: 8px;
   }
   .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stats--footer {
     justify-content: flex-start;
@@ -1347,8 +1379,7 @@
 
 @media (max-width: 900px) {
   .calc-sprint #dash-game-screen > header.dash-header {
-    display: flex;
-    flex-direction: column;
+    display: block;
   }
 }
 
