@@ -11,6 +11,7 @@ const BGM_URLS = {
   bgm_mul: 'assets/audio/bgm/free.mp3',
   bgm_div: 'assets/audio/bgm/free.mp3',
   bgm_mix: 'assets/audio/bgm/free.mp3',
+  bgm_dash: 'assets/audio/bgm/bgm-1.mp3',
 };
 
 // ADR-004: Use relative asset paths so subpath hosting works (avoid absolute `/assets/...`).
@@ -158,7 +159,8 @@ class AudioManager {
   setBgm(id, opts = {}) {
     warnUnknownBgmId(id);
     const resolvedId = resolveBgmId(id);
-    if (resolvedId === this.currentBgmId) {
+    const force = Boolean(opts.force);
+    if (!force && resolvedId === this.currentBgmId) {
       return;
     }
     if (!this.unlocked) {
@@ -175,7 +177,7 @@ class AudioManager {
     const fadeGuard = () => token === this.fadeToken;
 
     const nextAudio = new Audio(url);
-    nextAudio.loop = true;
+    nextAudio.loop = opts.loop ?? true;
     nextAudio.preload = 'auto';
     nextAudio.volume = this.muted ? 0 : this.bgmVolume;
     nextAudio.addEventListener('error', () => {
@@ -221,6 +223,15 @@ class AudioManager {
     } else {
       startNext();
     }
+  }
+
+  playBgm(id, opts = {}) {
+    const loop = opts.loop ?? true;
+    this.setBgm(id, {
+      ...opts,
+      force: true,
+      loop,
+    });
   }
 
   stopCurrentBgm(fadeMs, token) {
