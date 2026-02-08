@@ -16,6 +16,7 @@ const RUNNER_X_MAX_RATIO = 0.3;
 const RUNNER_X_FOLLOW_RATE = 0.12;
 const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
+const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
 const BG_BASE_SPEED_PX = 42;
 const SKY_SPEED_FACTOR = 0.08;
 const GROUND_SPEED_FACTOR = 1;
@@ -110,6 +111,12 @@ const loadCloudBaseWidth = async (src) => {
   img.src = src;
   await waitForImageDecode(img);
   return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+};
+const getGroundSurfaceInsetPx = () => {
+  const inset = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--ground-surface-inset'),
+  );
+  return Number.isFinite(inset) ? inset : DEFAULT_GROUND_SURFACE_INSET_PX;
 };
 
 const gameScreen = {
@@ -305,7 +312,8 @@ const gameScreen = {
     }
     const groundRect = runGround.getBoundingClientRect();
     const worldRect = runWorld.getBoundingClientRect();
-    const groundSurfaceY = Math.round(groundRect.top);
+    const groundSurfaceInsetPx = getGroundSurfaceInsetPx();
+    const groundSurfaceY = Math.round(groundRect.bottom - groundSurfaceInsetPx);
     const runnerFootOffset = RUNNER_FOOT_OFFSET_PX;
     const runnerBaseLeft = Math.round(worldRect.left + RUNNER_BASE_LEFT_PX);
     if (
