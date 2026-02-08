@@ -42,6 +42,7 @@ const CLOUD_SPEED_MAX = 0.25;
 const CLOUD_GAP_MIN_PX = 80;
 const CLOUD_GAP_MAX_PX = 260;
 const DEFAULT_CLOUD_WIDTH = 220;
+const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
 const EFFECT_MAX_SPEED_MPS = 8;
 const randomBetween = (min, max) => min + Math.random() * (max - min);
@@ -74,6 +75,21 @@ const loadCloudBaseWidth = async (src) => {
 };
 
 const dashGameScreen = {
+  ensureDebugGroundLine() {
+    if (this.debugGroundLine?.isConnected) {
+      return this.debugGroundLine;
+    }
+    const existingLine = document.querySelector('.debug-ground-line');
+    if (existingLine) {
+      this.debugGroundLine = existingLine;
+      return existingLine;
+    }
+    const line = document.createElement('div');
+    line.className = 'debug-ground-line';
+    document.body.appendChild(line);
+    this.debugGroundLine = line;
+    return line;
+  },
   ensureRunLayerMounted() {
     const runLayer = domRefs.game.runLayer;
     const host = domRefs.dashGame.runHost;
@@ -229,28 +245,30 @@ const dashGameScreen = {
     }
     const groundRect = runGround.getBoundingClientRect();
     const worldRect = runWorld.getBoundingClientRect();
-    const viewportHeight = window.innerHeight || 0;
-    if (!viewportHeight) {
-      return;
-    }
     const groundSurfaceY = Math.round(groundRect.top);
-    const groundInset = Math.round(viewportHeight - groundSurfaceY);
     const runnerFootOffset = RUNNER_FOOT_OFFSET_PX;
+    const runnerBaseLeft = Math.round(worldRect.left + RUNNER_BASE_LEFT_PX);
     if (
       !force
       && this.groundSurfaceY === groundSurfaceY
       && this.runnerFootOffset === runnerFootOffset
+      && this.runnerBaseLeft === runnerBaseLeft
     ) {
       return;
     }
     this.groundSurfaceY = groundSurfaceY;
     this.runnerFootOffset = runnerFootOffset;
+    this.runnerBaseLeft = runnerBaseLeft;
     gameState.run.groundSurfaceY = groundSurfaceY;
     gameState.run.groundY = groundSurfaceY;
-    runWorld.style.setProperty('--calc-sprint-ground-inset', `${groundInset}px`);
     runWorld.style.setProperty('--calc-sprint-runner-foot-offset', `${runnerFootOffset}px`);
     runnerWrap.style.bottom = 'auto';
-    runnerWrap.style.top = `${Math.round(groundSurfaceY - runnerFootOffset - worldRect.top)}px`;
+    runnerWrap.style.top = `${Math.round(groundSurfaceY - runnerFootOffset)}px`;
+    runnerWrap.style.left = `${runnerBaseLeft}px`;
+    const debugLine = this.ensureDebugGroundLine();
+    if (debugLine) {
+      debugLine.style.top = `${groundSurfaceY}px`;
+    }
     this.logGroundDebug();
   },
   spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
@@ -311,8 +329,8 @@ const dashGameScreen = {
       this.skyOffsetPx += worldWidth;
     }
     this.updateGroundLayout();
-    this.updateRunnerGroundAlignment();
     this.updateGround(dtSec, groundSpeedPerSec);
+    this.updateRunnerGroundAlignment();
     this.clouds?.forEach((cloud) => {
       if (!cloud?.el) {
         return;
