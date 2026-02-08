@@ -47,6 +47,7 @@ const RUNNER_FOOT_OFFSET_PX = 62;
 const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
 const EFFECT_MAX_SPEED_MPS = 8;
 const DEBUG_INPUT = false;
+const DEBUG_KEYPAD = false;
 const randomBetween = (min, max) => min + Math.random() * (max - min);
 const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
 const extractCssUrl = (value) => {
@@ -108,6 +109,21 @@ const logInputDebug = (label, payload = {}) => {
     activeElement: describeActiveElement(),
     ...payload,
   });
+};
+const formatTargetLabel = (target) => {
+  if (!target) {
+    return 'none';
+  }
+  const tag = target.tagName?.toLowerCase() ?? 'unknown';
+  const id = target.id ? `#${target.id}` : '';
+  const classes = target.classList?.length ? `.${[...target.classList].join('.')}` : '';
+  return `${tag}${id}${classes}`;
+};
+const logKeypadDebug = (label, payload = {}) => {
+  if (!DEBUG_KEYPAD) {
+    return;
+  }
+  console.log(`[keypad-debug:${label}]`, payload);
 };
 
 const dashGameScreen = {
@@ -484,8 +500,16 @@ const dashGameScreen = {
     if (!this.canAcceptInput()) {
       return;
     }
+    const normalized = String(digit);
     this.focusAnswerInput();
-    this.setAnswer(`${this.answerBuffer}${digit}`, { handler: 'keypad' });
+    this.setAnswer(`${this.answerBuffer}${normalized}`, { handler: 'keypad' });
+  },
+  clearAnswer() {
+    if (!this.canAcceptInput()) {
+      return;
+    }
+    this.focusAnswerInput();
+    this.setAnswer('', { handler: 'clear' });
   },
   handleBackspace() {
     if (!this.canAcceptInput()) {
@@ -951,29 +975,75 @@ const dashGameScreen = {
     };
     this.events.on(window, 'keydown', this.handleGlobalKeyDown);
 
-    this.handleSubmitClick = () => {
-      inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
-    };
-    this.events.on(domRefs.dashGame.submitButton, 'click', this.handleSubmitClick);
-
     this.handleKeypadToggleClick = () => {
       inputActions.dispatch(inputActions.ACTIONS.TOGGLE_KEYPAD, { source: 'button' });
     };
     this.events.on(domRefs.dashGame.keypadToggle, 'click', this.handleKeypadToggleClick);
 
-    this.handleKeypadClick = (event) => {
-      const button = event.target.closest('[data-keypad-key]');
-      if (!button || button.disabled) {
+    const keypadRoot = domRefs.dashGame.keypad?.closest('.dash-keypad-stack') ?? domRefs.dashGame.keypad;
+    this.handleKeypadCapture = (event) => {
+      if (!DEBUG_KEYPAD) {
         return;
       }
-      const key = button.dataset.keypadKey;
-      if (key === 'back') {
-        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keypad' });
-        return;
-      }
-      this.appendKeypadDigit(key);
+      const target = event.target;
+      const button = target?.closest?.('[data-digit],[data-action]');
+      const computed = button ? window.getComputedStyle(button) : null;
+      logKeypadDebug('capture', {
+        target: formatTargetLabel(target),
+        button: formatTargetLabel(button),
+        dataset: button ? { digit: button.dataset.digit, action: button.dataset.action } : null,
+        pointerEvents: computed?.pointerEvents,
+        zIndex: computed?.zIndex,
+      });
     };
-    this.events.on(domRefs.dashGame.keypad, 'click', this.handleKeypadClick);
+    this.handleKeypadClick = (event) => {
+      const button = event.target.closest('[data-digit],[data-action]');
+      if (!button) {
+        logKeypadDebug('ignore', { reason: 'no-button' });
+        return;
+      }
+      if (button.disabled) {
+        logKeypadDebug('ignore', { reason: 'disabled', button: formatTargetLabel(button) });
+        return;
+      }
+      const digit = button.dataset.digit;
+      const action = button.dataset.action;
+      if (digit !== undefined) {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', digit });
+          return;
+        }
+        this.appendKeypadDigit(String(digit));
+        return;
+      }
+      if (action === 'backspace') {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', action });
+          return;
+        }
+        this.handleBackspace();
+        return;
+      }
+      if (action === 'clear') {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', action });
+          return;
+        }
+        this.clearAnswer();
+        return;
+      }
+      if (action === 'submit') {
+        if (!this.canSubmit()) {
+          logKeypadDebug('ignore', { reason: 'submit-blocked', action });
+          return;
+        }
+        this.submitAnswer();
+        return;
+      }
+      logKeypadDebug('ignore', { reason: 'unknown-action', action });
+    };
+    this.events.on(keypadRoot, 'click', this.handleKeypadCapture, { capture: true });
+    this.events.on(keypadRoot, 'click', this.handleKeypadClick);
 
     if (domRefs.dashGame.keypad) {
       domRefs.dashGame.keypad.hidden = true;
@@ -1012,9 +1082,9 @@ const dashGameScreen = {
     this.handleKeyDown = null;
     this.handleAnswerInput = null;
     this.handleGlobalKeyDown = null;
-    this.handleSubmitClick = null;
     this.handleKeypadToggleClick = null;
     this.handleKeypadClick = null;
+    this.handleKeypadCapture = null;
     this.clearStreakCue();
     if (domRefs.game.runClouds) {
       domRefs.game.runClouds.innerHTML = '';

@@ -152,8 +152,8 @@ async def run(base_url):
     results.append({'id': 'E2', 'pass': after_click == before + 1})
 
     await page.click('#game-keypad-toggle')
-    await page.click('[data-keypad-key="1"]')
-    await page.click('[data-keypad-key="2"]')
+    await page.click('[data-digit="1"]')
+    await page.click('[data-digit="2"]')
     keypad_val = await page.input_value('#game-answer-input')
     results.append({'id': 'E3', 'pass': keypad_val.endswith('12')})
     await submit_answer(page, 'click')

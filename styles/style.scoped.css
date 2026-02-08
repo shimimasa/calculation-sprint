@@ -1284,6 +1284,8 @@
   display: flex;
   flex-direction: column;
   gap: clamp(10px, 1.8vh, 16px);
+  position: relative;
+  z-index: 6;
 }
 .calc-sprint #dash-game-screen .dash-problem-main {
   display: grid;
@@ -1460,6 +1462,8 @@
   justify-content: center;
   width: 100%;
   margin-top: clamp(4px, 1vh, 10px);
+  position: relative;
+  z-index: 6;
 }
 .calc-sprint #dash-game-screen .dash-submit-button {
   width: min(520px, 100%);
@@ -1913,6 +1917,8 @@
   gap: 12px;
   align-items: center;
   margin-top: 8px;
+  position: relative;
+  z-index: 6;
 }.calc-sprint .game-action-row {
   display: flex;
   flex-wrap: wrap;
@@ -1924,6 +1930,8 @@
   gap: 10px;
   width: min(320px, 90vw);
   margin: 0 auto;
+  position: relative;
+  z-index: 6;
 }.calc-sprint .game-keypad .keypad-button {
   font-size: 20px;
   padding: 10px 0;
@@ -2042,6 +2050,7 @@
   transition: filter 0.2s ease;
   filter: saturate(var(--world-clarity)) brightness(var(--world-brightness))
     contrast(var(--world-contrast));
+  pointer-events: none;
 }.calc-sprint .run-clouds {
   position: absolute;
   inset: 0;
@@ -2090,6 +2099,7 @@
   background-size: auto 100%;
   background-position: left bottom;
   will-change: transform;
+  pointer-events: none;
 }.calc-sprint .run-ground__tile--a {
   left: 0;
 }.calc-sprint .run-ground__tile--b {

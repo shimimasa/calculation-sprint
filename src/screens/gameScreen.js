@@ -35,6 +35,7 @@ const CLOUD_GAP_MIN_PX = 80;
 const CLOUD_GAP_MAX_PX = 260;
 const DEFAULT_CLOUD_WIDTH = 220;
 const DEBUG_INPUT = false;
+const DEBUG_KEYPAD = false;
 const COUNTDOWN_SFX_THRESHOLDS = Object.freeze([10, 5, 3, 2, 1]);
 const isReviewModeActive = (state) => Boolean(state?.isReviewMode);
 const EFFECT_BY_LEVEL = {
@@ -146,6 +147,21 @@ const logInputDebug = (label, payload = {}) => {
     activeElement: describeActiveElement(),
     ...payload,
   });
+};
+const formatTargetLabel = (target) => {
+  if (!target) {
+    return 'none';
+  }
+  const tag = target.tagName?.toLowerCase() ?? 'unknown';
+  const id = target.id ? `#${target.id}` : '';
+  const classes = target.classList?.length ? `.${[...target.classList].join('.')}` : '';
+  return `${tag}${id}${classes}`;
+};
+const logKeypadDebug = (label, payload = {}) => {
+  if (!DEBUG_KEYPAD) {
+    return;
+  }
+  console.log(`[keypad-debug:${label}]`, payload);
 };
 
 const gameScreen = {
@@ -458,8 +474,16 @@ const gameScreen = {
     if (!this.canAcceptInput()) {
       return;
     }
+    const normalized = String(digit);
     this.focusAnswerInput();
-    this.setAnswer(`${this.answerBuffer}${digit}`, { handler: 'keypad' });
+    this.setAnswer(`${this.answerBuffer}${normalized}`, { handler: 'keypad' });
+  },
+  clearAnswer() {
+    if (!this.canAcceptInput()) {
+      return;
+    }
+    this.focusAnswerInput();
+    this.setAnswer('', { handler: 'clear' });
   },
   handleBackspace() {
     if (!this.canAcceptInput()) {
@@ -639,29 +663,75 @@ const gameScreen = {
     };
     this.events.on(window, 'keydown', this.handleGlobalKeyDown);
 
-    this.handleSubmitClick = () => {
-      inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
-    };
-    this.events.on(domRefs.game.submitButton, 'click', this.handleSubmitClick);
-
     this.handleKeypadToggleClick = () => {
       inputActions.dispatch(inputActions.ACTIONS.TOGGLE_KEYPAD, { source: 'button' });
     };
     this.events.on(domRefs.game.keypadToggle, 'click', this.handleKeypadToggleClick);
 
-    this.handleKeypadClick = (event) => {
-      const button = event.target.closest('[data-keypad-key]');
-      if (!button || button.disabled) {
+    const keypadRoot = domRefs.game.keypad?.closest('.game-actions') ?? domRefs.game.keypad;
+    this.handleKeypadCapture = (event) => {
+      if (!DEBUG_KEYPAD) {
         return;
       }
-      const key = button.dataset.keypadKey;
-      if (key === 'back') {
-        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keypad' });
-        return;
-      }
-      this.appendKeypadDigit(key);
+      const target = event.target;
+      const button = target?.closest?.('[data-digit],[data-action]');
+      const computed = button ? window.getComputedStyle(button) : null;
+      logKeypadDebug('capture', {
+        target: formatTargetLabel(target),
+        button: formatTargetLabel(button),
+        dataset: button ? { digit: button.dataset.digit, action: button.dataset.action } : null,
+        pointerEvents: computed?.pointerEvents,
+        zIndex: computed?.zIndex,
+      });
     };
-    this.events.on(domRefs.game.keypad, 'click', this.handleKeypadClick);
+    this.handleKeypadClick = (event) => {
+      const button = event.target.closest('[data-digit],[data-action]');
+      if (!button) {
+        logKeypadDebug('ignore', { reason: 'no-button' });
+        return;
+      }
+      if (button.disabled) {
+        logKeypadDebug('ignore', { reason: 'disabled', button: formatTargetLabel(button) });
+        return;
+      }
+      const digit = button.dataset.digit;
+      const action = button.dataset.action;
+      if (digit !== undefined) {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', digit });
+          return;
+        }
+        this.appendKeypadDigit(String(digit));
+        return;
+      }
+      if (action === 'backspace') {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', action });
+          return;
+        }
+        this.handleBackspace();
+        return;
+      }
+      if (action === 'clear') {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', action });
+          return;
+        }
+        this.clearAnswer();
+        return;
+      }
+      if (action === 'submit') {
+        if (!this.canSubmit()) {
+          logKeypadDebug('ignore', { reason: 'submit-blocked', action });
+          return;
+        }
+        this.submitAnswer();
+        return;
+      }
+      logKeypadDebug('ignore', { reason: 'unknown-action', action });
+    };
+    this.events.on(keypadRoot, 'click', this.handleKeypadCapture, { capture: true });
+    this.events.on(keypadRoot, 'click', this.handleKeypadClick);
 
     this.loadNextQuestion();
     this.startTimer();

@@ -46,7 +46,7 @@ const domRefs = {
     submitButton: byId('dash-game-submit-button'),
     keypadToggle: byId('dash-game-keypad-toggle'),
     keypad: byId('dash-game-keypad'),
-    keypadButtons: qsa('#dash-game-keypad [data-keypad-key]'),
+    keypadButtons: qsa('#dash-game-keypad [data-digit], #dash-game-keypad [data-action]'),
   },
   dashResult: {
     backButton: byId('dash-result-back-button'),
@@ -98,7 +98,7 @@ const domRefs = {
     submitButton: byId('game-submit-button'),
     keypadToggle: byId('game-keypad-toggle'),
     keypad: byId('game-keypad'),
-    keypadButtons: qsa('#game-keypad [data-keypad-key]'),
+    keypadButtons: qsa('#game-keypad [data-digit], #game-keypad [data-action]'),
     runner: byId('runner-sprite'),
     runLayer: qs('.run-layer'),
     runWorld: qs('.run-world'),
