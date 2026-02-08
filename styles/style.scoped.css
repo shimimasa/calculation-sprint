@@ -17,7 +17,7 @@
   min-height: 100vh;
 }.calc-sprint {
   /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  --run-sky-image: url("../assets/bg-sky.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
@@ -1719,14 +1719,7 @@
 }
 
 .calc-sprint #dash-game-screen::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: none;
-  opacity: 0;
-  animation: none;
+  content: none;
 }
 
 .calc-sprint .screen-dash[data-enemy-state="caution"] .run-world::after {
@@ -1967,7 +1960,7 @@
   z-index: 0;
 }.calc-sprint .run-world[data-bg-theme="default"] {
   /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  --run-sky-image: url("../assets/bg-sky.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
@@ -1975,42 +1968,42 @@
 }.calc-sprint .run-world[data-bg-theme="theme1"], .calc-sprint .run-world[data-bg-theme="w1"] {
   background: #e2ecff;
   /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  --run-sky-image: url("../assets/bg-sky.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_add"] {
   background: #e7f1ff;
-  --run-sky-image: url("../assets/bg-sky.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(120, 170, 255, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_sub"] {
   background: #e7f8f0;
-  --run-sky-image: url("../assets/bg-sky.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(120, 220, 180, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_mul"] {
   background: #f0e8ff;
-  --run-sky-image: url("../assets/bg-sky.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(180, 140, 255, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_div"] {
   background: #fff2d9;
-  --run-sky-image: url("../assets/bg-sky.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 200, 120, 0.25), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_mix"] {
   background: #ffe9e1;
-  --run-sky-image: url("../assets/bg-sky.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 160, 150, 0.22), transparent);
@@ -2032,7 +2025,7 @@
   pointer-events: none;
   z-index: 0;
 }:root {
-  --debug-sky-flat: 0;
+  --debug-sky-solid: 0;
 }.calc-sprint .run-sky {
   position: absolute;
   inset: 0;
@@ -2046,11 +2039,16 @@
   background-repeat: repeat-x;
   background-position: center top;
   background-size: auto 100%;
+  background-color: transparent;
   will-change: background-position;
   transition: filter 0.2s ease;
   filter: saturate(var(--world-clarity)) brightness(var(--world-brightness))
     contrast(var(--world-contrast));
   pointer-events: none;
+}:root[style*="--debug-sky-solid: 1"] .calc-sprint .run-sky,
+:root[style*="--debug-sky-solid:1"] .calc-sprint .run-sky {
+  background-image: none !important;
+  background-color: #7dbdff;
 }.calc-sprint .run-clouds {
   position: absolute;
   inset: 0;
