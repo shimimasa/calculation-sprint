@@ -1038,44 +1038,49 @@
 }
 
 /* Step1-4 (future enemy from right): keep center/right lanes clear on desktop */
-@media (min-width: 901px) {
-  /* Step1: move control island to top-left (safe zone). */
-  .calc-sprint #dash-game-screen .dash-hud {
-    left: clamp(12px, 3vw, 28px);
-    top: clamp(12px, 3vh, 28px);
-    right: auto;
-    bottom: auto;
-    justify-content: flex-start;
-    align-items: flex-start;
-  }
-
-  /* Step2: shrink the island footprint slightly. */
-  .calc-sprint #dash-game-screen .dash-lane {
-    width: min(460px, 42vw);
-  }
-
-  /* Step3: pack auxiliary HUD to the top-right. */
-  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
-    top: 0;
-    right: 0;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
-    left: auto;
-    right: 0;
-    top: calc(clamp(12px, 3vh, 28px) + 64px);
-    margin: 0;
-    opacity: 0.72;
-    max-width: min(360px, 34vw);
-    text-align: right;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
-    top: calc(clamp(12px, 3vh, 28px) + 100px);
-  }
-
-  /* Step4: keep the ground lane clean (avoid UI near bottom). */
-  .calc-sprint #dash-game-screen .dash-submit-button {
-    width: min(460px, 100%);
-  }
+@media (min-width: 901px) {/*
+  +   * Layout tweak:
+  +   * - Place PROBLEM + ANSWER above the runner (bottom-left).
+  +   * - Place TIME BAR to the right (top-right).
+  +   *
+  +   * We only move the "problem block" (.dash-problem-main).
+  +   * Keypad/submit remain managed by the existing .dash-hud/.dash-lane rules.
+  +   */
+  
+    /* 1) Problem + answer block: above runner (bottom-left). */
+    .calc-sprint #dash-game-screen .dash-problem-main {
+      position: absolute;
+      left: clamp(18px, 2.6vw, 44px);
+      bottom: clamp(96px, 12vh, 168px);
+      width: min(440px, 36vw);
+      z-index: 4;
+      pointer-events: none; /* problem card is read-only; prevent accidental captures */
+    }
+  
+    .calc-sprint #dash-game-screen .dash-problem-main .question-area {
+      margin: 0;
+      box-shadow: 0 18px 34px rgba(29, 36, 51, 0.18), 0 8px 0 rgba(29, 36, 51, 0.08);
+    }
+  
+    .calc-sprint #dash-game-screen .dash-problem-main .answer-input {
+      pointer-events: none; /* keep consistent with existing read-only behavior */
+    }
+  
+    /* 2) Time bar: move to the right (top-right), independent from the lane. */
+    .calc-sprint #dash-game-screen .dash-time {
+      position: absolute;
+      top: clamp(12px, 3vh, 28px);
+      right: clamp(12px, 2.6vw, 28px);
+      width: min(380px, 30vw);
+      margin: 0;
+      z-index: 4;
+      pointer-events: none; /* display only */
+    }
+  
+    /* Slightly tighten the value so it reads cleanly in the corner. */
+    .calc-sprint #dash-game-screen .dash-timevalue {
+      justify-content: flex-end;
+    }
 }
 .calc-sprint #dash-game-screen .game-focus {
   padding: 0;
@@ -1095,6 +1100,11 @@
   gap: clamp(10px, 2vh, 14px);
   align-items: start;
 }
+
+/* Keep the problem card visually "clean" when we detach it from the lane on wide screens. */
+.calc-sprint #dash-game-screen .dash-problem-main .question-area {
+    transform: translateY(0);
+  }
 .calc-sprint #dash-game-screen .game-actions {
   margin-top: 0;
 }
