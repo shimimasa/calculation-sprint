@@ -1016,19 +1016,22 @@
   position: relative;
   padding: 0;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: flex-end;
   flex: 0 0 auto;
   z-index: 3;
   position: absolute;
-  right: clamp(12px, 3vw, 28px);
-  bottom: clamp(12px, 3vh, 28px);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  /* lift keypad so it never covers the runner/ground axis */
+  bottom: clamp(140px, 18vh, 230px);
 }
 .calc-sprint #dash-game-screen .dash-hud::before {
   display: none;
 }
 .calc-sprint #dash-game-screen .dash-lane {
-  width: min(520px, 52vw);
+  width: min(520px, 44vw);
   display: flex;
   flex-direction: column;
   gap: clamp(8px, 1.6vh, 12px);
@@ -1037,51 +1040,53 @@
   z-index: 1;
 }
 
-/* Step1-4 (future enemy from right): keep center/right lanes clear on desktop */
+/* Desktop (Dash Run / PC):
++   - Problem/answer: LEFT
++   - Keypad/submit: CENTER
++   - Runner axis (bottom lane): NO UI overlaps
++   - Time bar: RIGHT-TOP independent
++*/
 @media (min-width: 901px) {
-    /*
-  +    Desktop layout (Dash Run / PC):
-  +    - Problem/answer: LEFT, above runner.
-  +    - Keypad/submit: CENTER (keep runner axis clear).
-  +    - Time bar: RIGHT-TOP independent.
-  +    - Keep the bottom strip (runner/ground axis) clear.
-  +  */
-  
-    /* 1) Problem + Answer (LEFT, above runner) */
-    .calc-sprint #dash-game-screen .dash-problem-main {
+    /* 1) Problem block to LEFT (robust: target actual container) */
+    .calc-sprint #dash-game-screen .dash-problem-grid {
       position: absolute;
-      left: clamp(20px, 3vw, 48px);
-      bottom: clamp(170px, 20vh, 260px);
-      width: min(420px, 34vw);
+      left: clamp(20px, 3vw, 52px);
+      bottom: clamp(210px, 24vh, 320px);
+      width: min(440px, 34vw);
       z-index: 6;
-      pointer-events: none; /* 表示専用 */
+      align-items: flex-start;
+      pointer-events: none; /* display-only */
     }
   
-    .calc-sprint #dash-game-screen .dash-problem-main .question-area {
+    /* if dash-problem-main exists, keep it passive (avoid relying on it) */
+    .calc-sprint #dash-game-screen .dash-problem-main {
+      position: static;
+      width: 100%;
+      pointer-events: none;
+    }
+  
+    /* make the card behave when detached */
+    .calc-sprint #dash-game-screen .question-area {
+      transform: none !important;
+      margin: 0 !important;
+      width: 100%;
       background: #ffffff;
       box-shadow:
         0 18px 36px rgba(0, 0, 0, 0.18),
         0 6px 0 rgba(0, 0, 0, 0.08);
     }
   
-    .calc-sprint #dash-game-screen .dash-problem-main .answer-input {
+    .calc-sprint #dash-game-screen .answer-input {
       pointer-events: none;
     }
   
-    /* 2) Keypad lane (CENTER, lifted to avoid runner axis) */
+    /* 2) Keypad CENTER (already absolute) + ensure above runner axis */
     .calc-sprint #dash-game-screen .dash-hud {
-      left: 50%;
-      right: auto;
-      transform: translateX(-50%);
-      bottom: clamp(110px, 14vh, 180px);
       z-index: 5;
+      bottom: clamp(150px, 19vh, 240px);
     }
   
-    .calc-sprint #dash-game-screen .dash-lane {
-      width: min(520px, 44vw);
-    }
-  
-    /* 3) Time bar (RIGHT-TOP) */
+    /* 3) Time bar RIGHT-TOP and never inside/over the question card */
     .calc-sprint #dash-game-screen #dash-game-time-wrap {
       position: absolute;
       top: clamp(18px, 3vh, 36px);
@@ -1092,11 +1097,6 @@
   
     .calc-sprint #dash-game-screen .dash-time {
       width: min(420px, 30vw);
-    }
-  
-    /* 4) Safety: keep runner lane visually clear */
-    .calc-sprint #dash-game-screen > .screen-main.dash-playfield {
-      padding-bottom: clamp(320px, 40vh, 520px);
     }
   }
 
