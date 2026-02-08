@@ -1724,16 +1724,9 @@
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    repeating-linear-gradient(
-      -20deg,
-      rgba(255, 255, 255, 0.08) 0px,
-      rgba(255, 255, 255, 0.08) 4px,
-      rgba(255, 255, 255, 0) 6px,
-      rgba(255, 255, 255, 0) 18px
-    );
-  opacity: 0.05;
-  animation: calc-sprint-dash-playfield-drift 6s linear infinite;
+  background: none;
+  opacity: 0;
+  animation: none;
 }
 
 .calc-sprint .screen-dash[data-enemy-state="caution"] .run-world::after {
@@ -2038,11 +2031,18 @@
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
+}:root {
+  --debug-sky-flat: 0;
 }.calc-sprint .run-sky {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image: var(--run-sky-image, url("../assets/bg-sky.png"));
+  background-image:
+    linear-gradient(
+      rgba(120, 183, 255, var(--debug-sky-flat)),
+      rgba(120, 183, 255, var(--debug-sky-flat))
+    ),
+    var(--run-sky-image, url("../assets/bg-sky.png"));
   background-repeat: repeat-x;
   background-position: center top;
   background-size: auto 100%;
