@@ -52,6 +52,25 @@ const extractCssUrl = (value) => {
   const match = value.match(/url\((['"]?)(.*?)\1\)/);
   return match ? match[2] : '';
 };
+const waitForImageDecode = (img) => {
+  if (img.decode) {
+    return img.decode().catch(() => new Promise((resolve) => {
+      img.onload = resolve;
+      img.onerror = resolve;
+    }));
+  }
+  return new Promise((resolve) => {
+    img.onload = resolve;
+    img.onerror = resolve;
+  });
+};
+const loadCloudBaseWidth = async (src) => {
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = src;
+  await waitForImageDecode(img);
+  return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+};
 
 const dashGameScreen = {
   ensureRunLayerMounted() {
@@ -99,24 +118,35 @@ const dashGameScreen = {
     }
     const count = randomIntBetween(CLOUD_COUNT_MIN, CLOUD_COUNT_MAX);
     const cloudSrc = this.getCloudImageSrc();
-    for (let i = 0; i < count; i += 1) {
-      this.spawnCloud({
-        container: cloudContainer,
-        cloudSrc,
-        initial: true,
-      });
-    }
+    const loadToken = Symbol('cloud-load');
+    this.cloudLoadToken = loadToken;
+    loadCloudBaseWidth(cloudSrc).then((baseWidth) => {
+      if (this.cloudLoadToken !== loadToken) {
+        return;
+      }
+      if (!cloudContainer) {
+        return;
+      }
+      for (let i = 0; i < count; i += 1) {
+        this.spawnCloud({
+          container: cloudContainer,
+          cloudSrc,
+          initial: true,
+          baseWidth,
+        });
+      }
+    });
     this.resetGroundTiles();
   },
   resetGroundTiles() {
-    this.groundTileOffsets = [0, 0];
+    this.groundOffset = 0;
     this.groundTileWidth = 0;
     if (domRefs.game.runGroundTiles?.length >= 2) {
       domRefs.game.runGroundTiles[0].style.transform = 'translate3d(0px, 0px, 0px)';
       domRefs.game.runGroundTiles[1].style.transform = 'translate3d(0px, 0px, 0px)';
     }
   },
-  spawnCloud({ container, cloudSrc, initial = false } = {}) {
+  spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
     if (!container) {
       return;
     }
@@ -127,9 +157,11 @@ const dashGameScreen = {
     img.className = 'run-cloud';
     img.decoding = 'async';
     img.loading = 'eager';
+    img.style.width = `${DEFAULT_CLOUD_WIDTH}px`;
+    img.style.height = 'auto';
     container.appendChild(img);
     cloud.el = img;
-    cloud.baseWidth = img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+    cloud.baseWidth = baseWidth || DEFAULT_CLOUD_WIDTH;
     this.positionCloud(cloud, { initial });
     this.clouds.push(cloud);
   },
@@ -171,19 +203,15 @@ const dashGameScreen = {
     if (worldWidth > 0 && this.skyOffsetPx <= -worldWidth) {
       this.skyOffsetPx += worldWidth;
     }
-    if (worldWidth > 0 && this.groundTileWidth !== worldWidth) {
-      this.groundTileWidth = worldWidth;
-      this.groundTileOffsets = [0, worldWidth];
+    const tileWidth = domRefs.game.runGroundTiles?.[0]?.offsetWidth || 1920;
+    if (tileWidth > 0 && this.groundTileWidth !== tileWidth) {
+      this.groundTileWidth = tileWidth;
+      this.groundOffset = 0;
     }
     if (this.groundTileWidth > 0) {
-      this.groundTileOffsets = this.groundTileOffsets.map(
-        (offset) => offset - groundSpeedPerSec * dtSec,
-      );
-      if (this.groundTileOffsets[0] <= -this.groundTileWidth) {
-        this.groundTileOffsets[0] = this.groundTileOffsets[1] + this.groundTileWidth;
-      }
-      if (this.groundTileOffsets[1] <= -this.groundTileWidth) {
-        this.groundTileOffsets[1] = this.groundTileOffsets[0] + this.groundTileWidth;
+      this.groundOffset -= groundSpeedPerSec * dtSec;
+      if (this.groundOffset <= -this.groundTileWidth) {
+        this.groundOffset += this.groundTileWidth;
       }
     }
     this.clouds?.forEach((cloud) => {
@@ -205,9 +233,8 @@ const dashGameScreen = {
       runSky.style.backgroundPositionX = `${Math.round(this.skyOffsetPx)}px`;
     }
     if (domRefs.game.runGroundTiles?.length >= 2 && this.groundTileWidth > 0) {
-      domRefs.game.runGroundTiles.forEach((tile, index) => {
-        const offset = this.groundTileOffsets[index] ?? 0;
-        tile.style.transform = `translate3d(${Math.round(offset)}px, 0px, 0px)`;
+      domRefs.game.runGroundTiles.forEach((tile) => {
+        tile.style.transform = `translate3d(${Math.round(this.groundOffset)}px, 0px, 0px)`;
       });
     }
     if (this.clouds?.length) {
@@ -635,7 +662,7 @@ const dashGameScreen = {
     this.runLayerOriginalNextSibling = this.runLayerOriginalNextSibling ?? null;
     this.skyOffsetPx = 0;
     this.groundTileWidth = 0;
-    this.groundTileOffsets = [0, 0];
+    this.groundOffset = 0;
     this.clouds = [];
     this.runnerSpeedTier = null;
     this.initRunBackgrounds();
