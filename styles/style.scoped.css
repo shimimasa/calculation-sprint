@@ -1046,6 +1046,11 @@
 @media (min-width: 901px) {
   /* 0) Keep everything within one viewport (no page scroll). */
   .calc-sprint #dash-game-screen {
+    --hud-top: clamp(20px, 4vh, 56px);
+    --hud-gap: clamp(12px, 2vh, 20px);
+    --keypad-w: min(520px, 40vw);
+    --keypad-right: clamp(16px, 3vw, 40px);
+    --timebar-h: clamp(14px, 2vh, 18px);
     height: calc(100vh - 32px);
     max-height: calc(100vh - 32px);
     overflow: hidden;
@@ -1113,7 +1118,7 @@
     top: 0;
     left: 0;
     right: 0;
-    bottom: 50%;
+    bottom: 55%;
     transform: none;
     display: block;
     pointer-events: none;
@@ -1133,29 +1138,27 @@
   .calc-sprint #dash-game-screen .dash-hud .dash-problem-grid {
     position: absolute;
     inset: 0;
-    display: grid;
-    /* Top-half split: left=problem+time, right=keypad+submit */
-    grid-template-columns: 1.1fr 0.9fr;
-    grid-template-rows: auto auto;
-    grid-template-areas:
-      "problem keypad"
-      "problem submit";
+    display: block;
     max-width: 1400px;
     margin: 0 auto;
-    padding: clamp(14px, 2vh, 18px) clamp(14px, 2vw, 28px);
-    gap: clamp(10px, 1.8vh, 16px) clamp(14px, 2.2vw, 22px);
-    align-items: start;
-    justify-items: stretch;
+    padding: 0 var(--keypad-right);
     pointer-events: none;
   }
 
   /* keypad: top-center */
-  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad {
-    grid-area: keypad;
-    width: 100%;
-    max-width: min(560px, 42vw);
-    justify-self: end;
+  .calc-sprint #dash-game-screen .dash-hud .dash-keypad-stack {
+    position: absolute;
+    top: var(--hud-top);
+    right: var(--keypad-right);
+    width: var(--keypad-w);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 1.8vh, 16px);
     pointer-events: auto;
+  }
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad {
+    width: 100%;
+    max-width: none;
   }
   .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad.game-keypad {
     grid-template-columns: repeat(3, minmax(60px, 1fr));
@@ -1169,19 +1172,17 @@
     display: grid !important;
   }
   .calc-sprint #dash-game-screen .dash-hud .dash-keypad-actions {
-    grid-area: submit;
     width: 100%;
-    max-width: min(560px, 42vw);
-    justify-self: end;
-    pointer-events: auto;
+    max-width: none;
   }
 
   /* problem: above runner (bottom-left) */
   .calc-sprint #dash-game-screen .dash-hud .dash-problem-main {
-    grid-area: problem;
-    justify-self: start;
-    align-self: start;
-    width: min(720px, 54vw);
+    position: absolute;
+    top: calc(var(--hud-top) + var(--timebar-h) + var(--hud-gap));
+    left: var(--keypad-right);
+    right: calc(var(--keypad-right) + var(--keypad-w) + var(--hud-gap));
+    width: min(720px, calc(100% - var(--keypad-w) - var(--hud-gap) - (var(--keypad-right) * 2)));
     pointer-events: auto;
     margin-bottom: 0;
     padding: clamp(6px, 1.2vh, 10px) clamp(8px, 1.6vw, 14px);
@@ -1191,17 +1192,24 @@
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+    will-change: transform, opacity;
   }
 
-  /* Keep time bar visually tied to problem block. */
-  .calc-sprint #dash-game-screen .dash-hud .dash-problem-main .dash-time {
-    width: 100%;
-    margin-bottom: 8px;
+  /* Hook for future lightweight transitions on problem swaps. */
+  .calc-sprint #dash-game-screen .dash-hud .dash-problem-main.is-transitioning {
+    transform: translateY(-6px);
+    opacity: 0.88;
   }
 
-  /* 4) Time stays attached to the problem block (no floating overlap). */
-  .calc-sprint #dash-game-screen .dash-hud #dash-game-time-wrap {
-    position: static;
+  /* Independent time HUD anchored at the top without overlapping the keypad. */
+  .calc-sprint #dash-game-screen .dash-hud .dash-time-hud {
+    position: absolute;
+    top: var(--hud-top);
+    left: var(--keypad-right);
+    right: calc(var(--keypad-right) + var(--keypad-w) + var(--hud-gap));
+    width: min(720px, calc(100% - var(--keypad-w) - var(--hud-gap) - (var(--keypad-right) * 2)));
+    pointer-events: auto;
   }
 }
 
@@ -1250,6 +1258,9 @@
   margin-bottom: 0;
   gap: 6px;
 }
+.calc-sprint #dash-game-screen {
+  --timebar-h: clamp(14px, 2vh, 18px);
+}
 .calc-sprint #dash-game-screen .dash-problem-grid {
   position: relative;
   display: flex;
@@ -1257,6 +1268,14 @@
   gap: clamp(6px, 1.2vh, 10px);
   width: 100%;
   z-index: 2;
+}
+.calc-sprint #dash-game-screen .dash-time-hud {
+  margin-bottom: clamp(8px, 1.6vh, 12px);
+}
+.calc-sprint #dash-game-screen .dash-keypad-stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 16px);
 }
 .calc-sprint #dash-game-screen .dash-problem-main {
   display: grid;
@@ -1282,17 +1301,15 @@
 .calc-sprint #dash-game-screen .dash-time {
   width: min(520px, 100%);
   margin: 0;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas:
-    "bar value"
-    "note note";
+  display: flex;
+  flex-wrap: wrap;
   gap: clamp(6px, 1.4vh, 10px) clamp(10px, 2vw, 16px);
   align-items: center;
+  justify-content: space-between;
 }
 .calc-sprint #dash-game-screen .dash-timebar {
-  grid-area: bar;
-  height: clamp(14px, 2vh, 18px);
+  flex: 1 1 280px;
+  height: var(--timebar-h);
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.65), rgba(29, 36, 51, 0.22));
   border: 1px solid rgba(29, 36, 51, 0.18);
@@ -1316,7 +1333,7 @@
   box-shadow: 0 0 8px rgba(232, 79, 67, 0.35);
 }
 .calc-sprint #dash-game-screen .dash-timevalue {
-  grid-area: value;
+  flex: 0 0 auto;
   display: flex;
   align-items: baseline;
   gap: 6px;
@@ -1335,7 +1352,7 @@
   opacity: 0.75;
 }
 .calc-sprint #dash-game-screen .dash-time-note {
-  grid-area: note;
+  width: 100%;
   min-height: 16px;
   font-size: 12px;
   font-weight: 800;
