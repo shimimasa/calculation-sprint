@@ -1051,6 +1051,17 @@
     overflow: hidden;
   }
 
+  /* Step1: take Dash screen out of document flow (no page scroll). */
+  .calc-sprint #dash-game-screen.is-active {
+    position: fixed;
+    inset: 16px;
+    width: auto;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    overflow: hidden;
+  }
+
   /* 1) Use the playfield as the absolute positioning root. */
   .calc-sprint #dash-game-screen > .screen-main.dash-playfield {
     height: 100%;
@@ -1078,11 +1089,12 @@
   }
 
   /* 3) Place elements on a fixed grid: problem above runner (bottom-left), keypad top-center. */
-  .calc-sprint #dash-game-screen .dash-problem-grid {
+  /* Step2: increase specificity so desktop grid wins later rules. */
+  .calc-sprint #dash-game-screen .dash-hud .dash-problem-grid {
     position: absolute;
     inset: 0;
     display: grid;
-    grid-template-columns: 1fr minmax(320px, 520px) 1fr;
+    grid-template-columns: minmax(240px, 420px) minmax(320px, 520px) 1fr;
     grid-template-rows: auto auto 1fr;
     grid-template-areas:
       ". keypad ."
@@ -1091,8 +1103,8 @@
     padding:
       clamp(76px, 10vh, 120px)
       clamp(16px, 2vw, 28px)
-      clamp(120px, 18vh, 200px)
-      clamp(16px, 2vw, 28px);
+      clamp(84px, 12vh, 140px)
+      clamp(8px, 1vw, 16px);
     gap: 10px 18px;
     align-items: start;
     justify-items: center;
@@ -1100,19 +1112,19 @@
   }
 
   /* keypad: top-center */
-  .calc-sprint #dash-game-screen #dash-game-keypad {
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad {
     grid-area: keypad;
     width: min(520px, 44vw);
     pointer-events: auto;
   }
-  .calc-sprint #dash-game-screen .dash-keypad-actions {
+  .calc-sprint #dash-game-screen .dash-hud .dash-keypad-actions {
     grid-area: submit;
     width: min(520px, 44vw);
     pointer-events: auto;
   }
 
   /* problem: above runner (bottom-left) */
-  .calc-sprint #dash-game-screen .dash-problem-main {
+  .calc-sprint #dash-game-screen .dash-hud .dash-problem-main {
     grid-area: problem;
     justify-self: start;
     align-self: end;
@@ -1121,8 +1133,28 @@
   }
 
   /* 4) Time stays attached to the problem block (no floating overlap). */
-  .calc-sprint #dash-game-screen #dash-game-time-wrap {
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-time-wrap {
     position: static;
+  }
+}
+
+/* Step4: keep top-right HUD inside viewport (no overflow). */
+@media (min-width: 901px) {
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    max-width: min(340px, 34vw);
+    box-sizing: border-box;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-proximity-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
