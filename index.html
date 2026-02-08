@@ -404,11 +404,16 @@
             </div>
           </div>
         </div>
-        <div class="run-layer" aria-hidden="true">
+          <div class="run-layer" aria-hidden="true">
           <div class="run-world">
-            <div class="run-bg run-bg--far"></div>
-            <div class="run-bg run-bg--near"></div>
-            <div class="run-ground"></div>
+            <div class="run-bg" aria-hidden="true">
+              <div class="run-sky"></div>
+              <div class="run-clouds"></div>
+              <div class="run-ground">
+                <div class="run-ground__tile run-ground__tile--a"></div>
+                <div class="run-ground__tile run-ground__tile--b"></div>
+              </div>
+            </div>
             <div class="speed-lines"></div>
             <div class="runner-wrap">
               <span class="runner-shadow"></span>

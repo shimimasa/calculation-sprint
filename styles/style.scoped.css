@@ -13,9 +13,9 @@
   min-height: 100vh;
 }.calc-sprint {
   /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: url("../assets/bg-sky.png");
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
   --run-map-image: none;
 }.calc-sprint .app {
@@ -173,7 +173,7 @@
   pointer-events: none;
   z-index: 0;
 }.calc-sprint /* Stage theme hooks
- * - data-bg-theme is primarily consumed by .run-bg--far/.run-bg--near/.run-ground (art layers).
+ * - data-bg-theme is primarily consumed by .run-sky/.run-clouds/.run-ground (art layers).
  * - .game-screen/.run-world are the entry points for global tone (brightness/contrast/etc).
  * - Keep "default" + one sample theme ("theme1") as the placeholders to swap assets/colors.
  */
@@ -1961,52 +1961,52 @@
   z-index: 0;
 }.calc-sprint .run-world[data-bg-theme="default"] {
   /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: url("../assets/bg-sky.png");
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="theme1"], .calc-sprint .run-world[data-bg-theme="w1"] {
   background: #e2ecff;
   /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: url("../assets/bg-sky.png");
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_add"] {
   background: #e7f1ff;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: url("../assets/bg-sky.png");
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(120, 170, 255, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_sub"] {
   background: #e7f8f0;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: url("../assets/bg-sky.png");
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(120, 220, 180, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_mul"] {
   background: #f0e8ff;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: url("../assets/bg-sky.png");
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(180, 140, 255, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_div"] {
   background: #fff2d9;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: url("../assets/bg-sky.png");
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 200, 120, 0.25), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_mix"] {
   background: #ffe9e1;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: url("../assets/bg-sky.png");
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 160, 150, 0.22), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world::after {
@@ -2022,32 +2022,42 @@
 }.calc-sprint .run-bg {
   position: absolute;
   inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}.calc-sprint .run-sky {
+  position: absolute;
+  inset: 0;
+  background-image: var(--run-sky-image, url("../assets/bg-sky.png"));
   background-repeat: repeat-x;
-  background-position: center bottom;
+  background-position: center top;
   background-size: auto 100%;
   will-change: background-position;
   transition: filter 0.2s ease;
   filter: saturate(var(--world-clarity)) brightness(var(--world-brightness))
     contrast(var(--world-contrast));
-}.calc-sprint .run-bg--far {
-  z-index: 1;
-  /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  background-image: var(--run-bg-far-image, url("../assets/bg/bg-sky.png"));
-  opacity: 0.78;
-  filter: blur(0.3px) saturate(var(--world-clarity)) brightness(var(--world-brightness))
-    contrast(var(--world-contrast));
-}.calc-sprint .run-bg--near {
+}.calc-sprint .run-clouds {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   z-index: 2;
-  /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  background-image: var(--run-bg-near-image, url("../assets/bg/bg-sky.png"));
-}.calc-sprint .run-world.stumble-freeze .run-bg {
+}.calc-sprint .run-cloud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  will-change: transform;
+  opacity: 0.85;
+  filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
+}.calc-sprint .run-world.stumble-freeze .run-sky {
   background-position-x: var(--stumble-freeze-x, 0px);
   transition: none;
-}.calc-sprint .run-world.is-fast .run-bg {
+}.calc-sprint .run-world.is-fast .run-sky {
   filter: saturate(calc(var(--world-clarity) * 1.1))
     brightness(calc(var(--world-brightness) * 1.05))
     contrast(var(--world-contrast));
-}.calc-sprint .run-world.is-rapid .run-bg {
+}.calc-sprint .run-world.is-rapid .run-sky {
   filter: saturate(calc(var(--world-clarity) * 1.2))
     brightness(calc(var(--world-brightness) * 1.1))
     contrast(var(--world-contrast));
@@ -2057,14 +2067,21 @@
   left: 0;
   right: 0;
   height: 28px;
-  background-image: var(--run-ground-image), linear-gradient(180deg, #3f4655, #171c26);
-  background-repeat: repeat-x, no-repeat;
-  background-size: auto 100%, cover;
-  background-position: center bottom;
+  overflow: hidden;
   box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.18), 0 -1px 6px rgba(0, 0, 0, 0.25);
-  z-index: 2;
+  z-index: 3;
   filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
   opacity: calc(0.94 + (var(--world-clarity) - 1) * 0.25);
+}.calc-sprint .run-ground__tile {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  height: 100%;
+  background-image: var(--run-ground-image, url("../assets/bg-ground.png"));
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: center bottom;
+  will-change: transform;
 }.calc-sprint .speed-lines {
   position: absolute;
   inset: 0;
