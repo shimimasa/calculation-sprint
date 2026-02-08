@@ -15,11 +15,23 @@ const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
 const RUNNER_X_FOLLOW_RATE = 0.12;
 const RUNNER_BASE_LEFT_PX = 64;
-const BG_FAR_SPEED_FACTOR = 0.65;
-const BG_NEAR_SPEED_FACTOR = 1.1;
+const BG_BASE_SPEED_PX = 42;
+const SKY_SPEED_FACTOR = 0.08;
+const GROUND_SPEED_FACTOR = 1;
+const SKY_BOOST_DELTA = 0.04;
+const GROUND_BOOST_DELTA = 0.3;
 const BG_BOOST_DURATION_MS = 400; // 300-500ms window for noticeable boost without overstaying.
-const BG_BOOST_NEAR_DELTA = 0.3; // Near layer needs stronger bump to feel acceleration.
-const BG_BOOST_FAR_DELTA = 0.25; // Far layer bump kept subtle to avoid seam emphasis.
+const CLOUD_COUNT_MIN = 3;
+const CLOUD_COUNT_MAX = 7;
+const CLOUD_Y_MIN = 0.15;
+const CLOUD_Y_MAX = 0.55;
+const CLOUD_SCALE_MIN = 0.6;
+const CLOUD_SCALE_MAX = 1.2;
+const CLOUD_SPEED_MIN = 0.1;
+const CLOUD_SPEED_MAX = 0.25;
+const CLOUD_GAP_MIN_PX = 80;
+const CLOUD_GAP_MAX_PX = 260;
+const DEFAULT_CLOUD_WIDTH = 220;
 const COUNTDOWN_SFX_THRESHOLDS = Object.freeze([10, 5, 3, 2, 1]);
 const isReviewModeActive = (state) => Boolean(state?.isReviewMode);
 const EFFECT_BY_LEVEL = {
@@ -69,6 +81,15 @@ const getScalingLevelFromStreak = (streak) => {
     return 1;
   }
   return 0;
+};
+const randomBetween = (min, max) => min + Math.random() * (max - min);
+const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
+const extractCssUrl = (value) => {
+  if (!value) {
+    return '';
+  }
+  const match = value.match(/url\((['"]?)(.*?)\1\)/);
+  return match ? match[2] : '';
 };
 
 const gameScreen = {
@@ -121,6 +142,72 @@ const gameScreen = {
     domRefs.game.runWorld?.style.setProperty('--world-contrast', tuneValue(base.contrast));
     domRefs.game.runWorld?.style.setProperty('--world-brightness', tuneValue(base.brightness));
     domRefs.game.runWorld?.style.setProperty('--world-clarity', tuneValue(base.clarity));
+  },
+  getCloudImageSrc() {
+    const world = domRefs.game.runWorld;
+    if (!world) {
+      return 'assets/bg-cloud.png';
+    }
+    const computed = getComputedStyle(world);
+    const cssValue = computed.getPropertyValue('--run-cloud-image');
+    return extractCssUrl(cssValue) || 'assets/bg-cloud.png';
+  },
+  initRunBackgrounds() {
+    this.clouds = [];
+    const cloudContainer = domRefs.game.runClouds;
+    if (cloudContainer) {
+      cloudContainer.innerHTML = '';
+    }
+    const count = randomIntBetween(CLOUD_COUNT_MIN, CLOUD_COUNT_MAX);
+    const cloudSrc = this.getCloudImageSrc();
+    for (let i = 0; i < count; i += 1) {
+      this.spawnCloud({
+        container: cloudContainer,
+        cloudSrc,
+        initial: true,
+      });
+    }
+    this.resetGroundTiles();
+  },
+  resetGroundTiles() {
+    this.groundTileOffsets = [0, 0];
+    this.groundTileWidth = 0;
+    if (domRefs.game.runGroundTiles?.length >= 2) {
+      domRefs.game.runGroundTiles[0].style.transform = 'translate3d(0px, 0px, 0px)';
+      domRefs.game.runGroundTiles[1].style.transform = 'translate3d(0px, 0px, 0px)';
+    }
+  },
+  spawnCloud({ container, cloudSrc, initial = false } = {}) {
+    if (!container) {
+      return;
+    }
+    const cloud = {};
+    const img = document.createElement('img');
+    img.src = cloudSrc;
+    img.alt = '';
+    img.className = 'run-cloud';
+    img.decoding = 'async';
+    img.loading = 'eager';
+    container.appendChild(img);
+    cloud.el = img;
+    cloud.baseWidth = img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+    this.positionCloud(cloud, { initial });
+    this.clouds.push(cloud);
+  },
+  positionCloud(cloud, { initial = false } = {}) {
+    const world = domRefs.game.runWorld;
+    if (!world) {
+      return;
+    }
+    const worldWidth = world.clientWidth || 1;
+    const worldHeight = world.clientHeight || 1;
+    const xMax = worldWidth + (initial ? worldWidth * 0.6 : 0);
+    cloud.x = initial
+      ? randomBetween(0, xMax)
+      : worldWidth + randomBetween(CLOUD_GAP_MIN_PX, CLOUD_GAP_MAX_PX);
+    cloud.y = randomBetween(worldHeight * CLOUD_Y_MIN, worldHeight * CLOUD_Y_MAX);
+    cloud.scale = randomBetween(CLOUD_SCALE_MIN, CLOUD_SCALE_MAX);
+    cloud.speedFactor = randomBetween(CLOUD_SPEED_MIN, CLOUD_SPEED_MAX);
   },
   isScreenActive() {
     return Boolean(domRefs.screens.game?.classList.contains('is-active'));
@@ -224,8 +311,9 @@ const gameScreen = {
     this.feedbackTimeoutId = null;
     this.effectTimeoutIds = [];
     this.setLocked(false);
-    this.bgOffsetFarPx = 0;
-    this.bgOffsetNearPx = 0;
+    this.skyOffsetPx = 0;
+    this.groundTileWidth = 0;
+    this.groundTileOffsets = [0, 0];
     this.bgBoostRemainingMs = 0;
     this.runnerX = 0;
     this.runnerXTarget = 0;
@@ -235,6 +323,7 @@ const gameScreen = {
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false;
     this.applyWorldTuning();
+    this.initRunBackgrounds();
 
     if (domRefs.game.keypad) {
       domRefs.game.keypad.hidden = true;
@@ -337,8 +426,7 @@ const gameScreen = {
     domRefs.game.speedLines?.classList.remove('is-fast', 'is-rapid');
     domRefs.game.runner?.classList.remove('speed-glow');
     domRefs.game.runnerWrap?.classList.remove('is-fast', 'is-rapid');
-    domRefs.game.runBgFar?.style.removeProperty('--stumble-freeze-x');
-    domRefs.game.runBgNear?.style.removeProperty('--stumble-freeze-x');
+    domRefs.game.runSky?.style.removeProperty('--stumble-freeze-x');
     this.runnerSpeedTier = null;
   },
   queueEffectReset(callback, delayMs) {
@@ -397,21 +485,18 @@ const gameScreen = {
     const timeoutIds = [];
     if (!isReviewModeActive(gameState)) {
       domRefs.game.runWorld?.classList.add('stumble-freeze');
-      domRefs.game.runBgFar?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetFarPx}px`);
-      domRefs.game.runBgNear?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetNearPx}px`);
+      domRefs.game.runSky?.style.setProperty('--stumble-freeze-x', `${this.skyOffsetPx}px`);
       timeoutIds.push(
         window.setTimeout(() => {
           domRefs.game.runWorld?.classList.remove('stumble-freeze');
-          domRefs.game.runBgFar?.style.removeProperty('--stumble-freeze-x');
-          domRefs.game.runBgNear?.style.removeProperty('--stumble-freeze-x');
+          domRefs.game.runSky?.style.removeProperty('--stumble-freeze-x');
         }, 120),
       );
     }
     timeoutIds.push(window.setTimeout(() => {
       domRefs.game.runner?.classList.remove('stumble');
       domRefs.game.runWorld?.classList.remove('stumble-freeze');
-      domRefs.game.runBgFar?.style.removeProperty('--stumble-freeze-x');
-      domRefs.game.runBgNear?.style.removeProperty('--stumble-freeze-x');
+      domRefs.game.runSky?.style.removeProperty('--stumble-freeze-x');
       this.stumbleTimeoutId = null;
     }, 320));
     this.stumbleTimeoutId = timeoutIds;
@@ -550,23 +635,50 @@ const gameScreen = {
       gameState.speedMps - gameState.frictionMpsPerSec * dtSec,
     );
     gameState.distanceM += gameState.speedMps * dtSec;
-    const bgFactor = 42;
-    const loopWidthPx = 1200;
+    const baseSpeedPerSec = gameState.speedMps * BG_BASE_SPEED_PX;
     const isBgFrozen = domRefs.game.runWorld?.classList.contains('stumble-freeze');
     if (!isBgFrozen) {
       const boostRatio = Math.max(0, this.bgBoostRemainingMs / BG_BOOST_DURATION_MS);
       const easedBoost = boostRatio * (2 - boostRatio);
-      const farBoost = BG_FAR_SPEED_FACTOR + BG_BOOST_FAR_DELTA * easedBoost;
-      const nearBoost = BG_NEAR_SPEED_FACTOR + BG_BOOST_NEAR_DELTA * easedBoost;
-      const baseOffset = gameState.speedMps * dtSec * bgFactor;
-      this.bgOffsetFarPx -= baseOffset * farBoost;
-      this.bgOffsetNearPx -= baseOffset * nearBoost;
-      if (this.bgOffsetFarPx <= -loopWidthPx) {
-        this.bgOffsetFarPx += loopWidthPx;
+      const groundSpeedPerSec = baseSpeedPerSec * (
+        GROUND_SPEED_FACTOR + GROUND_BOOST_DELTA * easedBoost
+      );
+      const skySpeedPerSec = baseSpeedPerSec * (SKY_SPEED_FACTOR + SKY_BOOST_DELTA * easedBoost);
+      this.skyOffsetPx -= skySpeedPerSec * dtSec;
+      const worldWidth = domRefs.game.runWorld?.clientWidth || 0;
+      if (worldWidth > 0 && this.skyOffsetPx <= -worldWidth) {
+        this.skyOffsetPx += worldWidth;
       }
-      if (this.bgOffsetNearPx <= -loopWidthPx) {
-        this.bgOffsetNearPx += loopWidthPx;
+      if (worldWidth > 0 && this.groundTileWidth !== worldWidth) {
+        this.groundTileWidth = worldWidth;
+        this.groundTileOffsets = [0, worldWidth];
       }
+      if (this.groundTileWidth > 0) {
+        this.groundTileOffsets = this.groundTileOffsets.map(
+          (offset) => offset - groundSpeedPerSec * dtSec,
+        );
+        if (this.groundTileOffsets[0] <= -this.groundTileWidth) {
+          this.groundTileOffsets[0] = this.groundTileOffsets[1] + this.groundTileWidth;
+        }
+        if (this.groundTileOffsets[1] <= -this.groundTileWidth) {
+          this.groundTileOffsets[1] = this.groundTileOffsets[0] + this.groundTileWidth;
+        }
+      }
+      const cloudMotionFactor = this.prefersReducedMotion ? 0.35 : 1;
+      this.clouds?.forEach((cloud) => {
+        if (!cloud?.el) {
+          return;
+        }
+        if (!cloud.baseWidth && cloud.el.naturalWidth) {
+          cloud.baseWidth = cloud.el.naturalWidth;
+        }
+        const cloudSpeedPx = baseSpeedPerSec * cloud.speedFactor * cloudMotionFactor * dtSec;
+        cloud.x -= cloudSpeedPx;
+        const cloudWidth = (cloud.baseWidth || DEFAULT_CLOUD_WIDTH) * cloud.scale;
+        if (cloud.x < -cloudWidth) {
+          this.positionCloud(cloud);
+        }
+      });
     }
     if (this.bgBoostRemainingMs > 0) {
       this.bgBoostRemainingMs = Math.max(0, this.bgBoostRemainingMs - dtMs);
@@ -605,15 +717,27 @@ const gameScreen = {
       const speedValue = isReviewModeActive(gameState) ? 0 : gameState.speedMps;
       domRefs.game.speed.textContent = speedValue.toFixed(1);
     }
-    if (domRefs.game.runBgFar) {
-      const bgOffset = isReviewModeActive(gameState) ? 0 : this.bgOffsetFarPx;
+    if (domRefs.game.runSky) {
+      const bgOffset = isReviewModeActive(gameState) ? 0 : this.skyOffsetPx;
       const parallaxFar = this.worldParallax?.far ?? 1;
-      domRefs.game.runBgFar.style.backgroundPositionX = `${(bgOffset * parallaxFar).toFixed(2)}px`;
+      domRefs.game.runSky.style.backgroundPositionX = `${Math.round(bgOffset * parallaxFar)}px`;
     }
-    if (domRefs.game.runBgNear) {
-      const bgOffset = isReviewModeActive(gameState) ? 0 : this.bgOffsetNearPx;
-      const parallaxNear = this.worldParallax?.near ?? 1;
-      domRefs.game.runBgNear.style.backgroundPositionX = `${(bgOffset * parallaxNear).toFixed(2)}px`;
+    if (domRefs.game.runGroundTiles?.length >= 2 && this.groundTileWidth > 0) {
+      const offsets = isReviewModeActive(gameState) ? [0, this.groundTileWidth] : this.groundTileOffsets;
+      domRefs.game.runGroundTiles.forEach((tile, index) => {
+        const offset = offsets[index] ?? 0;
+        tile.style.transform = `translate3d(${Math.round(offset)}px, 0px, 0px)`;
+      });
+    }
+    if (this.clouds?.length) {
+      this.clouds.forEach((cloud) => {
+        if (!cloud?.el) {
+          return;
+        }
+        const x = isReviewModeActive(gameState) ? 0 : cloud.x;
+        const y = isReviewModeActive(gameState) ? 0 : cloud.y;
+        cloud.el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0) scale(${cloud.scale})`;
+      });
     }
     if (domRefs.game.speedLines) {
       const speedValue = isReviewModeActive(gameState) ? 0 : gameState.speedMps;
@@ -710,6 +834,10 @@ const gameScreen = {
     this.clearEffectTimeouts();
     this.clearStumbleTimeout();
     this.resetEffects();
+    if (domRefs.game.runClouds) {
+      domRefs.game.runClouds.innerHTML = '';
+    }
+    this.clouds = [];
     this.setLocked(false);
   },
 };
