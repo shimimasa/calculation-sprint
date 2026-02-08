@@ -18,6 +18,7 @@
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
   --run-map-image: none;
+  --z-runner: 4;
 }.calc-sprint .app {
   width: 100vw;
   min-height: 100vh;
@@ -2166,17 +2167,26 @@
       )
       rotate(0deg);
   }
+}.calc-sprint .debug-ground-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0, 255, 0, 0.4);
+  pointer-events: none;
+  z-index: 5;
 }.calc-sprint .runner-wrap {
-  position: absolute;
+  position: fixed;
   left: 64px;
   bottom: calc(
     var(--calc-sprint-ground-inset) - var(--calc-sprint-runner-foot-offset)
   );
   width: 64px;
   height: 64px;
-  z-index: 4;
+  z-index: var(--z-runner, 4);
   transform: translateX(0);
   will-change: transform;
+  pointer-events: none;
 }.calc-sprint .runner-shadow {
   position: absolute;
   left: 6px;
