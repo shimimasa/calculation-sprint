@@ -50,6 +50,10 @@ const gameState = {
     wrongCount: 0,
     streak: 0,
   },
+  run: {
+    groundSurfaceY: 0,
+    groundY: 0,
+  },
   settings: {
     mode: 'add',
     digit: 1,
