@@ -1934,7 +1934,12 @@
   grid-column: span 2;
 }.calc-sprint .game-keypad .keypad-button--action {
   background: #f4f6ff;
-}.calc-sprint .run-world {
+}.calc-sprint {
+  --calc-sprint-ground-inset: 150px;
+  --calc-sprint-runner-foot-offset: 0px;
+}
+
+.calc-sprint .run-world {
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -2138,7 +2143,9 @@
 }.calc-sprint .runner-wrap {
   position: absolute;
   left: 64px;
-  bottom: 24px;
+  bottom: calc(
+    var(--calc-sprint-ground-inset) - var(--calc-sprint-runner-foot-offset)
+  );
   width: 64px;
   height: 64px;
   z-index: 4;
