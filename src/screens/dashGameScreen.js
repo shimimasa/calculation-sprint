@@ -46,6 +46,7 @@ const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
 const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
 const EFFECT_MAX_SPEED_MPS = 8;
+const DEBUG_INPUT = false;
 const randomBetween = (min, max) => min + Math.random() * (max - min);
 const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
 const extractCssUrl = (value) => {
@@ -80,23 +81,38 @@ const getGroundSurfaceInsetPx = () => {
   );
   return Number.isFinite(inset) ? inset : DEFAULT_GROUND_SURFACE_INSET_PX;
 };
+const describeActiveElement = () => {
+  const active = document.activeElement;
+  if (!active) {
+    return 'none';
+  }
+  const tag = active.tagName?.toLowerCase() ?? 'unknown';
+  const id = active.id ? `#${active.id}` : '';
+  return `${tag}${id}`;
+};
+const isEditableTarget = (target) => {
+  if (!target) {
+    return false;
+  }
+  if (target.isContentEditable) {
+    return true;
+  }
+  const tag = target.tagName?.toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select';
+};
+const logInputDebug = (label, payload = {}) => {
+  if (!DEBUG_INPUT) {
+    return;
+  }
+  console.log(`[input-debug:${label}]`, {
+    activeElement: describeActiveElement(),
+    ...payload,
+  });
+};
 
 const dashGameScreen = {
-  ensureDebugGroundLine() {
-    if (this.debugGroundLine?.isConnected) {
-      return this.debugGroundLine;
-    }
-    const existingLine = document.querySelector('.debug-ground-line');
-    if (existingLine) {
-      this.debugGroundLine = existingLine;
-      return existingLine;
-    }
-    const line = document.createElement('div');
-    line.className = 'debug-ground-line';
-    document.body.appendChild(line);
-    this.debugGroundLine = line;
-    return line;
-  },
+  answerBuffer: '',
+  isSyncingAnswer: false,
   ensureRunLayerMounted() {
     const runLayer = domRefs.game.runLayer;
     const host = domRefs.dashGame.runHost;
@@ -273,11 +289,45 @@ const dashGameScreen = {
     runnerWrap.style.bottom = 'auto';
     runnerWrap.style.top = `${Math.round(groundSurfaceY - runnerFootOffset)}px`;
     runnerWrap.style.left = `${runnerBaseLeft}px`;
-    const debugLine = this.ensureDebugGroundLine();
-    if (debugLine) {
-      debugLine.style.top = `${groundSurfaceY}px`;
-    }
     this.logGroundDebug();
+  },
+  getAnswerInput() {
+    const input = domRefs.dashGame.answerInput;
+    if (input?.isConnected) {
+      return input;
+    }
+    const refreshed = document.querySelector('.calc-sprint #dash-game-answer-input');
+    if (refreshed) {
+      domRefs.dashGame.answerInput = refreshed;
+    }
+    return refreshed;
+  },
+  focusAnswerInput() {
+    const input = this.getAnswerInput();
+    if (!input) {
+      return null;
+    }
+    if (typeof input.focus === 'function') {
+      input.focus({ preventScroll: true });
+    }
+    return input;
+  },
+  setAnswer(nextValue, meta = {}) {
+    const value = `${nextValue ?? ''}`;
+    const previous = this.answerBuffer ?? '';
+    this.answerBuffer = value;
+    const input = this.getAnswerInput();
+    if (input && input.value !== value) {
+      this.isSyncingAnswer = true;
+      input.value = value;
+      this.isSyncingAnswer = false;
+    }
+    logInputDebug('setAnswer', {
+      handler: meta.handler,
+      before: previous,
+      after: value,
+      defaultPrevented: meta.defaultPrevented,
+    });
   },
   spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
     if (!container) {
@@ -434,23 +484,15 @@ const dashGameScreen = {
     if (!this.canAcceptInput()) {
       return;
     }
-    const input = domRefs.dashGame.answerInput;
-    if (!input) {
-      return;
-    }
-    input.focus();
-    input.value = `${input.value}${digit}`;
+    this.focusAnswerInput();
+    this.setAnswer(`${this.answerBuffer}${digit}`, { handler: 'keypad' });
   },
   handleBackspace() {
     if (!this.canAcceptInput()) {
       return;
     }
-    const input = domRefs.dashGame.answerInput;
-    if (!input) {
-      return;
-    }
-    input.focus();
-    input.value = input.value.slice(0, -1);
+    this.focusAnswerInput();
+    this.setAnswer(this.answerBuffer.slice(0, -1), { handler: 'backspace' });
   },
   setFeedback(message, type = 'correct') {
     if (!domRefs.dashGame.feedback) {
@@ -645,17 +687,21 @@ const dashGameScreen = {
     if (domRefs.dashGame.question) {
       domRefs.dashGame.question.textContent = this.currentQuestion.text;
     }
-    if (domRefs.dashGame.answerInput) {
-      domRefs.dashGame.answerInput.value = '';
-      domRefs.dashGame.answerInput.focus();
-    }
+    this.setAnswer('', { handler: 'load' });
+    this.focusAnswerInput();
     this.clearFeedback();
   },
   submitAnswer() {
     if (!this.canSubmit()) {
       return;
     }
-    const inputValue = domRefs.dashGame.answerInput?.value ?? '';
+    logInputDebug('submit', {
+      handler: 'submit',
+      before: this.answerBuffer,
+      after: this.answerBuffer,
+      defaultPrevented: false,
+    });
+    const inputValue = this.answerBuffer;
     if (inputValue === '') {
       return;
     }
@@ -792,6 +838,8 @@ const dashGameScreen = {
     this.groundTileX = [0, 0];
     this.clouds = [];
     this.runnerSpeedTier = null;
+    this.answerBuffer = '';
+    this.isSyncingAnswer = false;
     this.initRunBackgrounds();
     this.updateArea(gameState.dash.distanceM);
     this.updateHud();
@@ -814,7 +862,7 @@ const dashGameScreen = {
       this.submitAnswer();
     };
     this.handleBackAction = () => {
-      const currentValue = domRefs.dashGame.answerInput?.value ?? '';
+      const currentValue = this.answerBuffer;
       if (currentValue !== '') {
         this.handleBackspace();
         return;
@@ -832,16 +880,76 @@ const dashGameScreen = {
     inputActions.on(inputActions.ACTIONS.BACK, this.handleBackAction);
     inputActions.on(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
 
+    const answerInput = this.getAnswerInput();
+    if (answerInput) {
+      answerInput.inputMode = 'numeric';
+      answerInput.autocomplete = 'off';
+      answerInput.autocapitalize = 'off';
+      answerInput.readOnly = false;
+    }
+
     this.handleKeyDown = inputActions.createKeyHandler();
-    this.events.on(domRefs.dashGame.answerInput, 'keydown', this.handleKeyDown);
-    this.handleEnterKeyDown = (event) => {
-      if (event.key !== 'Enter' || !this.isScreenActive()) {
+    this.events.on(this.getAnswerInput(), 'keydown', this.handleKeyDown);
+    this.handleAnswerInput = (event) => {
+      if (this.isSyncingAnswer) {
         return;
       }
-      event.preventDefault();
-      inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'keyboard' });
+      if (!this.canAcceptInput()) {
+        this.setAnswer(this.answerBuffer, {
+          handler: 'input-blocked',
+          defaultPrevented: event.defaultPrevented,
+        });
+        return;
+      }
+      const input = this.getAnswerInput();
+      if (!input) {
+        return;
+      }
+      const raw = input.value ?? '';
+      const sanitized = raw.replace(/\D+/g, '');
+      this.setAnswer(sanitized, {
+        handler: 'input',
+        defaultPrevented: event.defaultPrevented,
+      });
     };
-    this.events.on(window, 'keydown', this.handleEnterKeyDown);
+    this.events.on(this.getAnswerInput(), 'input', this.handleAnswerInput);
+    this.handleGlobalKeyDown = (event) => {
+      if (!this.isScreenActive() || !this.canAcceptInput()) {
+        return;
+      }
+      if (event.defaultPrevented) {
+        return;
+      }
+      const input = this.getAnswerInput();
+      const active = document.activeElement;
+      if (active === input) {
+        return;
+      }
+      if (isEditableTarget(active)) {
+        return;
+      }
+      const key = event.key;
+      if (/^\d$/.test(key)) {
+        event.preventDefault();
+        this.setAnswer(`${this.answerBuffer}${key}`, {
+          handler: 'keyboard',
+          defaultPrevented: event.defaultPrevented,
+        });
+        this.focusAnswerInput();
+        return;
+      }
+      if (key === 'Backspace' || key === 'Delete') {
+        event.preventDefault();
+        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keyboard' });
+        this.focusAnswerInput();
+        return;
+      }
+      if (key === 'Enter') {
+        event.preventDefault();
+        inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'keyboard' });
+      }
+    };
+    this.events.on(window, 'keydown', this.handleGlobalKeyDown);
 
     this.handleSubmitClick = () => {
       inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
@@ -902,7 +1010,8 @@ const dashGameScreen = {
     this.handleBackAction = null;
     this.handleToggleKeypadAction = null;
     this.handleKeyDown = null;
-    this.handleEnterKeyDown = null;
+    this.handleAnswerInput = null;
+    this.handleGlobalKeyDown = null;
     this.handleSubmitClick = null;
     this.handleKeypadToggleClick = null;
     this.handleKeypadClick = null;

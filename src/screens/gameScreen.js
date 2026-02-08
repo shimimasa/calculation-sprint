@@ -34,6 +34,7 @@ const CLOUD_SPEED_MAX = 0.25;
 const CLOUD_GAP_MIN_PX = 80;
 const CLOUD_GAP_MAX_PX = 260;
 const DEFAULT_CLOUD_WIDTH = 220;
+const DEBUG_INPUT = false;
 const COUNTDOWN_SFX_THRESHOLDS = Object.freeze([10, 5, 3, 2, 1]);
 const isReviewModeActive = (state) => Boolean(state?.isReviewMode);
 const EFFECT_BY_LEVEL = {
@@ -118,8 +119,38 @@ const getGroundSurfaceInsetPx = () => {
   );
   return Number.isFinite(inset) ? inset : DEFAULT_GROUND_SURFACE_INSET_PX;
 };
+const describeActiveElement = () => {
+  const active = document.activeElement;
+  if (!active) {
+    return 'none';
+  }
+  const tag = active.tagName?.toLowerCase() ?? 'unknown';
+  const id = active.id ? `#${active.id}` : '';
+  return `${tag}${id}`;
+};
+const isEditableTarget = (target) => {
+  if (!target) {
+    return false;
+  }
+  if (target.isContentEditable) {
+    return true;
+  }
+  const tag = target.tagName?.toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select';
+};
+const logInputDebug = (label, payload = {}) => {
+  if (!DEBUG_INPUT) {
+    return;
+  }
+  console.log(`[input-debug:${label}]`, {
+    activeElement: describeActiveElement(),
+    ...payload,
+  });
+};
 
 const gameScreen = {
+  answerBuffer: '',
+  isSyncingAnswer: false,
   applyStageThemeHooks() {
     const stage = gameState.selectedStage;
     const shouldApplyTheme = gameState.playMode === 'stage' && stage;
@@ -287,21 +318,6 @@ const gameScreen = {
     });
     this.groundDebugLogged = true;
   },
-  ensureDebugGroundLine() {
-    if (this.debugGroundLine?.isConnected) {
-      return this.debugGroundLine;
-    }
-    const existingLine = document.querySelector('.debug-ground-line');
-    if (existingLine) {
-      this.debugGroundLine = existingLine;
-      return existingLine;
-    }
-    const line = document.createElement('div');
-    line.className = 'debug-ground-line';
-    document.body.appendChild(line);
-    this.debugGroundLine = line;
-    return line;
-  },
   updateRunnerGroundAlignment(force = false) {
     const runGround = domRefs.game.runGround;
     const runWorld = domRefs.game.runWorld;
@@ -333,11 +349,45 @@ const gameScreen = {
     runnerWrap.style.bottom = 'auto';
     runnerWrap.style.top = `${Math.round(groundSurfaceY - runnerFootOffset)}px`;
     runnerWrap.style.left = `${runnerBaseLeft}px`;
-    const debugLine = this.ensureDebugGroundLine();
-    if (debugLine) {
-      debugLine.style.top = `${groundSurfaceY}px`;
-    }
     this.logGroundDebug();
+  },
+  getAnswerInput() {
+    const input = domRefs.game.answerInput;
+    if (input?.isConnected) {
+      return input;
+    }
+    const refreshed = document.querySelector('.calc-sprint #game-answer-input');
+    if (refreshed) {
+      domRefs.game.answerInput = refreshed;
+    }
+    return refreshed;
+  },
+  focusAnswerInput() {
+    const input = this.getAnswerInput();
+    if (!input) {
+      return null;
+    }
+    if (typeof input.focus === 'function') {
+      input.focus({ preventScroll: true });
+    }
+    return input;
+  },
+  setAnswer(nextValue, meta = {}) {
+    const value = `${nextValue ?? ''}`;
+    const previous = this.answerBuffer ?? '';
+    this.answerBuffer = value;
+    const input = this.getAnswerInput();
+    if (input && input.value !== value) {
+      this.isSyncingAnswer = true;
+      input.value = value;
+      this.isSyncingAnswer = false;
+    }
+    logInputDebug('setAnswer', {
+      handler: meta.handler,
+      before: previous,
+      after: value,
+      defaultPrevented: meta.defaultPrevented,
+    });
   },
   spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
     if (!container) {
@@ -408,21 +458,15 @@ const gameScreen = {
     if (!this.canAcceptInput()) {
       return;
     }
-    if (!domRefs.game.answerInput) {
-      return;
-    }
-    domRefs.game.answerInput.focus();
-    domRefs.game.answerInput.value = `${domRefs.game.answerInput.value}${digit}`;
+    this.focusAnswerInput();
+    this.setAnswer(`${this.answerBuffer}${digit}`, { handler: 'keypad' });
   },
   handleBackspace() {
     if (!this.canAcceptInput()) {
       return;
     }
-    if (!domRefs.game.answerInput) {
-      return;
-    }
-    domRefs.game.answerInput.focus();
-    domRefs.game.answerInput.value = domRefs.game.answerInput.value.slice(0, -1);
+    this.focusAnswerInput();
+    this.setAnswer(this.answerBuffer.slice(0, -1), { handler: 'backspace' });
   },
   enter() {
     uiRenderer.showScreen('game');
@@ -481,6 +525,8 @@ const gameScreen = {
     this.bgBoostRemainingMs = 0;
     this.runnerX = 0;
     this.runnerXTarget = 0;
+    this.answerBuffer = '';
+    this.isSyncingAnswer = false;
     this.resetEffects();
     this.updateScalingHud();
     this.prefersReducedMotion = window.matchMedia
@@ -494,6 +540,14 @@ const gameScreen = {
       domRefs.game.keypad.setAttribute('aria-hidden', 'true');
     }
     domRefs.game.keypadToggle?.setAttribute('aria-expanded', 'false');
+
+    const answerInput = this.getAnswerInput();
+    if (answerInput) {
+      answerInput.inputMode = 'numeric';
+      answerInput.autocomplete = 'off';
+      answerInput.autocapitalize = 'off';
+      answerInput.readOnly = false;
+    }
 
     this.handleSubmitAction = () => {
       if (!this.canSubmit()) {
@@ -523,7 +577,67 @@ const gameScreen = {
     inputActions.on(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
 
     this.handleKeyDown = inputActions.createKeyHandler();
-    this.events.on(domRefs.game.answerInput, 'keydown', this.handleKeyDown);
+    this.events.on(this.getAnswerInput(), 'keydown', this.handleKeyDown);
+    this.handleAnswerInput = (event) => {
+      if (this.isSyncingAnswer) {
+        return;
+      }
+      if (!this.canAcceptInput()) {
+        this.setAnswer(this.answerBuffer, {
+          handler: 'input-blocked',
+          defaultPrevented: event.defaultPrevented,
+        });
+        return;
+      }
+      const input = this.getAnswerInput();
+      if (!input) {
+        return;
+      }
+      const raw = input.value ?? '';
+      const sanitized = raw.replace(/\D+/g, '');
+      this.setAnswer(sanitized, {
+        handler: 'input',
+        defaultPrevented: event.defaultPrevented,
+      });
+    };
+    this.events.on(this.getAnswerInput(), 'input', this.handleAnswerInput);
+    this.handleGlobalKeyDown = (event) => {
+      if (!this.isScreenActive() || !this.canAcceptInput()) {
+        return;
+      }
+      if (event.defaultPrevented) {
+        return;
+      }
+      const input = this.getAnswerInput();
+      const active = document.activeElement;
+      if (active === input) {
+        return;
+      }
+      if (isEditableTarget(active)) {
+        return;
+      }
+      const key = event.key;
+      if (/^\d$/.test(key)) {
+        event.preventDefault();
+        this.setAnswer(`${this.answerBuffer}${key}`, {
+          handler: 'keyboard',
+          defaultPrevented: event.defaultPrevented,
+        });
+        this.focusAnswerInput();
+        return;
+      }
+      if (key === 'Backspace' || key === 'Delete') {
+        event.preventDefault();
+        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keyboard' });
+        this.focusAnswerInput();
+        return;
+      }
+      if (key === 'Enter') {
+        event.preventDefault();
+        inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'keyboard' });
+      }
+    };
+    this.events.on(window, 'keydown', this.handleGlobalKeyDown);
 
     this.handleSubmitClick = () => {
       inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
@@ -551,7 +665,7 @@ const gameScreen = {
 
     this.loadNextQuestion();
     this.startTimer();
-    domRefs.game.answerInput?.focus();
+    this.focusAnswerInput();
     this.stumbleTimeoutId = null;
     this.runnerSpeedTier = null;
   },
@@ -701,16 +815,22 @@ const gameScreen = {
       ...gameState.settings,
       reviewModes: isReviewModeActive(gameState) ? gameState.reviewModes : [],
     });
-    domRefs.game.answerInput.value = '';
+    this.setAnswer('', { handler: 'load' });
     gameState.questionStartAtMs = performance.now();
   },
   submitAnswer() {
     if (!this.canSubmit()) {
       return;
     }
+    logInputDebug('submit', {
+      handler: 'submit',
+      before: this.answerBuffer,
+      after: this.answerBuffer,
+      defaultPrevented: false,
+    });
     this.setLocked(true);
     const elapsedMs = performance.now() - gameState.questionStartAtMs;
-    const rawValue = domRefs.game.answerInput.value.trim();
+    const rawValue = this.answerBuffer.trim();
     const answerValue = Number(rawValue);
     const isCorrect = Number.isFinite(answerValue)
       && gameState.currentQuestion
@@ -783,7 +903,7 @@ const gameScreen = {
       uiRenderer.clearFeedback();
       this.loadNextQuestion();
       this.setLocked(false);
-      domRefs.game.answerInput?.focus();
+      this.focusAnswerInput();
     }, 500);
   },
   update(dtMs) {
