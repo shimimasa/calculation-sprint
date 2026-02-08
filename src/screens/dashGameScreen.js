@@ -817,11 +817,28 @@ const dashGameScreen = {
       this.rafId = null;
     }
   },
+  startBgm() {
+    if (this.isBgmActive) {
+      return;
+    }
+    this.isBgmActive = true;
+    console.log('[BGM] dash loop start');
+    audioManager.playBgm('bgm_dash', { loop: true });
+  },
+  stopBgm() {
+    if (!this.isBgmActive) {
+      return;
+    }
+    this.isBgmActive = false;
+    console.log('[BGM] dash stop');
+    audioManager.stopBgm();
+  },
   endSession(endReason = 'unknown') {
     if (this.hasEnded) {
       return;
     }
     this.hasEnded = true;
+    this.stopBgm();
     this.stopLoop();
     gameState.dash.result = {
       distanceM: gameState.dash.distanceM,
@@ -864,6 +881,7 @@ const dashGameScreen = {
     this.runnerSpeedTier = null;
     this.answerBuffer = '';
     this.isSyncingAnswer = false;
+    this.isBgmActive = false;
     this.initRunBackgrounds();
     this.updateArea(gameState.dash.distanceM);
     this.updateHud();
@@ -1052,6 +1070,7 @@ const dashGameScreen = {
     domRefs.dashGame.keypadToggle?.setAttribute('aria-expanded', 'false');
 
     this.loadNextQuestion();
+    this.startBgm();
     this.startLoop();
   },
   render() {},
@@ -1086,6 +1105,7 @@ const dashGameScreen = {
     this.handleKeypadClick = null;
     this.handleKeypadCapture = null;
     this.clearStreakCue();
+    this.stopBgm();
     if (domRefs.game.runClouds) {
       domRefs.game.runClouds.innerHTML = '';
     }
