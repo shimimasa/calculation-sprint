@@ -44,6 +44,7 @@ const CLOUD_GAP_MAX_PX = 260;
 const DEFAULT_CLOUD_WIDTH = 220;
 const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
+const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
 const EFFECT_MAX_SPEED_MPS = 8;
 const randomBetween = (min, max) => min + Math.random() * (max - min);
 const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
@@ -72,6 +73,12 @@ const loadCloudBaseWidth = async (src) => {
   img.src = src;
   await waitForImageDecode(img);
   return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+};
+const getGroundSurfaceInsetPx = () => {
+  const inset = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--ground-surface-inset'),
+  );
+  return Number.isFinite(inset) ? inset : DEFAULT_GROUND_SURFACE_INSET_PX;
 };
 
 const dashGameScreen = {
@@ -245,7 +252,8 @@ const dashGameScreen = {
     }
     const groundRect = runGround.getBoundingClientRect();
     const worldRect = runWorld.getBoundingClientRect();
-    const groundSurfaceY = Math.round(groundRect.top);
+    const groundSurfaceInsetPx = getGroundSurfaceInsetPx();
+    const groundSurfaceY = Math.round(groundRect.bottom - groundSurfaceInsetPx);
     const runnerFootOffset = RUNNER_FOOT_OFFSET_PX;
     const runnerBaseLeft = Math.round(worldRect.left + RUNNER_BASE_LEFT_PX);
     if (
