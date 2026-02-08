@@ -1,7 +1,7 @@
 /* ADR-004 Phase0陬應ｿｮ: Scoped stylesheet for portal/subpath hosting. */
 :root {
   --ground-art-height: 240px;
-  --ground-surface-inset: 110px;
+  --ground-surface-inset: 90px;
 }
 .calc-sprint * {
   box-sizing: border-box;
