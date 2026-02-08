@@ -2026,6 +2026,7 @@
   z-index: 0;
 }:root {
   --debug-sky-solid: 0;
+  --debug-sky-flat: 0;
 }.calc-sprint .run-sky {
   position: absolute;
   inset: 0;
