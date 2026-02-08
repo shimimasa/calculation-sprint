@@ -1101,11 +1101,11 @@
       ". submit ."
       "problem . .";
     padding:
-      /* keep keypad near top-center but below top HUD */
-      clamp(84px, 11vh, 132px)
+      /* keep keypad at top-center (Mario-like HUD) */
+      clamp(56px, 7vh, 92px)
       clamp(16px, 2vw, 28px)
       /* reserve bottom lane for runner/enemy (no UI overlaps) */
-      clamp(160px, 22vh, 260px)
+      clamp(240px, 32vh, 360px)
       clamp(8px, 1vw, 16px);
     gap: 10px 18px;
     align-items: start;
@@ -1118,6 +1118,9 @@
     grid-area: keypad;
     width: min(520px, 44vw);
     pointer-events: auto;
+  }
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad[hidden] {
+    display: grid !important;
   }
   .calc-sprint #dash-game-screen .dash-hud .dash-keypad-actions {
     grid-area: submit;
@@ -1152,17 +1155,17 @@
   .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
   .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud,
   .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
-    right: 0;
+    right: clamp(12px, 2vw, 24px);
     left: auto;
   }
   .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
-    top: 0;
+    top: clamp(10px, 2vh, 18px);
   }
   .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
-    top: calc(clamp(12px, 3vh, 28px) + 64px);
+    top: calc(clamp(10px, 2vh, 18px) + 56px);
   }
   .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
-    top: calc(clamp(12px, 3vh, 28px) + 8px);
+    top: calc(clamp(10px, 2vh, 18px) + 6px);
     opacity: 0.72;
     text-align: right;
   }
@@ -1491,22 +1494,12 @@
 }
 
 @media (min-width: 901px) {
-  .calc-sprint #dash-game-screen .dash-problem-grid {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(10px, 1.6vh, 14px);
-    max-width: 100%;
-    margin: 0;
-  }
   .calc-sprint #dash-game-screen #dash-game-keypad-toggle {
     display: none;
   }
   /* Always show keypad on wide screens (even if DOM keeps [hidden]). */
   .calc-sprint #dash-game-screen #dash-game-keypad[hidden] {
     display: grid !important;
-  }
-  .calc-sprint #dash-game-screen .dash-keypad-actions {
-    justify-self: stretch;
   }
 }
 
