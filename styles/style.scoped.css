@@ -2080,7 +2080,6 @@
   pointer-events: none;
   filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
   opacity: calc(0.94 + (var(--world-clarity) - 1) * 0.25);
-  outline: 2px solid rgba(0, 255, 0, 0.25);
 }.calc-sprint .run-ground__tile {
   position: absolute;
   top: 0;
@@ -2091,7 +2090,6 @@
   background-size: auto 100%;
   background-position: left bottom;
   will-change: transform;
-  outline: 1px solid rgba(0, 255, 0, 0.25);
 }.calc-sprint .run-ground__tile--a {
   left: 0;
 }.calc-sprint .run-ground__tile--b {
@@ -2171,14 +2169,6 @@
       )
       rotate(0deg);
   }
-}.calc-sprint .debug-ground-line {
-  position: fixed;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: rgba(0, 255, 0, 0.4);
-  pointer-events: none;
-  z-index: 5;
 }.calc-sprint .runner-wrap {
   position: fixed;
   left: 64px;
