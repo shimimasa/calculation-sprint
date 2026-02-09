@@ -2079,6 +2079,8 @@
   object-fit: contain;
   will-change: transform;
   z-index: 1;
+  --enemy-hit-pull: 0px;
+  --enemy-hit-scale: 1;
 }.calc-sprint .run-world.stumble-freeze .run-sky {
   background-position-x: var(--stumble-freeze-x, 0px);
   transition: none;
@@ -2192,6 +2194,21 @@
       )
       rotate(0deg);
   }
+}
+
+@keyframes calc-sprint-runner-kick {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  27% {
+    transform: translate3d(6px, -6px, 0) rotate(-6deg) scale(1.02);
+  }
+  60% {
+    transform: translate3d(14px, -8px, 0) rotate(-12deg) scale(1.04);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
 }.calc-sprint .runner-wrap {
   position: fixed;
   left: 64px;
@@ -2204,6 +2221,8 @@
   transform: translateX(0);
   will-change: transform;
   pointer-events: none;
+}.calc-sprint .runner-wrap.is-kicking {
+  animation: calc-sprint-runner-kick 300ms ease-out 1;
 }.calc-sprint .runner-shadow {
   position: absolute;
   left: 6px;
@@ -2264,6 +2283,11 @@
   transform: translate(
     var(--calc-sprint-runner-bob-x, 0px),
     calc(var(--calc-sprint-runner-bob-offset, 0px) + 4px)
+  );
+}.calc-sprint .runner-wrap.is-kicking #runner-sprite.hit {
+  transform: translate(
+    var(--calc-sprint-runner-bob-x, 0px),
+    var(--calc-sprint-runner-bob-offset, 0px)
   );
 }
 

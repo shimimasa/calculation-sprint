@@ -33,6 +33,7 @@ const COLLISION_PENALTY_MS = 5000;
 const COLLISION_COOLDOWN_MS = 500;
 const COLLISION_SLOW_MS = 1000;
 const COLLISION_SLOW_MULT = 0.7;
+const KICK_MS = 300;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
@@ -409,6 +410,7 @@ const dashGameScreen = {
     if (this.hasEnded) {
       return;
     }
+    const nowMs = window.performance.now();
     const runWorld = domRefs.game.runWorld;
     const runSky = domRefs.game.runSky;
     const speedLines = domRefs.game.speedLines;
@@ -474,6 +476,7 @@ const dashGameScreen = {
     runner?.classList.toggle('hit', isSlowed);
     runnerWrap?.classList.toggle('is-fast', speedRatio > 0.7);
     runnerWrap?.classList.toggle('is-rapid', speedRatio > 0.85);
+    runnerWrap?.classList.toggle('is-kicking', nowMs < (this.kickUntilMs ?? 0));
 
     if (runner) {
       let nextTier = 'runner-speed-high';
@@ -758,10 +761,14 @@ const dashGameScreen = {
     }
     const isCorrect = numericValue === this.currentQuestion.answer;
     if (isCorrect) {
+      const nowMs = window.performance.now();
       const defeatedEnemy = this.enemySystem?.defeatNearestEnemy({
         playerRect: this.getPlayerRect(),
-        nowMs: window.performance.now(),
+        nowMs,
       });
+      if (defeatedEnemy) {
+        this.kickUntilMs = nowMs + KICK_MS;
+      }
       audioManager.playSfx('sfx_correct');
       gameState.dash.correctCount += 1;
       gameState.dash.streak += 1;
@@ -919,6 +926,7 @@ const dashGameScreen = {
     this.enemySpeed = enemyBaseSpeed;
     this.enemyGapM = collisionThreshold * 2;
     this.attackUntilMs = 0;
+    this.kickUntilMs = 0;
     this.lastCollisionPenaltyAtMs = -Infinity;
     this.slowUntilMs = 0;
     this.timeLeftMs = this.getInitialTimeLimitMs();
