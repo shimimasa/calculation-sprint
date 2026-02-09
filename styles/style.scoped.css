@@ -1094,7 +1094,7 @@
   pointer-events: none;
 }
 
-.calc-sprint #dash-game-screen .dash-bottom-side .dash-stats--footer,
+.calc-sprint #dash-game-screen .dash-bottom-side .dash-proximity,
 .calc-sprint #dash-game-screen .dash-bottom-side .title-actions,
 .calc-sprint #dash-game-screen .dash-bottom-side button {
   pointer-events: auto;

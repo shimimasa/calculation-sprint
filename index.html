@@ -253,22 +253,20 @@
               <strong id="dash-game-enemy-count" class="dash-stat-value">0</strong>
               <span class="dash-stat-unit">体</span>
             </div>
+            <div class="dash-stat-card">
+              <span class="dash-stat-label">連続正解</span>
+              <strong id="dash-game-streak" class="dash-stat-value">0</strong>
+              <span class="dash-stat-unit">問</span>
+              <span id="dash-game-streak-cue" class="dash-streak-cue" aria-live="polite"></span>
+            </div>
           </div>
           <div class="dash-bottom-side">
-            <div class="dash-stats dash-stats--footer" aria-label="ダッシュ状況">
-              <div class="dash-stat-card">
-                <span class="dash-stat-label">連続正解</span>
-                <strong id="dash-game-streak" class="dash-stat-value">0</strong>
-                <span class="dash-stat-unit">問</span>
-                <span id="dash-game-streak-cue" class="dash-streak-cue" aria-live="polite"></span>
+            <div id="dash-game-enemy" class="dash-proximity" data-state="safe">
+              <span class="dash-stat-label">敵の接近</span>
+              <div class="dash-proximity-bar" role="presentation">
+                <div id="dash-game-enemy-bar" class="dash-proximity-fill"></div>
               </div>
-              <div id="dash-game-enemy" class="dash-proximity" data-state="safe">
-                <span class="dash-stat-label">敵の接近</span>
-                <div class="dash-proximity-bar" role="presentation">
-                  <div id="dash-game-enemy-bar" class="dash-proximity-fill"></div>
-                </div>
-                <span id="dash-game-enemy-text" class="dash-proximity-text">安全 (0%)</span>
-              </div>
+              <span id="dash-game-enemy-text" class="dash-proximity-text">安全 (0%)</span>
             </div>
             <div class="title-actions">
               <button id="dash-game-back-button" class="secondary-button primary-button--xl">終了して記録を見る</button>
