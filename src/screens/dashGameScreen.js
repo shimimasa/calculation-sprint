@@ -765,6 +765,9 @@ const dashGameScreen = {
       this.playerSpeed += speedIncrementPerCorrect;
       this.enemySpeed = enemyBaseSpeed + enemySpeedIncrementPerStreak * gameState.dash.streak;
       this.timeLeftMs += timeBonusOnCorrect;
+      if (defeatedEnemy) {
+        this.timeLeftMs += timeBonusOnDefeat;
+      }
       if (gameState.dash.streak === streakAttack) {
         this.enemyGapM += collisionThreshold;
         this.showStreakCue(STREAK_ATTACK_CUE_TEXT);
@@ -772,9 +775,6 @@ const dashGameScreen = {
       if (gameState.dash.streak === streakDefeat) {
         this.showStreakCue(STREAK_DEFEAT_CUE_TEXT);
         audioManager.playSfx('sfx_levelup', { volume: 0.8 });
-        if (defeatedEnemy) {
-          this.timeLeftMs += timeBonusOnDefeat;
-        }
         this.enemyGapM = collisionThreshold * 2;
         this.enemySpeed = enemyBaseSpeed;
         gameState.dash.streak = 0;
