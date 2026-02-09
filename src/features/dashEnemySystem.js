@@ -184,7 +184,7 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
 
   system.defeatNearestEnemy = ({ playerRect, nowMs }) => {
     if (!playerRect) {
-      return false;
+      return { defeated: false, target: null };
     }
     let nearestEnemy = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
@@ -202,10 +202,18 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
       }
     });
     if (!nearestEnemy) {
-      return false;
+      return { defeated: false, target: null };
     }
     system.setEnemyState(nearestEnemy, 'hit', nowMs);
-    return true;
+    return {
+      defeated: true,
+      target: {
+        x: nearestEnemy.x,
+        y: nearestEnemy.y,
+        w: nearestEnemy.w,
+        h: nearestEnemy.h,
+      },
+    };
   };
 
   system.setEnemyState = (enemy, nextState, nowMs) => {
