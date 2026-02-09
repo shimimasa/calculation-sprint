@@ -104,6 +104,7 @@ const domRefs = {
     runWorld: qs('.run-world'),
     runSky: qs('.run-sky'),
     runClouds: qs('.run-clouds'),
+    runEnemies: qs('.run-enemies'),
     runGround: qs('.run-ground'),
     runGroundTileA: qs('.run-ground__tile--a'),
     runGroundTileB: qs('.run-ground__tile--b'),
