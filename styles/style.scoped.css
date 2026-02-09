@@ -955,7 +955,9 @@
   overflow: hidden;
   position: relative;
   display: grid;
-  grid-template-rows: 38% 40% 22%;
+  --dash-run-h: clamp(260px, 42vh, 420px);
+  --dash-bottom-min: clamp(160px, 24vh, 240px);
+  grid-template-rows: auto var(--dash-run-h) minmax(var(--dash-bottom-min), auto);
   height: 100%;
   max-height: 100%;
   --ground-surface-inset: 140px;
@@ -1000,6 +1002,9 @@
   grid-row: 2;
   position: relative;
   z-index: 10;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .calc-sprint #dash-game-screen .dash-top-hud {
@@ -1007,8 +1012,8 @@
   display: flex;
   flex-direction: column;
   gap: clamp(6px, 1.2vh, 10px);
-  justify-content: center;
-  overflow: hidden;
+  justify-content: flex-start;
+  overflow: visible;
 }
 
 .calc-sprint #dash-game-screen .dash-top-info {
@@ -1065,8 +1070,9 @@
   align-self: stretch;
   pointer-events: none;
   padding: clamp(10px, 1.6vh, 14px) clamp(12px, 2vw, 16px);
-  background: rgba(255, 255, 255, 0.96);
-  overflow: hidden;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  overflow: visible;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud #dash-game-time-wrap,
@@ -1856,7 +1862,15 @@
 }
 
 .calc-sprint #dash-game-screen::before {
-  content: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: var(--run-sky-image, url("../assets/bg-sky.png"));
+  background-repeat: repeat-x;
+  background-position: center top;
+  background-size: auto 100%;
 }
 
 .calc-sprint .screen-dash[data-enemy-state="caution"] .run-world::after {
