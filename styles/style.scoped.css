@@ -2200,11 +2200,8 @@
   0% {
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
   }
-  27% {
-    transform: translate3d(6px, -6px, 0) rotate(-6deg) scale(1.02);
-  }
-  60% {
-    transform: translate3d(14px, -8px, 0) rotate(-12deg) scale(1.04);
+  55% {
+    transform: translate3d(var(--kick-lunge-px), -10px, 0) rotate(-18deg) scale(1.05);
   }
   100% {
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
@@ -2217,6 +2214,9 @@
   );
   width: 64px;
   height: 64px;
+  --kick-lunge-px: 0px;
+  --kick-raise-px: 0px;
+  --kick-rot-deg: 0deg;
   z-index: var(--z-runner, 4);
   transform: translateX(0);
   will-change: transform;
