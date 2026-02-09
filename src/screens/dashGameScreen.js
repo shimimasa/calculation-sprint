@@ -130,6 +130,20 @@ const logKeypadDebug = (label, payload = {}) => {
   }
   console.log(`[keypad-debug:${label}]`, payload);
 };
+const operatorSymbolByMode = {
+  add: '+',
+  sub: '-',
+  mul: '×',
+  div: '÷',
+};
+const enemyTypeByOperator = {
+  '+': 'plus',
+  '-': 'minus',
+  '×': 'multi',
+  '*': 'multi',
+  '÷': 'divide',
+  '/': 'divide',
+};
 
 const dashGameScreen = {
   answerBuffer: '',
@@ -731,9 +745,24 @@ const dashGameScreen = {
     if (domRefs.dashGame.question) {
       domRefs.dashGame.question.textContent = this.currentQuestion.text;
     }
+    // Derive the current operator for enemy type mapping (fallback to rendered text if needed).
+    this.currentOperatorSymbol = this.getCurrentOperatorSymbol();
     this.setAnswer('', { handler: 'load' });
     this.focusAnswerInput();
     this.clearFeedback();
+  },
+  getCurrentOperatorSymbol() {
+    const mode = this.currentQuestion?.meta?.mode;
+    if (mode && operatorSymbolByMode[mode]) {
+      return operatorSymbolByMode[mode];
+    }
+    const text = this.currentQuestion?.text ?? domRefs.dashGame.question?.textContent ?? '';
+    const match = text.match(/[+\-×*÷/]/);
+    return match ? match[0] : null;
+  },
+  getCurrentEnemyType() {
+    const operatorSymbol = this.getCurrentOperatorSymbol();
+    return enemyTypeByOperator[operatorSymbol] ?? null;
   },
   submitAnswer() {
     if (!this.canSubmit()) {
@@ -800,8 +829,9 @@ const dashGameScreen = {
     this.updateArea(gameState.dash.distanceM);
     const runWorld = domRefs.game.runWorld;
     const worldRect = runWorld?.getBoundingClientRect?.();
-    const groundY = worldRect
-      ? Math.round((gameState.run.groundY ?? worldRect.bottom) - worldRect.top)
+    const runGroundY = gameState.run.groundY ?? gameState.run.groundSurfaceY;
+    const groundY = worldRect && Number.isFinite(runGroundY)
+      ? Math.round(runGroundY - worldRect.top)
       : null;
     const playerRect = this.getPlayerRect();
     const enemyUpdate = this.enemySystem?.update({
@@ -810,6 +840,7 @@ const dashGameScreen = {
       groundY,
       playerRect,
       correctCount: gameState.dash.correctCount,
+      enemyType: this.getCurrentEnemyType(),
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
     });
     if (enemyUpdate) {
