@@ -805,6 +805,7 @@
   position: absolute;
   inset: 0;
   height: 100%;
+  width: 100%;
   padding: 0;
   transform: none;
 }
@@ -812,7 +813,8 @@
 .calc-sprint .screen-dash .dash-run-zone {
   position: relative;
   overflow: hidden;
-  z-index: 1;
+  isolation: isolate;
+  z-index: 10;
   min-height: 0;
   height: 100%;
 }
@@ -989,15 +991,15 @@
 .calc-sprint #dash-game-screen .dash-top-hud,
 .calc-sprint #dash-game-screen .dash-bottom-hud {
   position: relative;
-  z-index: 3;
-  padding: clamp(8px, 1.6vh, 12px) clamp(12px, 2.6vw, 18px);
+  z-index: 30;
+  padding: clamp(6px, 1.2vh, 10px) clamp(10px, 2vw, 16px);
   min-height: 0;
 }
 
 .calc-sprint #dash-game-screen .dash-top-hud {
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 1.6vh, 12px);
+  gap: clamp(6px, 1.2vh, 10px);
   justify-content: center;
   overflow: hidden;
 }
@@ -1013,10 +1015,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(24px, 3vw, 36px);
+  gap: clamp(12px, 2vw, 20px);
   width: 100%;
   max-width: 980px;
   margin: 0 auto;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls .dash-top-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 2.4vw, 24px);
+  width: 100%;
+  max-width: 980px;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-grid {
@@ -1031,7 +1042,7 @@
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-actions {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-submit-button {
@@ -1062,11 +1073,11 @@
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
   min-width: 120px;
-  padding: 8px 12px;
+  padding: 6px 10px;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-value {
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-label,
@@ -1079,7 +1090,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: clamp(10px, 2vw, 18px);
+  gap: clamp(8px, 1.6vw, 14px);
   pointer-events: none;
 }
 
