@@ -87,8 +87,9 @@ const loadCloudBaseWidth = async (src) => {
   return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
 };
 const getGroundSurfaceInsetPx = () => {
+  const target = domRefs.dashGame?.screen ?? document.documentElement;
   const inset = parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue('--ground-surface-inset'),
+    getComputedStyle(target).getPropertyValue('--ground-surface-inset'),
   );
   return Number.isFinite(inset) ? inset : DEFAULT_GROUND_SURFACE_INSET_PX;
 };
@@ -622,6 +623,14 @@ const dashGameScreen = {
       domRefs.dashGame.distance.textContent = gameState.dash.distanceM.toFixed(1);
     }
     this.updateNextAreaIndicator(gameState.dash.distanceM);
+    if (domRefs.dashGame.speed) {
+      domRefs.dashGame.speed.textContent = this.playerSpeed.toFixed(1);
+    }
+    if (domRefs.dashGame.enemyCount) {
+      const enemies = this.enemySystem?.enemies ?? [];
+      const aliveCount = enemies.filter((enemy) => enemy?.isAlive && enemy.state !== 'dead').length;
+      domRefs.dashGame.enemyCount.textContent = String(aliveCount);
+    }
     if (domRefs.dashGame.timeRemaining) {
       const timeSeconds = Math.max(0, Math.ceil(this.timeLeftMs / 1000));
       domRefs.dashGame.timeRemaining.textContent = String(timeSeconds);

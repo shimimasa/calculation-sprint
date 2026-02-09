@@ -808,6 +808,30 @@
   padding: 0;
   transform: none;
 }
+
+.calc-sprint .screen-dash .dash-run-zone {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.calc-sprint .screen-dash .dash-run-zone .run-viewport {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.calc-sprint .screen-dash .dash-run-zone .run-host {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  pointer-events: none;
+}
 .calc-sprint .screen-dash > .screen-header,
 .calc-sprint .screen-dash > .screen-main,
 .calc-sprint .screen-dash > .screen-footer {
@@ -925,52 +949,14 @@
 
 /* Dash Run: layout density + playfield focus (Dash-scoped overrides) */
 .calc-sprint #dash-game-screen {
-  padding: 12px 18px 14px;
-  overflow-x: hidden;
+  padding: 0;
+  overflow: hidden;
   position: relative;
-}
-.calc-sprint #dash-game-screen > .screen-header {
-  gap: 10px;
-  margin-bottom: 0;
-  position: absolute;
-  inset: 0 0 auto 0;
-  padding: 12px 18px 0;
-  pointer-events: none;
-}
-.calc-sprint #dash-game-screen > header.dash-header .screen-kicker,
-.calc-sprint #dash-game-screen > header.dash-header .screen__title,
-.calc-sprint #dash-game-screen > header.dash-header .screen__description {
-  display: none;
-}
-.calc-sprint #dash-game-screen .dash-header {
-  gap: 10px;
-}
-.calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
-.calc-sprint #dash-game-screen > header.dash-header .dash-next-area,
-.calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
-  position: absolute;
-  pointer-events: auto;
-}
-.calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
-  top: 0;
-  right: 0;
-}
-.calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
-  top: 0;
-  left: 0;
-  margin: 0;
-  font-size: 12px;
-  opacity: 0.6;
-}
-.calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
-  top: clamp(18px, 3vh, 36px);
-  right: clamp(12px, 2vw, 24px);
-  width: min(320px, 36vw);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  transform: scale(0.92);
-  transform-origin: top right;
+  display: grid;
+  grid-template-rows: 45% 33% 22%;
+  height: 100vh;
+  max-height: 100vh;
+  --ground-surface-inset: 140px;
 }
 .calc-sprint #dash-game-screen .screen__title {
   font-size: 24px;
@@ -999,6 +985,91 @@
 }
 .calc-sprint #dash-game-screen .dash-stats--header .dash-stat-unit {
   font-size: 13px;
+}
+.calc-sprint #dash-game-screen .dash-top-hud,
+.calc-sprint #dash-game-screen .dash-bottom-hud {
+  position: relative;
+  z-index: 2;
+  padding: clamp(12px, 2vh, 18px) clamp(16px, 3vw, 24px);
+}
+
+.calc-sprint #dash-game-screen .dash-top-hud {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2vh, 16px);
+  justify-content: center;
+}
+
+.calc-sprint #dash-game-screen .dash-top-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(12px, 2vw, 20px);
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls .dash-problem-grid {
+  flex: 1 1 320px;
+  max-width: 520px;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-stack {
+  flex: 0 0 auto;
+  width: min(360px, 42vw);
+  gap: 12px;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-actions {
+  margin-top: 12px;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls .dash-submit-button {
+  width: 100%;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.6vh, 12px);
+  justify-content: center;
+  pointer-events: none;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud .dash-time {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 18px);
+  pointer-events: none;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-side .dash-stats--footer,
+.calc-sprint #dash-game-screen .dash-bottom-side .title-actions,
+.calc-sprint #dash-game-screen .dash-bottom-side button {
+  pointer-events: auto;
 }
 .calc-sprint #dash-game-screen > .screen-main.dash-playfield {
   max-width: 980px;
@@ -1504,7 +1575,7 @@
   border-color: rgba(29, 36, 51, 0.9);
 }
 .calc-sprint #dash-game-screen #dash-game-back-button {
-  display: none;
+  display: inline-flex;
 }
 .calc-sprint #dash-game-screen .feedback {
   min-height: 26px;
@@ -1597,6 +1668,16 @@
     flex-direction: column;
     gap: clamp(8px, 1.6vh, 12px);
     width: 100%;
+  }
+  .calc-sprint #dash-game-screen .dash-top-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-stack {
+    width: 100%;
+  }
+  .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-grid {
+    max-width: none;
   }
 }
 
