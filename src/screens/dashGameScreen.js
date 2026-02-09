@@ -34,6 +34,7 @@ const COLLISION_COOLDOWN_MS = 500;
 const COLLISION_SLOW_MS = 1000;
 const COLLISION_SLOW_MULT = 0.7;
 const KICK_MS = 300;
+const MAX_LUNGE_PX = 140;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
@@ -476,7 +477,17 @@ const dashGameScreen = {
     runner?.classList.toggle('hit', isSlowed);
     runnerWrap?.classList.toggle('is-fast', speedRatio > 0.7);
     runnerWrap?.classList.toggle('is-rapid', speedRatio > 0.85);
-    runnerWrap?.classList.toggle('is-kicking', nowMs < (this.kickUntilMs ?? 0));
+    if (runnerWrap) {
+      if (nowMs < (this.kickUntilMs ?? 0)) {
+        runnerWrap.classList.add('is-kicking');
+        const lungePx = Number(this.kickLungePx) || 0;
+        runnerWrap.style.setProperty('--kick-lunge-px', `${lungePx}px`);
+      } else {
+        runnerWrap.classList.remove('is-kicking');
+        runnerWrap.style.setProperty('--kick-lunge-px', '0px');
+        this.kickLungePx = 0;
+      }
+    }
 
     if (runner) {
       let nextTier = 'runner-speed-high';
@@ -762,12 +773,25 @@ const dashGameScreen = {
     const isCorrect = numericValue === this.currentQuestion.answer;
     if (isCorrect) {
       const nowMs = window.performance.now();
-      const defeatedEnemy = this.enemySystem?.defeatNearestEnemy({
-        playerRect: this.getPlayerRect(),
+      const playerRect = this.getPlayerRect();
+      const defeatResult = this.enemySystem?.defeatNearestEnemy({
+        playerRect,
         nowMs,
       });
-      if (defeatedEnemy) {
+      if (defeatResult?.defeated) {
+        const target = defeatResult.target;
+        if (playerRect && target) {
+          const desiredRunnerRight = target.x + target.w * 0.35;
+          const currentRunnerRight = playerRect.x + playerRect.w;
+          const rawLungePx = desiredRunnerRight - currentRunnerRight;
+          this.kickLungePx = Math.max(0, Math.min(rawLungePx, MAX_LUNGE_PX));
+        } else {
+          this.kickLungePx = 0;
+        }
         this.kickUntilMs = nowMs + KICK_MS;
+      } else {
+        this.kickUntilMs = 0;
+        this.kickLungePx = 0;
       }
       audioManager.playSfx('sfx_correct');
       gameState.dash.correctCount += 1;
@@ -776,7 +800,7 @@ const dashGameScreen = {
       this.playerSpeed += speedIncrementPerCorrect;
       this.enemySpeed = enemyBaseSpeed + enemySpeedIncrementPerStreak * gameState.dash.streak;
       this.timeLeftMs += timeBonusOnCorrect;
-      if (defeatedEnemy) {
+      if (defeatResult?.defeated) {
         this.timeLeftMs += timeBonusOnDefeat;
       }
       if (gameState.dash.streak === streakAttack) {
