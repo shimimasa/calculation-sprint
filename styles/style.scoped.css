@@ -2079,6 +2079,8 @@
   object-fit: contain;
   will-change: transform;
   z-index: 1;
+  --enemy-hit-pull: 0px;
+  --enemy-hit-scale: 1;
 }.calc-sprint .run-world.stumble-freeze .run-sky {
   background-position-x: var(--stumble-freeze-x, 0px);
   transition: none;
