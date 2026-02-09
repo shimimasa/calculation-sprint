@@ -4,8 +4,13 @@ const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
 const MIN_REACTION_DISTANCE_PX = 180;
 const MIN_TIME_TO_COLLISION_SEC = 2.2;
+const HIT_START_DELAY_MS = 150;
 const HIT_DURATION_MS = 120;
 const DEAD_DURATION_MS = 300;
+const HIT_PULL_DURATION_MS = 80;
+const HIT_PULL_PX = 16;
+const HIT_FLASH_MS = 40;
+const HIT_FLASH_SCALE = 1.03;
 const MAX_ENEMIES = 2;
 const START_GRACE_MS = 2500;
 const COLLISION_KNOCKBACK_PX = 120;
@@ -29,6 +34,12 @@ const intersects = (a, b) => (
   && a.x + a.w > b.x
   && a.y < b.y + b.h
   && a.y + a.h > b.y
+);
+
+const getEnemyTransform = (enemy) => (
+  `translate3d(${Math.round(enemy.x)}px, ${Math.round(enemy.y)}px, 0)`
+  + ' translateX(var(--enemy-hit-pull, 0px))'
+  + ' scale(var(--enemy-hit-scale, 1))'
 );
 
 const ensureEnemyContainer = (worldEl, containerEl) => {
@@ -58,6 +69,14 @@ const createEnemyElement = (type, state) => {
   img.src = getEnemyAssetPath(type, state);
   img.draggable = false;
   return img;
+};
+
+const setEnemySprite = (enemy, state) => {
+  if (!enemy?.el || enemy.visualState === state) {
+    return;
+  }
+  enemy.visualState = state;
+  enemy.el.src = getEnemyAssetPath(enemy.type, state);
 };
 
 const getSpeedPxPerSec = ({ correctCount = 0, elapsedSec = 0 }) => -(
@@ -150,12 +169,14 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
       tStateUntil: null,
       isAlive: true,
       hitAtTs: null,
+      visualState: state,
+      pendingVisualState: null,
       ignoreCollisionUntilMs: 0,
       el: createEnemyElement(type, state),
     };
     enemy.el.style.width = `${width}px`;
     enemy.el.style.height = `${height}px`;
-    enemy.el.style.transform = `translate3d(${Math.round(enemy.x)}px, ${Math.round(enemy.y)}px, 0)`;
+    enemy.el.style.transform = getEnemyTransform(enemy);
     container.appendChild(enemy.el);
     system.enemies.push(enemy);
     return enemy;
@@ -193,13 +214,20 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
       return;
     }
     enemy.state = state;
-    enemy.el.src = getEnemyAssetPath(enemy.type, state);
     if (state === 'hit') {
-      enemy.tStateUntil = nowMs + HIT_DURATION_MS;
+      enemy.hitAtTs = nowMs + HIT_START_DELAY_MS;
+      enemy.tStateUntil = enemy.hitAtTs + HIT_DURATION_MS;
+      enemy.pendingVisualState = 'hit';
     } else if (state === 'dead') {
+      enemy.hitAtTs = null;
+      enemy.pendingVisualState = null;
       enemy.tStateUntil = nowMs + DEAD_DURATION_MS;
+      setEnemySprite(enemy, state);
     } else {
+      enemy.hitAtTs = null;
+      enemy.pendingVisualState = null;
       enemy.tStateUntil = null;
+      setEnemySprite(enemy, state);
     }
   };
 
@@ -266,9 +294,29 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
         return false;
       }
 
+      if (enemy.state === 'hit' && enemy.pendingVisualState && nowMs >= enemy.hitAtTs) {
+        setEnemySprite(enemy, enemy.pendingVisualState);
+        enemy.pendingVisualState = null;
+      }
+
+      let hitPullPx = 0;
+      let hitScale = 1;
+      if (enemy.state === 'hit' && Number.isFinite(enemy.hitAtTs)) {
+        const hitElapsedMs = nowMs - enemy.hitAtTs;
+        if (hitElapsedMs >= 0 && hitElapsedMs < HIT_PULL_DURATION_MS) {
+          const progress = hitElapsedMs / HIT_PULL_DURATION_MS;
+          hitPullPx = -HIT_PULL_PX * (1 - progress);
+        }
+        if (hitElapsedMs >= 0 && hitElapsedMs < HIT_FLASH_MS) {
+          hitScale = HIT_FLASH_SCALE;
+        }
+      }
+      enemy.el.style.setProperty('--enemy-hit-pull', `${hitPullPx.toFixed(2)}px`);
+      enemy.el.style.setProperty('--enemy-hit-scale', hitScale.toFixed(3));
+
       enemy.x += enemy.vx * dtSec;
       enemy.y = Math.max(0, (groundY ?? enemy.y) - enemy.h);
-      enemy.el.style.transform = `translate3d(${Math.round(enemy.x)}px, ${Math.round(enemy.y)}px, 0)`;
+      enemy.el.style.transform = getEnemyTransform(enemy);
 
       if (enemy.x + enemy.w < 0) {
         enemy.el.remove();
@@ -286,7 +334,7 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
             playerRect.x + playerRect.w + 1,
           );
           enemy.x = knockbackTargetX;
-          enemy.el.style.transform = `translate3d(${Math.round(enemy.x)}px, ${Math.round(enemy.y)}px, 0)`;
+          enemy.el.style.transform = getEnemyTransform(enemy);
           if (attackActive) {
             attackHandled = true;
             system.setEnemyState(enemy, 'hit', nowMs);
