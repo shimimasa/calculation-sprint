@@ -8,6 +8,8 @@ const HIT_DURATION_MS = 120;
 const DEAD_DURATION_MS = 300;
 const MAX_ENEMIES = 2;
 const START_GRACE_MS = 2500;
+const COLLISION_KNOCKBACK_PX = 120;
+const COLLISION_INVULN_MS = 700;
 const BASE_SPEED_PX_PER_SEC = 220;
 const SPEED_PER_CORRECT_PX_PER_SEC = 2.0;
 const SPEED_PER_SEC_PX_PER_SEC = 1.5;
@@ -148,6 +150,7 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
       tStateUntil: null,
       isAlive: true,
       hitAtTs: null,
+      ignoreCollisionUntilMs: 0,
       el: createEnemyElement(type, state),
     };
     enemy.el.style.width = `${width}px`;
@@ -275,8 +278,15 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
       if (playerRect && enemy.state === 'walk') {
         const distancePx = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
         nearestDistancePx = Math.min(nearestDistancePx, distancePx);
-        if (!collision && intersects(playerRect, enemy)) {
+        if (!collision && nowMs >= enemy.ignoreCollisionUntilMs && intersects(playerRect, enemy)) {
           collision = true;
+          enemy.ignoreCollisionUntilMs = nowMs + COLLISION_INVULN_MS;
+          const knockbackTargetX = Math.max(
+            enemy.x + COLLISION_KNOCKBACK_PX,
+            playerRect.x + playerRect.w + 1,
+          );
+          enemy.x = knockbackTargetX;
+          enemy.el.style.transform = `translate3d(${Math.round(enemy.x)}px, ${Math.round(enemy.y)}px, 0)`;
           if (attackActive) {
             attackHandled = true;
             system.setEnemyState(enemy, 'hit', nowMs);
