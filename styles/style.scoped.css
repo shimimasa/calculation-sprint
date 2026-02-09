@@ -2065,6 +2065,20 @@
   will-change: transform;
   opacity: 0.85;
   filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
+}.calc-sprint .run-enemies {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}.calc-sprint .enemy-sprite {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  will-change: transform;
+  z-index: 1;
 }.calc-sprint .run-world.stumble-freeze .run-sky {
   background-position-x: var(--stumble-freeze-x, 0px);
   transition: none;

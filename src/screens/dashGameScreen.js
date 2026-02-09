@@ -18,6 +18,11 @@ import {
   streakAttack,
   streakDefeat,
 } from '../features/dashConstants.js';
+import {
+  ATTACK_WINDOW_MS,
+  PX_PER_METER,
+  createDashEnemySystem,
+} from '../features/dashEnemySystem.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
@@ -306,6 +311,21 @@ const dashGameScreen = {
     runnerWrap.style.top = `${Math.round(groundSurfaceY - runnerFootOffset)}px`;
     runnerWrap.style.left = `${runnerBaseLeft}px`;
     this.logGroundDebug();
+  },
+  getPlayerRect() {
+    const runWorld = domRefs.game.runWorld;
+    const runnerWrap = domRefs.game.runnerWrap;
+    if (!runWorld || !runnerWrap) {
+      return null;
+    }
+    const worldRect = runWorld.getBoundingClientRect();
+    const runnerRect = runnerWrap.getBoundingClientRect();
+    return {
+      x: runnerRect.left - worldRect.left,
+      y: runnerRect.top - worldRect.top,
+      w: runnerRect.width,
+      h: runnerRect.height,
+    };
   },
   getAnswerInput() {
     const input = domRefs.dashGame.answerInput;
@@ -754,6 +774,7 @@ const dashGameScreen = {
         this.enemySpeed = enemyBaseSpeed;
         gameState.dash.streak = 0;
       }
+      this.attackUntilMs = window.performance.now() + ATTACK_WINDOW_MS;
       this.setFeedback('○', 'correct');
     } else {
       audioManager.playSfx('sfx_wrong');
@@ -773,17 +794,38 @@ const dashGameScreen = {
     if (this.timeLeftMs <= 0) {
       return;
     }
+    const nowMs = window.performance.now();
     const dtSeconds = dtMs / 1000;
     gameState.dash.distanceM += this.playerSpeed * dtSeconds;
     this.updateArea(gameState.dash.distanceM);
-    this.enemyGapM -= (this.enemySpeed - this.playerSpeed) * dtSeconds;
-    if (this.enemyGapM <= collisionThreshold) {
-      audioManager.playSfx('sfx_wrong', { volume: 0.7 });
-      this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
-      this.enemyGapM = collisionThreshold * 2;
-      this.updateHud();
-      this.endSession('collision');
-      return;
+    const runWorld = domRefs.game.runWorld;
+    const worldRect = runWorld?.getBoundingClientRect?.();
+    const groundY = worldRect
+      ? Math.round((gameState.run.groundY ?? worldRect.bottom) - worldRect.top)
+      : null;
+    const playerRect = this.getPlayerRect();
+    const enemyUpdate = this.enemySystem?.update({
+      dtMs,
+      nowMs,
+      groundY,
+      playerRect,
+      correctCount: gameState.dash.correctCount,
+      attackActive: nowMs <= (this.attackUntilMs ?? 0),
+    });
+    if (enemyUpdate) {
+      if (enemyUpdate.collision && !enemyUpdate.attackHandled) {
+        audioManager.playSfx('sfx_wrong', { volume: 0.7 });
+        this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
+        this.enemyGapM = collisionThreshold * 2;
+        this.updateHud();
+        this.endSession('collision');
+        return;
+      }
+      if (Number.isFinite(enemyUpdate.nearestDistancePx)) {
+        this.enemyGapM = enemyUpdate.nearestDistancePx / PX_PER_METER;
+      } else {
+        this.enemyGapM = collisionThreshold * 2;
+      }
     }
     this.timeLeftMs -= dtMs;
     if (this.timeLeftMs <= 0) {
@@ -857,6 +899,7 @@ const dashGameScreen = {
     this.playerSpeed = baseSpeed;
     this.enemySpeed = enemyBaseSpeed;
     this.enemyGapM = collisionThreshold * 2;
+    this.attackUntilMs = 0;
     this.timeLeftMs = this.getInitialTimeLimitMs();
     this.initialTimeLimitMs = this.timeLeftMs;
     this.lastTickTs = window.performance.now();
@@ -882,6 +925,11 @@ const dashGameScreen = {
     this.answerBuffer = '';
     this.isSyncingAnswer = false;
     this.isBgmActive = false;
+    this.enemySystem = createDashEnemySystem({
+      worldEl: domRefs.game.runWorld,
+      containerEl: domRefs.game.runEnemies,
+    });
+    this.enemySystem.reset();
     this.initRunBackgrounds();
     this.updateArea(gameState.dash.distanceM);
     this.updateHud();
@@ -1110,6 +1158,8 @@ const dashGameScreen = {
       domRefs.game.runClouds.innerHTML = '';
     }
     this.clouds = [];
+    this.enemySystem?.destroy();
+    this.enemySystem = null;
     if (this.feedbackFxTimeout) {
       window.clearTimeout(this.feedbackFxTimeout);
       this.feedbackFxTimeout = null;
