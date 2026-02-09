@@ -31,6 +31,8 @@ const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 const LOW_TIME_THRESHOLD_MS = 8000;
 const COLLISION_PENALTY_MS = 5000;
 const COLLISION_COOLDOWN_MS = 500;
+const COLLISION_SLOW_MS = 1000;
+const COLLISION_SLOW_MULT = 0.7;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
@@ -399,7 +401,7 @@ const dashGameScreen = {
     cloud.scale = randomBetween(CLOUD_SCALE_MIN, CLOUD_SCALE_MAX);
     cloud.speedFactor = randomBetween(CLOUD_SPEED_MIN, CLOUD_SPEED_MAX);
   },
-  updateRunLayerVisuals(dtMs) {
+  updateRunLayerVisuals(dtMs, runSpeed = this.playerSpeed, isSlowed = false) {
     const dtSec = dtMs / 1000;
     if (!Number.isFinite(dtSec) || dtSec <= 0) {
       return;
@@ -413,7 +415,7 @@ const dashGameScreen = {
     const runner = domRefs.game.runner;
     const runnerWrap = domRefs.game.runnerWrap;
 
-    const speedValue = Math.max(0, Number(this.playerSpeed) || 0);
+    const speedValue = Math.max(0, Number(runSpeed) || 0);
     const baseSpeedPerSec = speedValue * BG_BASE_SPEED_PX;
     const skySpeedPerSec = baseSpeedPerSec * SKY_SPEED_FACTOR;
     const groundSpeedPerSec = baseSpeedPerSec * GROUND_SPEED_FACTOR;
@@ -469,6 +471,7 @@ const dashGameScreen = {
     runWorld?.classList.toggle('is-fast', speedRatio > 0.6);
     runWorld?.classList.toggle('is-rapid', speedRatio > 0.85);
     runner?.classList.toggle('speed-glow', speedRatio > 0.7);
+    runner?.classList.toggle('hit', isSlowed);
     runnerWrap?.classList.toggle('is-fast', speedRatio > 0.7);
     runnerWrap?.classList.toggle('is-rapid', speedRatio > 0.85);
 
@@ -802,7 +805,10 @@ const dashGameScreen = {
     }
     const nowMs = window.performance.now();
     const dtSeconds = dtMs / 1000;
-    gameState.dash.distanceM += this.playerSpeed * dtSeconds;
+    const isSlowed = nowMs < (this.slowUntilMs ?? 0);
+    const speedMultiplier = isSlowed ? COLLISION_SLOW_MULT : 1;
+    const effectivePlayerSpeed = this.playerSpeed * speedMultiplier;
+    gameState.dash.distanceM += effectivePlayerSpeed * dtSeconds;
     this.updateArea(gameState.dash.distanceM);
     const runWorld = domRefs.game.runWorld;
     const worldRect = runWorld?.getBoundingClientRect?.();
@@ -825,6 +831,7 @@ const dashGameScreen = {
         if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
           audioManager.playSfx('sfx_wrong', { volume: 0.7 });
           this.timeLeftMs = Math.max(0, this.timeLeftMs - COLLISION_PENALTY_MS);
+          this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
           this.updateHud();
           if (this.timeLeftMs <= 0) {
@@ -843,7 +850,7 @@ const dashGameScreen = {
     if (this.timeLeftMs <= 0) {
       this.endSession('timeup');
     }
-    this.updateRunLayerVisuals(dtMs);
+    this.updateRunLayerVisuals(dtMs, effectivePlayerSpeed, isSlowed);
     this.updateHud();
   },
   startLoop() {
@@ -913,6 +920,7 @@ const dashGameScreen = {
     this.enemyGapM = collisionThreshold * 2;
     this.attackUntilMs = 0;
     this.lastCollisionPenaltyAtMs = -Infinity;
+    this.slowUntilMs = 0;
     this.timeLeftMs = this.getInitialTimeLimitMs();
     this.initialTimeLimitMs = this.timeLeftMs;
     this.lastTickTs = window.performance.now();
