@@ -11,7 +11,6 @@ import {
   enemyBaseSpeed,
   enemySpeedIncrementPerStreak,
   collisionThreshold,
-  timePenaltyOnCollision,
   timeBonusOnCorrect,
   timePenaltyOnWrong,
   timeBonusOnDefeat,
@@ -30,6 +29,8 @@ const STREAK_CUE_DURATION_MS = 800;
 const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 const LOW_TIME_THRESHOLD_MS = 8000;
+const COLLISION_PENALTY_MS = 5000;
+const COLLISION_COOLDOWN_MS = 500;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
@@ -819,15 +820,20 @@ const dashGameScreen = {
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
     });
     if (enemyUpdate) {
-      if (enemyUpdate.collision && !enemyUpdate.attackHandled) {
-        audioManager.playSfx('sfx_wrong', { volume: 0.7 });
-        this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
+      const handledCollision = enemyUpdate.collision && !enemyUpdate.attackHandled;
+      if (handledCollision) {
+        if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
+          audioManager.playSfx('sfx_wrong', { volume: 0.7 });
+          this.timeLeftMs = Math.max(0, this.timeLeftMs - COLLISION_PENALTY_MS);
+          this.lastCollisionPenaltyAtMs = nowMs;
+          this.updateHud();
+          if (this.timeLeftMs <= 0) {
+            this.endSession('timeup');
+            return;
+          }
+        }
         this.enemyGapM = collisionThreshold * 2;
-        this.updateHud();
-        this.endSession('collision');
-        return;
-      }
-      if (Number.isFinite(enemyUpdate.nearestDistancePx)) {
+      } else if (Number.isFinite(enemyUpdate.nearestDistancePx)) {
         this.enemyGapM = enemyUpdate.nearestDistancePx / PX_PER_METER;
       } else {
         this.enemyGapM = collisionThreshold * 2;
@@ -906,6 +912,7 @@ const dashGameScreen = {
     this.enemySpeed = enemyBaseSpeed;
     this.enemyGapM = collisionThreshold * 2;
     this.attackUntilMs = 0;
+    this.lastCollisionPenaltyAtMs = -Infinity;
     this.timeLeftMs = this.getInitialTimeLimitMs();
     this.initialTimeLimitMs = this.timeLeftMs;
     this.lastTickTs = window.performance.now();
