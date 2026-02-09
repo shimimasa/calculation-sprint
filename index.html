@@ -173,80 +173,99 @@
               <strong id="dash-game-distance" class="dash-stat-value">0.0</strong>
               <span class="dash-stat-unit">m</span>
             </div>
-            <div class="dash-stat-card">
-              <span class="dash-stat-label">残り時間</span>
-              <strong id="dash-game-time" class="dash-stat-value">30</strong>
-              <span class="dash-stat-unit">s</span>
-              <span id="dash-game-time-note" class="dash-time-note" aria-live="polite"></span>
-            </div>
           </div>
           <p id="dash-game-next-area" class="dash-next-area" aria-live="off"></p>
           <p class="dash-rules-hint">正解で時間＋／まちがいで時間−／ぶつかると終了</p>
+          <div class="dash-sidehud" aria-label="ダッシュHUD">
+            <div class="dash-stats dash-stats--footer" aria-label="ダッシュ状況">
+              <div class="dash-stat-card">
+                <span class="dash-stat-label">連続正解</span>
+                <strong id="dash-game-streak" class="dash-stat-value">0</strong>
+                <span class="dash-stat-unit">問</span>
+                <span id="dash-game-streak-cue" class="dash-streak-cue" aria-live="polite"></span>
+              </div>
+              <div id="dash-game-enemy" class="dash-proximity" data-state="safe">
+                <span class="dash-stat-label">敵の接近</span>
+                <div class="dash-proximity-bar" role="presentation">
+                  <div id="dash-game-enemy-bar" class="dash-proximity-fill"></div>
+                </div>
+                <span id="dash-game-enemy-text" class="dash-proximity-text">安全 (0%)</span>
+              </div>
+            </div>
+            <div class="title-actions">
+              <button id="dash-game-back-button" class="secondary-button primary-button--xl">終了して記録を見る</button>
+            </div>
+          </div>
         </header>
-        <div class="screen-main stage-card">
-          <div class="game-focus">
-            <div class="question-area">
-              <div id="dash-game-question" class="question-text">1 + 1</div>
-              <input id="dash-game-answer-input" type="number" class="answer-input" autocomplete="off" />
-            </div>
-            <div id="dash-game-feedback" class="feedback" aria-live="polite"></div>
-            <div class="game-actions" aria-label="入力操作">
-              <div class="game-action-row">
-                <button id="dash-game-submit-button" class="primary-button primary-button--xl" type="button">確定</button>
-                <button
-                  id="dash-game-keypad-toggle"
-                  class="secondary-button"
-                  type="button"
-                  aria-expanded="false"
-                  aria-controls="dash-game-keypad"
-                >
-                  テンキー
-                </button>
+        <div class="screen-main dash-playfield">
+            <div class="dash-hud">
+              <div class="dash-lane">
+                <div class="game-focus">
+                  <div id="dash-game-time-wrap" class="dash-time dash-time-hud" aria-label="残り時間">
+                    <div class="dash-timebar" aria-hidden="true">
+                      <div id="dash-game-timebar" class="dash-timebar__fill"></div>
+                    </div>
+                    <div class="dash-timevalue" aria-label="残り秒数">
+                      <strong id="dash-game-time" class="dash-time-seconds">30</strong>
+                      <span class="dash-time-unit">s</span>
+                    </div>
+                    <div id="dash-game-time-note" class="dash-time-note" aria-live="polite"></div>
+                  </div>
+                  <div class="dash-problem-grid" aria-label="問題入力エリア">
+                    <div class="dash-problem-main">
+                      <div class="question-area problem-frame">
+                        <div id="dash-game-question" class="question-text problem-frame__text">1 + 1</div>
+                        <input
+                        id="dash-game-answer-input"
+                        type="number"
+                        class="answer-input problem-frame__input"
+                        autocomplete="off"
+                      />
+                    </div>
+                    <div id="dash-game-feedback" class="feedback" aria-live="polite"></div>
+                    <div class="game-actions" aria-label="入力操作">
+                      <div class="game-action-row">
+                        <button
+                          id="dash-game-keypad-toggle"
+                          class="secondary-button"
+                          type="button"
+                          aria-expanded="false"
+                          aria-controls="dash-game-keypad"
+                        >
+                          テンキー
+                        </button>
+                      </div>
+                      </div>
+                    </div>
+                    <div class="dash-keypad-stack" aria-label="テンキー操作">
+                      <div id="dash-game-keypad" class="game-keypad" hidden aria-hidden="true">
+                        <button class="keypad-button" type="button" data-digit="7">7</button>
+                        <button class="keypad-button" type="button" data-digit="8">8</button>
+                        <button class="keypad-button" type="button" data-digit="9">9</button>
+                        <button class="keypad-button" type="button" data-digit="4">4</button>
+                        <button class="keypad-button" type="button" data-digit="5">5</button>
+                        <button class="keypad-button" type="button" data-digit="6">6</button>
+                        <button class="keypad-button" type="button" data-digit="1">1</button>
+                        <button class="keypad-button" type="button" data-digit="2">2</button>
+                        <button class="keypad-button" type="button" data-digit="3">3</button>
+                        <button class="keypad-button keypad-button--wide" type="button" data-digit="0">
+                          0
+                        </button>
+                        <button class="keypad-button keypad-button--action" type="button" data-action="backspace">
+                          ⌫
+                        </button>
+                      </div>
+                      <div class="dash-keypad-actions" aria-label="確定操作">
+                        <button id="dash-game-submit-button" class="primary-button primary-button--xl dash-submit-button" type="button" data-action="submit">
+                          確定
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div id="dash-game-keypad" class="game-keypad" hidden aria-hidden="true">
-                <button class="keypad-button" type="button" data-keypad-key="7">7</button>
-                <button class="keypad-button" type="button" data-keypad-key="8">8</button>
-                <button class="keypad-button" type="button" data-keypad-key="9">9</button>
-                <button class="keypad-button" type="button" data-keypad-key="4">4</button>
-                <button class="keypad-button" type="button" data-keypad-key="5">5</button>
-                <button class="keypad-button" type="button" data-keypad-key="6">6</button>
-                <button class="keypad-button" type="button" data-keypad-key="1">1</button>
-                <button class="keypad-button" type="button" data-keypad-key="2">2</button>
-                <button class="keypad-button" type="button" data-keypad-key="3">3</button>
-                <button
-                  class="keypad-button keypad-button--wide"
-                  type="button"
-                  data-keypad-key="0"
-                >
-                  0
-                </button>
-                <button class="keypad-button keypad-button--action" type="button" data-keypad-key="back">
-                  ⌫
-                </button>
-              </div>
             </div>
-          </div>
         </div>
-        <footer class="screen-footer dash-footer">
-          <div class="dash-stats dash-stats--footer" aria-label="ダッシュ状況">
-            <div class="dash-stat-card">
-              <span class="dash-stat-label">連続正解</span>
-              <strong id="dash-game-streak" class="dash-stat-value">0</strong>
-              <span class="dash-stat-unit">問</span>
-              <span id="dash-game-streak-cue" class="dash-streak-cue" aria-live="polite"></span>
-            </div>
-            <div id="dash-game-enemy" class="dash-proximity" data-state="safe">
-              <span class="dash-stat-label">敵の接近</span>
-              <div class="dash-proximity-bar" role="presentation">
-                <div id="dash-game-enemy-bar" class="dash-proximity-fill"></div>
-              </div>
-              <span id="dash-game-enemy-text" class="dash-proximity-text">安全 (0%)</span>
-            </div>
-          </div>
-          <div class="title-actions">
-            <button id="dash-game-back-button" class="secondary-button primary-button--xl">終了して記録を見る</button>
-          </div>
-        </footer>
       </section>
 
       <section id="dash-result-screen" class="screen screen-dash screen-dash-result" hidden>
@@ -344,14 +363,14 @@
           </div>
         </div>
         <div class="game-focus">
-          <div class="question-area">
-            <div id="game-question" class="question-text">1 + 1</div>
-            <input id="game-answer-input" type="number" class="answer-input" autocomplete="off" />
+          <div class="question-area problem-frame">
+            <div id="game-question" class="question-text problem-frame__text">1 + 1</div>
+            <input id="game-answer-input" type="number" class="answer-input problem-frame__input" autocomplete="off" />
           </div>
           <div id="game-feedback" class="feedback" aria-live="polite"></div>
           <div class="game-actions" aria-label="入力操作">
             <div class="game-action-row">
-              <button id="game-submit-button" class="primary-button primary-button--xl" type="button">確定</button>
+              <button id="game-submit-button" class="primary-button primary-button--xl" type="button" data-action="submit">確定</button>
               <button
                 id="game-keypad-toggle"
                 class="secondary-button"
@@ -363,33 +382,38 @@
               </button>
             </div>
             <div id="game-keypad" class="game-keypad" hidden aria-hidden="true">
-              <button class="keypad-button" type="button" data-keypad-key="7">7</button>
-              <button class="keypad-button" type="button" data-keypad-key="8">8</button>
-              <button class="keypad-button" type="button" data-keypad-key="9">9</button>
-              <button class="keypad-button" type="button" data-keypad-key="4">4</button>
-              <button class="keypad-button" type="button" data-keypad-key="5">5</button>
-              <button class="keypad-button" type="button" data-keypad-key="6">6</button>
-              <button class="keypad-button" type="button" data-keypad-key="1">1</button>
-              <button class="keypad-button" type="button" data-keypad-key="2">2</button>
-              <button class="keypad-button" type="button" data-keypad-key="3">3</button>
+              <button class="keypad-button" type="button" data-digit="7">7</button>
+              <button class="keypad-button" type="button" data-digit="8">8</button>
+              <button class="keypad-button" type="button" data-digit="9">9</button>
+              <button class="keypad-button" type="button" data-digit="4">4</button>
+              <button class="keypad-button" type="button" data-digit="5">5</button>
+              <button class="keypad-button" type="button" data-digit="6">6</button>
+              <button class="keypad-button" type="button" data-digit="1">1</button>
+              <button class="keypad-button" type="button" data-digit="2">2</button>
+              <button class="keypad-button" type="button" data-digit="3">3</button>
               <button
                 class="keypad-button keypad-button--wide"
                 type="button"
-                data-keypad-key="0"
+                data-digit="0"
               >
                 0
               </button>
-              <button class="keypad-button keypad-button--action" type="button" data-keypad-key="back">
+              <button class="keypad-button keypad-button--action" type="button" data-action="backspace">
                 ⌫
               </button>
             </div>
           </div>
         </div>
-        <div class="run-layer" aria-hidden="true">
+          <div class="run-layer" aria-hidden="true">
           <div class="run-world">
-            <div class="run-bg run-bg--far"></div>
-            <div class="run-bg run-bg--near"></div>
-            <div class="run-ground"></div>
+            <div class="run-bg" aria-hidden="true">
+              <div class="run-sky"></div>
+              <div class="run-clouds"></div>
+              <div class="run-ground">
+                <div class="run-ground__tile run-ground__tile--a"></div>
+                <div class="run-ground__tile run-ground__tile--b"></div>
+              </div>
+            </div>
             <div class="speed-lines"></div>
             <div class="runner-wrap">
               <span class="runner-shadow"></span>

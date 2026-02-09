@@ -1,4 +1,8 @@
 /* ADR-004 Phase0陬應ｿｮ: Scoped stylesheet for portal/subpath hosting. */
+:root {
+  --ground-art-height: 240px;
+  --ground-surface-inset: 90px;
+}
 .calc-sprint * {
   box-sizing: border-box;
   margin: 0;
@@ -13,11 +17,12 @@
   min-height: 100vh;
 }.calc-sprint {
   /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
   --run-map-image: none;
+  --z-runner: 4;
 }.calc-sprint .app {
   width: 100vw;
   min-height: 100vh;
@@ -173,7 +178,7 @@
   pointer-events: none;
   z-index: 0;
 }.calc-sprint /* Stage theme hooks
- * - data-bg-theme is primarily consumed by .run-bg--far/.run-bg--near/.run-ground (art layers).
+ * - data-bg-theme is primarily consumed by .run-sky/.run-clouds/.run-ground (art layers).
  * - .game-screen/.run-world are the entry points for global tone (brightness/contrast/etc).
  * - Keep "default" + one sample theme ("theme1") as the placeholders to swap assets/colors.
  */
@@ -768,6 +773,7 @@
   background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
   position: relative;
   min-height: 100vh;
+  overflow-x: hidden;
 }.calc-sprint .screen-dash[data-area="1"] {
   background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
 }.calc-sprint .screen-dash[data-area="2"] {
@@ -783,10 +789,7 @@
 
 .calc-sprint .screen-dash .run-viewport {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: clamp(220px, 38vh, 420px);
+  inset: 0;
   z-index: 0;
   overflow: hidden;
   border-radius: inherit;
@@ -800,10 +803,9 @@
 }
 .calc-sprint .screen-dash .run-host .run-layer {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: min(58vh, 520px);
+  inset: 0;
+  height: 100%;
+  padding: 0;
   transform: none;
 }
 .calc-sprint .screen-dash > .screen-header,
@@ -814,7 +816,7 @@
 }
 
 .calc-sprint .screen-dash > .screen-main {
-  padding-bottom: clamp(200px, 30vh, 280px);
+  padding-bottom: 0;
 }
 
 .calc-sprint .screen-dash .dash-header {
@@ -923,14 +925,52 @@
 
 /* Dash Run: layout density + playfield focus (Dash-scoped overrides) */
 .calc-sprint #dash-game-screen {
-  padding: 18px 18px 14px;
+  padding: 12px 18px 14px;
+  overflow-x: hidden;
+  position: relative;
 }
 .calc-sprint #dash-game-screen > .screen-header {
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
+  position: absolute;
+  inset: 0 0 auto 0;
+  padding: 12px 18px 0;
+  pointer-events: none;
+}
+.calc-sprint #dash-game-screen > header.dash-header .screen-kicker,
+.calc-sprint #dash-game-screen > header.dash-header .screen__title,
+.calc-sprint #dash-game-screen > header.dash-header .screen__description {
+  display: none;
 }
 .calc-sprint #dash-game-screen .dash-header {
   gap: 10px;
+}
+.calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
+.calc-sprint #dash-game-screen > header.dash-header .dash-next-area,
+.calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+  position: absolute;
+  pointer-events: auto;
+}
+.calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
+  top: 0;
+  right: 0;
+}
+.calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+  top: 0;
+  left: 0;
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.6;
+}
+.calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+  top: clamp(18px, 3vh, 36px);
+  right: clamp(12px, 2vw, 24px);
+  width: min(320px, 36vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: scale(0.92);
+  transform-origin: top right;
 }
 .calc-sprint #dash-game-screen .screen__title {
   font-size: 24px;
@@ -943,32 +983,577 @@
 .calc-sprint #dash-game-screen .dash-stats {
   gap: 10px;
 }
-.calc-sprint #dash-game-screen > .screen-main.stage-card {
-  padding: 14px 16px;
-  max-width: 720px;
+.calc-sprint #dash-game-screen .dash-stats--header .dash-stat-card {
+  padding: 10px 12px;
+  min-width: 120px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 18px rgba(29, 36, 51, 0.1);
+}
+.calc-sprint #dash-game-screen .dash-stats--header .dash-stat-label {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.calc-sprint #dash-game-screen .dash-stats--header .dash-stat-value {
+  font-size: 22px;
+}
+.calc-sprint #dash-game-screen .dash-stats--header .dash-stat-unit {
+  font-size: 13px;
+}
+.calc-sprint #dash-game-screen > .screen-main.dash-playfield {
+  max-width: 980px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.74);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 16px 32px rgba(29, 36, 51, 0.14);
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  position: relative;
+  min-height: 0;
+  height: 100%;
 }
 .calc-sprint #dash-game-screen > .screen-main {
   margin-bottom: -14px;
 }
+.calc-sprint #dash-game-screen .dash-hud {
+  position: relative;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  z-index: 3;
+  position: absolute;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  /* lift keypad so it never covers the runner/ground axis */
+  bottom: clamp(140px, 18vh, 230px);
+}
+.calc-sprint #dash-game-screen .dash-hud::before {
+  display: none;
+}
+.calc-sprint #dash-game-screen .dash-lane {
+  width: min(520px, 44vw);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.6vh, 12px);
+  align-items: stretch;
+  position: relative;
+  z-index: 1;
+}
+
+/* Desktop (Dash Run / PC):
++   - Problem/answer: LEFT
++   - Keypad/submit: CENTER
++   - Runner axis (bottom lane): NO UI overlaps
++   - Time bar: RIGHT-TOP independent
++*/
+@media (min-width: 901px) {
+  /* 0) Keep everything within one viewport (no page scroll). */
+  .calc-sprint #dash-game-screen {
+    --hud-top: clamp(20px, 4vh, 56px);
+    --hud-gap: clamp(12px, 2vh, 20px);
+    --keypad-w: min(520px, 40vw);
+    --keypad-right: clamp(16px, 3vw, 40px);
+    --timebar-h: clamp(14px, 2vh, 18px);
+    height: calc(100vh - 32px);
+    max-height: calc(100vh - 32px);
+    overflow: hidden;
+  }
+
+  /* Hide stat boxes to widen the top UI area. */
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stats--footer {
+    display: none !important;
+  }
+
+  /* Step1: take Dash screen out of document flow (no page scroll). */
+  .calc-sprint #dash-game-screen.is-active {
+    position: fixed;
+    inset: 16px;
+    width: auto;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  /* Reuse header container as a full-screen anchor for the exit button only. */
+  .calc-sprint #dash-game-screen > header.dash-header {
+    inset: 0;
+    padding: 0;
+    pointer-events: none;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+    position: absolute;
+    inset: auto;
+    right: clamp(12px, 2vw, 24px);
+    bottom: clamp(12px, 2vh, 24px);
+    top: auto;
+    left: auto;
+    width: auto;
+    max-width: min(360px, 32vw);
+    transform: none;
+    pointer-events: auto;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .title-actions {
+    margin: 0;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud #dash-game-back-button {
+    width: auto;
+    max-width: none;
+    padding: 10px 14px;
+    min-height: 44px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  /* 1) Use the playfield as the absolute positioning root. */
+  .calc-sprint #dash-game-screen > .screen-main.dash-playfield {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    height: 100%;
+  }
+
+  /* 2) Full-screen overlay container for the "control island" layout. */
+  .calc-sprint #dash-game-screen .dash-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 55%;
+    transform: none;
+    display: block;
+    pointer-events: none;
+  }
+  .calc-sprint #dash-game-screen .dash-lane {
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+  }
+  .calc-sprint #dash-game-screen .game-focus {
+    position: static;
+  }
+
+  /* 3) Place elements on a fixed grid: problem above runner (bottom-left), keypad top-center. */
+  /* Step2: increase specificity so desktop grid wins later rules. */
+  .calc-sprint #dash-game-screen .dash-hud .dash-problem-grid {
+    position: absolute;
+    inset: 0;
+    display: block;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--keypad-right);
+    pointer-events: none;
+  }
+
+  /* keypad: top-center */
+  .calc-sprint #dash-game-screen .dash-hud .dash-keypad-stack {
+    position: absolute;
+    top: var(--hud-top);
+    right: var(--keypad-right);
+    width: var(--keypad-w);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 1.8vh, 16px);
+    pointer-events: auto;
+  }
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad {
+    width: 100%;
+    max-width: none;
+  }
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad.game-keypad {
+    grid-template-columns: repeat(3, minmax(60px, 1fr));
+    gap: 10px;
+  }
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad .keypad-button {
+    font-size: 18px;
+    padding: 8px 0;
+  }
+  .calc-sprint #dash-game-screen .dash-hud #dash-game-keypad[hidden] {
+    display: grid !important;
+  }
+  .calc-sprint #dash-game-screen .dash-hud .dash-keypad-actions {
+    width: 100%;
+    max-width: none;
+  }
+
+  /* problem: above runner (bottom-left) */
+  .calc-sprint #dash-game-screen .dash-hud .dash-problem-main {
+    position: absolute;
+    top: calc(var(--hud-top) + var(--timebar-h) + var(--hud-gap));
+    left: 50%;
+    right: auto;
+    width: min(720px, calc(100% - (var(--keypad-right) * 2)));
+    max-width: calc(100vw - (var(--keypad-right) + var(--keypad-w) + var(--hud-gap) + 32px));
+    transform: translateX(-50%);
+    pointer-events: auto;
+    margin-bottom: 0;
+    padding: clamp(6px, 1.2vh, 10px) clamp(8px, 1.6vw, 14px);
+    border-radius: 16px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    z-index: 2;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+    will-change: transform, opacity;
+  }
+
+  /* Hook for future lightweight transitions on problem swaps. */
+  .calc-sprint #dash-game-screen .dash-hud .dash-problem-main.is-transitioning {
+    transform: translateX(-50%) translateY(-6px);
+    opacity: 0.88;
+  }
+
+  /* Independent time HUD anchored at the top without overlapping the keypad. */
+  .calc-sprint #dash-game-screen .dash-hud .dash-time-hud {
+    position: absolute;
+    top: var(--hud-top);
+    left: var(--keypad-right);
+    right: calc(var(--keypad-right) + var(--keypad-w) + var(--hud-gap));
+    width: min(720px, calc(100% - var(--keypad-w) - var(--hud-gap) - (var(--keypad-right) * 2)));
+    pointer-events: auto;
+  }
+}
+
+/* Step4: keep top-right HUD inside viewport (no overflow). */
+@media (min-width: 901px) {
+  /* Force top HUD to be truly top-right and never overflow. */
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    right: clamp(12px, 2vw, 24px);
+    left: auto;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
+    top: clamp(10px, 2vh, 18px);
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+    top: calc(clamp(10px, 2vh, 18px) + 56px);
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    top: calc(clamp(10px, 2vh, 18px) + 6px);
+    opacity: 0.72;
+    text-align: right;
+  }
+
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    max-width: min(340px, 34vw);
+    box-sizing: border-box;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-proximity-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+
 .calc-sprint #dash-game-screen .game-focus {
-  padding: 0 12px 0;
-  margin-bottom: -10px;
+  padding: 0;
+  margin-bottom: 0;
   gap: 6px;
 }
+.calc-sprint #dash-game-screen {
+  --timebar-h: clamp(14px, 2vh, 18px);
+}
+.calc-sprint #dash-game-screen .dash-problem-grid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1.2vh, 10px);
+  width: 100%;
+  z-index: 2;
+}
+.calc-sprint #dash-game-screen .dash-time-hud {
+  margin-bottom: clamp(8px, 1.6vh, 12px);
+}
+.calc-sprint #dash-game-screen .dash-keypad-stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 16px);
+  position: relative;
+  z-index: 6;
+}
+.calc-sprint #dash-game-screen .dash-problem-main {
+  display: grid;
+  gap: clamp(10px, 2vh, 14px);
+  align-items: start;
+}
+
+/* Keep the problem card visually "clean" when we detach it from the lane on wide screens. */
+.calc-sprint #dash-game-screen .dash-problem-main .question-area {
+  transform: none;
+}
 .calc-sprint #dash-game-screen .game-actions {
-  margin-top: 4px;
+  margin-top: 0;
+}
+.calc-sprint #dash-game-screen .game-action-row {
+  justify-content: center;
 }
 .calc-sprint #dash-game-screen .question-area {
-  transform: translateY(12px);
-  padding: 14px 18px;
+  transform: none;
+}
+
+/* Dash: primary time (danger gauge) */
+.calc-sprint #dash-game-screen .dash-time {
+  width: min(520px, 100%);
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, 1.4vh, 10px) clamp(10px, 2vw, 16px);
+  align-items: center;
+  justify-content: space-between;
+}
+.calc-sprint #dash-game-screen .dash-timebar {
+  flex: 1 1 280px;
+  height: var(--timebar-h);
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.65), rgba(29, 36, 51, 0.22));
+  border: 1px solid rgba(29, 36, 51, 0.18);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(29, 36, 51, 0.16);
+}
+.calc-sprint #dash-game-screen .dash-timebar__fill {
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  background: #32c97d;
+  transition: width 0.12s linear, background-color 0.12s ease;
+  box-shadow: 0 0 8px rgba(50, 201, 125, 0.35);
+}
+.calc-sprint #dash-game-screen #dash-game-time-wrap[data-state="caution"] .dash-timebar__fill {
+  background: #f0b24a;
+  box-shadow: 0 0 8px rgba(240, 178, 74, 0.35);
+}
+.calc-sprint #dash-game-screen #dash-game-time-wrap[data-state="danger"] .dash-timebar__fill {
+  background: #e84f43;
+  box-shadow: 0 0 8px rgba(232, 79, 67, 0.35);
+}
+.calc-sprint #dash-game-screen .dash-timevalue {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-weight: 900;
+  color: rgba(29, 36, 51, 0.96);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.calc-sprint #dash-game-screen .dash-time-seconds {
+  font-size: clamp(22px, 3.2vw, 30px);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.calc-sprint #dash-game-screen .dash-time-unit {
+  font-size: clamp(14px, 2.2vw, 18px);
+  font-weight: 800;
+  opacity: 0.75;
+}
+.calc-sprint #dash-game-screen .dash-time-note {
+  width: 100%;
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(29, 36, 51, 0.6);
+}
+.calc-sprint #dash-game-screen #dash-game-time-wrap[data-state="danger"] .dash-time-note {
+  color: rgba(224, 107, 95, 0.95);
+}
+.calc-sprint #dash-game-screen .dash-problem-main .question-area:not(.problem-frame) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.calc-sprint #dash-game-screen .dash-problem-main .question-area:not(.problem-frame)::after {
+  opacity: 0;
+}
+.calc-sprint #dash-game-screen .question-area:not(.problem-frame) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.calc-sprint #dash-game-screen .question-area:not(.problem-frame)::after {
+  opacity: 0.2;
+}
+.calc-sprint #dash-game-screen .dash-stat-card,
+.calc-sprint #dash-game-screen .dash-proximity {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 10px 22px rgba(29, 36, 51, 0.12);
+}
+.calc-sprint #dash-game-screen .dash-next-area {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.calc-sprint #dash-game-screen .dash-rules-hint {
+  color: rgba(29, 36, 51, 0.58);
+  display: none;
+}
+.calc-sprint #dash-game-screen .dash-sidehud {
+  opacity: 0.72;
+}
+.calc-sprint #dash-game-screen .dash-sidehud .dash-stat-card,
+.calc-sprint #dash-game-screen .dash-sidehud .dash-proximity {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+.calc-sprint #dash-game-screen .dash-sidehud .dash-stat-label {
+  font-size: 12px;
+  opacity: 0.72;
+}
+.calc-sprint #dash-game-screen[data-enemy-state="caution"] .dash-sidehud {
+  opacity: 0.86;
+}
+.calc-sprint #dash-game-screen[data-enemy-state="danger"] .dash-sidehud {
+  opacity: 1;
+}
+.calc-sprint #dash-game-screen[data-enemy-state="danger"] .dash-sidehud .dash-stat-card {
+  opacity: 0.55;
+}
+.calc-sprint #dash-game-screen[data-enemy-state="danger"] .dash-sidehud .dash-proximity {
+  opacity: 1;
+}
+.calc-sprint #dash-game-screen .question-text {
+  font-size: clamp(28px, 4.2vw, 38px);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: 0.03em;
+  word-spacing: 0.14em;
+  white-space: nowrap;
+}
+.calc-sprint #dash-game-screen .answer-input {
+  pointer-events: none;
+  caret-color: transparent;
+  color: #1d2433;
+  background: #eef2ff;
+  border-color: rgba(29, 36, 51, 0.2);
+  box-shadow: none;
+  font-weight: 700;
+  -moz-appearance: textfield;
+  appearance: textfield;
+  height: clamp(46px, 6vh, 56px);
+  font-size: clamp(20px, 3.4vw, 26px);
+  text-align: center;
+  border-radius: 12px;
+}
+.calc-sprint #dash-game-screen .answer-input::-webkit-outer-spin-button,
+.calc-sprint #dash-game-screen .answer-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.calc-sprint #dash-game-screen .answer-input:focus {
+  border-color: rgba(56, 103, 255, 0.18);
+  box-shadow: none;
+}
+.calc-sprint #dash-game-screen .dash-keypad-actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: clamp(4px, 1vh, 10px);
+  position: relative;
+  z-index: 6;
+}
+.calc-sprint #dash-game-screen .dash-submit-button {
+  width: min(520px, 100%);
+  min-height: clamp(48px, 6vh, 56px);
+  opacity: 0.95;
+  box-shadow: none;
+}
+.calc-sprint #dash-game-screen .primary-button {
+  background: #3d5afe;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.calc-sprint #dash-game-screen .secondary-button {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.calc-sprint #dash-game-screen .game-keypad .keypad-button {
+  background: #ffffff;
+  border: 1px solid rgba(29, 36, 51, 0.18);
+  box-shadow: 0 12px 24px rgba(29, 36, 51, 0.16);
+  color: #1d2433;
+  font-size: clamp(18px, 3.1vw, 22px);
+  padding: clamp(10px, 1.5vh, 14px) 0;
+  transition: transform 0.06s ease, box-shadow 0.06s ease, background-color 0.06s ease, color 0.06s ease;
+}
+.calc-sprint #dash-game-screen .game-keypad .keypad-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 10px rgba(29, 36, 51, 0.16);
+  background: rgba(56, 103, 255, 0.92);
+  border-color: rgba(56, 103, 255, 0.9);
+  color: #ffffff;
+}
+.calc-sprint #dash-game-screen .game-keypad .keypad-button--action:active {
+  background: rgba(29, 36, 51, 0.88);
+  border-color: rgba(29, 36, 51, 0.9);
+}
+.calc-sprint #dash-game-screen #dash-game-back-button {
+  display: none;
 }
 .calc-sprint #dash-game-screen .feedback {
   min-height: 26px;
+}
+
+@keyframes calc-sprint-dash-attack-pop {
+  0% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+  35% {
+    transform: translateY(-1px) scale(1.02);
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes calc-sprint-dash-hit-shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  55% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.calc-sprint #dash-game-screen .dash-problem-main.is-attack .question-area {
+  animation: calc-sprint-dash-attack-pop 0.16s ease-out 1;
+  box-shadow: 0 18px 40px rgba(56, 103, 255, 0.18);
+}
+.calc-sprint #dash-game-screen .dash-problem-main.is-hit .question-area {
+  animation: calc-sprint-dash-hit-shake 0.16s ease-out 1;
+  border-color: rgba(224, 107, 95, 0.55);
+  box-shadow: 0 18px 40px rgba(224, 107, 95, 0.18);
+}
+.calc-sprint #dash-game-screen .game-keypad {
+  width: 100%;
+  margin: 0;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
+  gap: clamp(6px, 1.1vh, 10px);
 }
 .calc-sprint #dash-game-screen > .screen-footer {
   margin-top: 8px;
@@ -992,56 +1577,117 @@
 .calc-sprint #dash-game-screen .title-actions {
   gap: 10px;
 }
-.calc-sprint #dash-game-screen #dash-game-back-button {
-  max-width: 720px;
-  width: 100%;
-  padding: 12px 18px;
-  min-height: 44px;
+.calc-sprint #dash-game-screen .dash-sidehud .dash-proximity {
+  order: -1;
 }
 
-/* Dash Run: wide layout (PC) - 2-column header */
 @media (min-width: 901px) {
+  .calc-sprint #dash-game-screen #dash-game-keypad-toggle {
+    display: none;
+  }
+  /* Always show keypad on wide screens (even if DOM keeps [hidden]). */
+  .calc-sprint #dash-game-screen #dash-game-keypad[hidden] {
+    display: grid !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .calc-sprint #dash-game-screen .dash-problem-grid {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.6vh, 12px);
+    width: 100%;
+  }
+}
+
+/* Dash Run: wide layout (PC) - HUD positioning */
+@media (min-width: 901px) {
+  /* Unify top-right HUD as a single readable column (no overlaps). */
   .calc-sprint #dash-game-screen > header.dash-header {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      "kicker stats"
-      "title stats"
-      "desc stats"
-      ". next"
-      "rules rules";
-    column-gap: 18px;
-    row-gap: 8px;
-    align-items: start;
+    inset: auto;
+    left: auto;
+    right: clamp(12px, 2vw, 24px);
+    top: clamp(10px, 2vh, 18px);
+    width: min(340px, 34vw);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    pointer-events: none;
   }
-  .calc-sprint #dash-game-screen > header.dash-header .screen-kicker {
-    grid-area: kicker;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .screen__title {
-    grid-area: title;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .screen__description {
-    grid-area: desc;
-    max-width: 44ch;
-  }
-  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header {
-    grid-area: stats;
-    justify-self: end;
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stats--header,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+    position: static;
+    top: auto;
+    right: auto;
+    left: auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    transform: none;
+    pointer-events: auto;
+    box-sizing: border-box;
   }
   .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
-    grid-area: next;
-    justify-self: end;
-    margin: 0;
+    text-align: right;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .calc-sprint #dash-game-screen > header.dash-header .dash-rules-hint {
-    grid-area: rules;
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud {
+    gap: 8px;
+    opacity: 0.9;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stats--footer {
+    justify-content: flex-start;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-stat-label,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-proximity-text,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-next-area {
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 26px rgba(29, 36, 51, 0.18);
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stat-card,
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-proximity {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid transparent;
+    box-shadow: none;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stat-label {
+    font-size: 12px;
+    opacity: 0.72;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-stat-value {
+    font-size: 20px;
+  }
+  .calc-sprint #dash-game-screen > header.dash-header .dash-sidehud .dash-proximity-text {
+    font-size: 12px;
+  }
+  .calc-sprint #dash-game-screen[data-enemy-state="safe"] .dash-sidehud {
+    opacity: 0.6;
+  }
+  .calc-sprint #dash-game-screen[data-enemy-state="caution"] .dash-sidehud {
+    opacity: 0.75;
+  }
+  .calc-sprint #dash-game-screen[data-enemy-state="danger"] .dash-sidehud .dash-proximity {
+    border-color: rgba(224, 107, 95, 0.7);
+    background: rgba(224, 107, 95, 0.16);
+    box-shadow: 0 12px 24px rgba(224, 107, 95, 0.18);
+    opacity: 1;
+  }
+  .calc-sprint #dash-game-screen[data-enemy-state="danger"] .dash-sidehud .dash-stat-card {
+    opacity: 0.55;
+  }
+  .calc-sprint #dash-game-screen[data-enemy-state="danger"] .dash-sidehud {
+    opacity: 1;
   }
 }
 
 @media (max-width: 900px) {
   .calc-sprint #dash-game-screen > header.dash-header {
-    display: flex;
-    flex-direction: column;
+    display: block;
   }
 }
 
@@ -1073,21 +1719,7 @@
 }
 
 .calc-sprint #dash-game-screen::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    repeating-linear-gradient(
-      -20deg,
-      rgba(255, 255, 255, 0.08) 0px,
-      rgba(255, 255, 255, 0.08) 4px,
-      rgba(255, 255, 255, 0) 6px,
-      rgba(255, 255, 255, 0) 18px
-    );
-  opacity: 0.05;
-  animation: calc-sprint-dash-playfield-drift 6s linear infinite;
+  content: none;
 }
 
 .calc-sprint .screen-dash[data-enemy-state="caution"] .run-world::after {
@@ -1167,6 +1799,12 @@
   .calc-sprint #dash-game-screen::before {
     animation: none;
   }
+  .calc-sprint #dash-game-screen .dash-timebar__fill {
+    transition: none;
+  }
+  .calc-sprint #dash-game-screen .game-keypad .keypad-button {
+    transition: none;
+  }
   .calc-sprint .screen-dash-result .dash-stat-card {
     transition: none;
   }
@@ -1176,44 +1814,81 @@
 }.calc-sprint .question-area {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   align-items: center;
   position: relative;
   margin-bottom: 6px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 246, 255, 0.92));
-  padding: 18px 26px;
-  border-radius: 16px;
-  box-shadow: 0 22px 30px rgba(29, 36, 51, 0.18), 0 6px 0 rgba(29, 36, 51, 0.06);
-  border: 1px solid rgba(56, 103, 255, 0.08);
-  transform: translateY(28px);
   z-index: 2;
+}
+.calc-sprint .problem-frame {
+  --problem-frame-accent: 96 168 255;
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  width: fit-content;
+  padding: clamp(14px, 2.2vh, 18px) clamp(16px, 2.4vw, 24px);
+  border-radius: 18px;
+  border: 2px solid rgba(var(--problem-frame-accent), 0.75);
+  background: linear-gradient(180deg, rgba(8, 16, 32, 0.7), rgba(10, 18, 38, 0.5));
+  box-shadow:
+    0 0 0 1px rgba(var(--problem-frame-accent), 0.18),
+    0 0 6px rgba(var(--problem-frame-accent), 0.24),
+    0 0 16px rgba(var(--problem-frame-accent), 0.18),
+    0 12px 24px rgba(4, 8, 20, 0.3);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   isolation: isolate;
-}.calc-sprint .question-area::after {
+}
+.calc-sprint .problem-frame::before {
   content: "";
   position: absolute;
-  left: 12%;
-  right: 12%;
-  bottom: -18px;
-  height: 18px;
-  background: radial-gradient(ellipse at center, rgba(29, 36, 51, 0.25), rgba(29, 36, 51, 0) 70%);
-  filter: blur(1px);
-  z-index: -1;
-}.calc-sprint .question-text {
-  font-size: 32px;
+  inset: 3px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 8px rgba(var(--problem-frame-accent), 0.16);
+  pointer-events: none;
+}
+.calc-sprint .problem-frame--caution {
+  --problem-frame-accent: 255 196 92;
+}
+.calc-sprint .problem-frame--danger {
+  --problem-frame-accent: 255 107 107;
+}
+.calc-sprint .question-text,
+.calc-sprint .problem-frame__text {
+  font-size: clamp(30px, 3vw, 36px);
   font-weight: 700;
-}.calc-sprint .answer-input {
+  color: #f7fbff;
+  text-shadow: 0 2px 8px rgba(8, 12, 24, 0.6);
+}
+.calc-sprint .answer-input,
+.calc-sprint .problem-frame__input {
   font-size: 24px;
-  padding: 8px 12px;
+  padding: 10px 16px;
   width: min(240px, 80vw);
   text-align: center;
   border-radius: 999px;
-  border: 2px solid rgba(56, 103, 255, 0.2);
+  border: 2px solid rgba(var(--problem-frame-accent), 0.55);
+  background: rgba(6, 12, 24, 0.75);
+  color: #f7fbff;
   outline: none;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.35), 0 0 12px rgba(var(--problem-frame-accent), 0.2);
   transition: border 0.2s ease, box-shadow 0.2s ease;
-}.calc-sprint .answer-input:focus {
-  border-color: rgba(56, 103, 255, 0.6);
-  box-shadow: 0 0 0 4px rgba(56, 103, 255, 0.15);
-}.calc-sprint .feedback {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.calc-sprint .answer-input::-webkit-outer-spin-button,
+.calc-sprint .answer-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.calc-sprint .answer-input:focus {
+  border-color: rgba(var(--problem-frame-accent), 0.85);
+  box-shadow: 0 0 0 3px rgba(var(--problem-frame-accent), 0.35),
+    0 0 20px rgba(var(--problem-frame-accent), 0.5);
+}
+.calc-sprint .feedback {
   min-height: 32px;
   text-align: center;
   font-size: 24px;
@@ -1228,6 +1903,8 @@
   gap: 12px;
   align-items: center;
   margin-top: 8px;
+  position: relative;
+  z-index: 6;
 }.calc-sprint .game-action-row {
   display: flex;
   flex-wrap: wrap;
@@ -1239,6 +1916,8 @@
   gap: 10px;
   width: min(320px, 90vw);
   margin: 0 auto;
+  position: relative;
+  z-index: 6;
 }.calc-sprint .game-keypad .keypad-button {
   font-size: 20px;
   padding: 10px 0;
@@ -1254,7 +1933,12 @@
   grid-column: span 2;
 }.calc-sprint .game-keypad .keypad-button--action {
   background: #f4f6ff;
-}.calc-sprint .run-world {
+}.calc-sprint {
+  --calc-sprint-ground-inset: 150px;
+  --calc-sprint-runner-foot-offset: 0px;
+}
+
+.calc-sprint .run-world {
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -1276,52 +1960,52 @@
   z-index: 0;
 }.calc-sprint .run-world[data-bg-theme="default"] {
   /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="theme1"], .calc-sprint .run-world[data-bg-theme="w1"] {
   background: #e2ecff;
   /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_add"] {
   background: #e7f1ff;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(120, 170, 255, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_sub"] {
   background: #e7f8f0;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(120, 220, 180, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_mul"] {
   background: #f0e8ff;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(180, 140, 255, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_div"] {
   background: #fff2d9;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 200, 120, 0.25), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_mix"] {
   background: #ffe9e1;
-  --run-bg-far-image: url("../assets/bg/bg-sky.png");
-  --run-bg-near-image: url("../assets/bg/bg-sky.png");
-  --run-ground-image: url("../assets/bg/ground.png");
+  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 160, 150, 0.22), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world::after {
@@ -1337,32 +2021,58 @@
 }.calc-sprint .run-bg {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}:root {
+  --debug-sky-solid: 0;
+  --debug-sky-flat: 0;
+}.calc-sprint .run-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(
+      rgba(120, 183, 255, var(--debug-sky-flat)),
+      rgba(120, 183, 255, var(--debug-sky-flat))
+    ),
+    var(--run-sky-image, url("../assets/bg-sky.png"));
   background-repeat: repeat-x;
-  background-position: center bottom;
+  background-position: center top;
   background-size: auto 100%;
+  background-color: transparent;
   will-change: background-position;
   transition: filter 0.2s ease;
   filter: saturate(var(--world-clarity)) brightness(var(--world-brightness))
     contrast(var(--world-contrast));
-}.calc-sprint .run-bg--far {
+  pointer-events: none;
+}:root[style*="--debug-sky-solid: 1"] .calc-sprint .run-sky,
+:root[style*="--debug-sky-solid:1"] .calc-sprint .run-sky {
+  background-image: none !important;
+  background-color: #7dbdff;
+}.calc-sprint .run-clouds {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   z-index: 1;
-  /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  background-image: var(--run-bg-far-image, url("../assets/bg/bg-sky.png"));
-  opacity: 0.78;
-  filter: blur(0.3px) saturate(var(--world-clarity)) brightness(var(--world-brightness))
-    contrast(var(--world-contrast));
-}.calc-sprint .run-bg--near {
-  z-index: 2;
-  /* ADR-004 Phase0補修: keep asset URLs relative so subpath hosting works (even if this legacy file is used). */
-  background-image: var(--run-bg-near-image, url("../assets/bg/bg-sky.png"));
-}.calc-sprint .run-world.stumble-freeze .run-bg {
+}.calc-sprint .run-cloud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  will-change: transform;
+  opacity: 0.85;
+  filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
+}.calc-sprint .run-world.stumble-freeze .run-sky {
   background-position-x: var(--stumble-freeze-x, 0px);
   transition: none;
-}.calc-sprint .run-world.is-fast .run-bg {
+}.calc-sprint .run-world.is-fast .run-sky {
   filter: saturate(calc(var(--world-clarity) * 1.1))
     brightness(calc(var(--world-brightness) * 1.05))
     contrast(var(--world-contrast));
-}.calc-sprint .run-world.is-rapid .run-bg {
+}.calc-sprint .run-world.is-rapid .run-sky {
   filter: saturate(calc(var(--world-clarity) * 1.2))
     brightness(calc(var(--world-brightness) * 1.1))
     contrast(var(--world-contrast));
@@ -1371,15 +2081,28 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 28px;
-  background-image: var(--run-ground-image), linear-gradient(180deg, #3f4655, #171c26);
-  background-repeat: repeat-x, no-repeat;
-  background-size: auto 100%, cover;
-  background-position: center bottom;
+  height: var(--ground-art-height, 240px);
+  overflow: hidden;
   box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.18), 0 -1px 6px rgba(0, 0, 0, 0.25);
   z-index: 2;
+  pointer-events: none;
   filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
   opacity: calc(0.94 + (var(--world-clarity) - 1) * 0.25);
+}.calc-sprint .run-ground__tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-image: var(--run-ground-image, url("../assets/bg-ground.png"));
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: left bottom;
+  will-change: transform;
+  pointer-events: none;
+}.calc-sprint .run-ground__tile--a {
+  left: 0;
+}.calc-sprint .run-ground__tile--b {
+  left: 0;
 }.calc-sprint .speed-lines {
   position: absolute;
   inset: 0;
@@ -1456,14 +2179,17 @@
       rotate(0deg);
   }
 }.calc-sprint .runner-wrap {
-  position: absolute;
+  position: fixed;
   left: 64px;
-  bottom: 24px;
+  bottom: calc(
+    var(--calc-sprint-ground-inset) - var(--calc-sprint-runner-foot-offset)
+  );
   width: 64px;
   height: 64px;
-  z-index: 4;
+  z-index: var(--z-runner, 4);
   transform: translateX(0);
   will-change: transform;
+  pointer-events: none;
 }.calc-sprint .runner-shadow {
   position: absolute;
   left: 6px;

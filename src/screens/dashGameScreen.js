@@ -28,13 +28,107 @@ const LOW_TIME_THRESHOLD_MS = 8000;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
-const BG_FAR_SPEED_FACTOR = 0.65;
-const BG_NEAR_SPEED_FACTOR = 1.1;
-const BG_FACTOR_PX_PER_M = 42;
-const BG_LOOP_WIDTH_PX = 1200;
+const BG_BASE_SPEED_PX = 42;
+const SKY_SPEED_FACTOR = 0.08;
+const GROUND_SPEED_FACTOR = 1;
+const CLOUD_COUNT_MIN = 3;
+const CLOUD_COUNT_MAX = 7;
+const CLOUD_Y_MIN = 0.15;
+const CLOUD_Y_MAX = 0.55;
+const CLOUD_SCALE_MIN = 0.6;
+const CLOUD_SCALE_MAX = 1.2;
+const CLOUD_SPEED_MIN = 0.1;
+const CLOUD_SPEED_MAX = 0.25;
+const CLOUD_GAP_MIN_PX = 80;
+const CLOUD_GAP_MAX_PX = 260;
+const DEFAULT_CLOUD_WIDTH = 220;
+const RUNNER_BASE_LEFT_PX = 64;
+const RUNNER_FOOT_OFFSET_PX = 62;
+const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
 const EFFECT_MAX_SPEED_MPS = 8;
+const DEBUG_INPUT = false;
+const DEBUG_KEYPAD = false;
+const randomBetween = (min, max) => min + Math.random() * (max - min);
+const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
+const extractCssUrl = (value) => {
+  if (!value) {
+    return '';
+  }
+  const match = value.match(/url\((['"]?)(.*?)\1\)/);
+  return match ? match[2] : '';
+};
+const waitForImageDecode = (img) => {
+  if (img.decode) {
+    return img.decode().catch(() => new Promise((resolve) => {
+      img.onload = resolve;
+      img.onerror = resolve;
+    }));
+  }
+  return new Promise((resolve) => {
+    img.onload = resolve;
+    img.onerror = resolve;
+  });
+};
+const loadCloudBaseWidth = async (src) => {
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = src;
+  await waitForImageDecode(img);
+  return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+};
+const getGroundSurfaceInsetPx = () => {
+  const inset = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--ground-surface-inset'),
+  );
+  return Number.isFinite(inset) ? inset : DEFAULT_GROUND_SURFACE_INSET_PX;
+};
+const describeActiveElement = () => {
+  const active = document.activeElement;
+  if (!active) {
+    return 'none';
+  }
+  const tag = active.tagName?.toLowerCase() ?? 'unknown';
+  const id = active.id ? `#${active.id}` : '';
+  return `${tag}${id}`;
+};
+const isEditableTarget = (target) => {
+  if (!target) {
+    return false;
+  }
+  if (target.isContentEditable) {
+    return true;
+  }
+  const tag = target.tagName?.toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select';
+};
+const logInputDebug = (label, payload = {}) => {
+  if (!DEBUG_INPUT) {
+    return;
+  }
+  console.log(`[input-debug:${label}]`, {
+    activeElement: describeActiveElement(),
+    ...payload,
+  });
+};
+const formatTargetLabel = (target) => {
+  if (!target) {
+    return 'none';
+  }
+  const tag = target.tagName?.toLowerCase() ?? 'unknown';
+  const id = target.id ? `#${target.id}` : '';
+  const classes = target.classList?.length ? `.${[...target.classList].join('.')}` : '';
+  return `${tag}${id}${classes}`;
+};
+const logKeypadDebug = (label, payload = {}) => {
+  if (!DEBUG_KEYPAD) {
+    return;
+  }
+  console.log(`[keypad-debug:${label}]`, payload);
+};
 
 const dashGameScreen = {
+  answerBuffer: '',
+  isSyncingAnswer: false,
   ensureRunLayerMounted() {
     const runLayer = domRefs.game.runLayer;
     const host = domRefs.dashGame.runHost;
@@ -63,6 +157,228 @@ const dashGameScreen = {
       parent.appendChild(runLayer);
     }
   },
+  getCloudImageSrc() {
+    const world = domRefs.game.runWorld;
+    if (!world) {
+      return 'assets/bg-cloud.png';
+    }
+    const computed = getComputedStyle(world);
+    const cssValue = computed.getPropertyValue('--run-cloud-image');
+    return extractCssUrl(cssValue) || 'assets/bg-cloud.png';
+  },
+  initRunBackgrounds() {
+    this.clouds = [];
+    const cloudContainer = domRefs.game.runClouds;
+    if (cloudContainer) {
+      cloudContainer.innerHTML = '';
+    }
+    const count = randomIntBetween(CLOUD_COUNT_MIN, CLOUD_COUNT_MAX);
+    const cloudSrc = this.getCloudImageSrc();
+    const loadToken = Symbol('cloud-load');
+    this.cloudLoadToken = loadToken;
+    loadCloudBaseWidth(cloudSrc).then((baseWidth) => {
+      if (this.cloudLoadToken !== loadToken) {
+        return;
+      }
+      if (!cloudContainer) {
+        return;
+      }
+      for (let i = 0; i < count; i += 1) {
+        this.spawnCloud({
+          container: cloudContainer,
+          cloudSrc,
+          initial: true,
+          baseWidth,
+        });
+      }
+    });
+    this.resetGroundTiles();
+  },
+  resetGroundTiles() {
+    this.groundTileWidth = 0;
+    this.groundTileX = [0, 0];
+    this.groundDebugLogged = false;
+    if (domRefs.game.runGroundTiles?.length >= 2) {
+      domRefs.game.runGroundTiles[0].style.transform = 'translate3d(0px, 0px, 0px)';
+      domRefs.game.runGroundTiles[1].style.transform = 'translate3d(0px, 0px, 0px)';
+    }
+    this.updateGroundLayout(true);
+    this.updateRunnerGroundAlignment(true);
+  },
+  updateGroundLayout(force = false) {
+    const runGround = domRefs.game.runGround;
+    const tileA = domRefs.game.runGroundTileA;
+    const tileB = domRefs.game.runGroundTileB;
+    if (!runGround || !tileA || !tileB) {
+      return;
+    }
+    const nextWidth = Math.round(runGround.getBoundingClientRect().width || 0);
+    if (!nextWidth) {
+      return;
+    }
+    if (force || Math.abs(nextWidth - this.groundTileWidth) > 1) {
+      this.initGround(runGround, tileA, tileB);
+    }
+  },
+  initGround(groundEl, tileA, tileB) {
+    if (!groundEl || !tileA || !tileB) {
+      return;
+    }
+    const tileW = Math.round(groundEl.getBoundingClientRect().width || 0);
+    if (!tileW) {
+      return;
+    }
+    this.groundTileWidth = tileW;
+    this.groundTileX = [0, tileW];
+    tileA.style.width = `${tileW}px`;
+    tileB.style.width = `${tileW}px`;
+    tileA.style.transform = 'translate3d(0px, 0px, 0px)';
+    tileB.style.transform = `translate3d(${Math.round(tileW)}px, 0px, 0px)`;
+    this.logGroundDebug();
+  },
+  updateGround(dtSec, speedPerSec) {
+    if (!this.groundTileWidth) {
+      return;
+    }
+    const tileA = domRefs.game.runGroundTileA;
+    const tileB = domRefs.game.runGroundTileB;
+    if (!tileA || !tileB) {
+      return;
+    }
+    const tileW = this.groundTileWidth;
+    const nextXA = (this.groundTileX?.[0] ?? 0) - speedPerSec * dtSec;
+    const nextXB = (this.groundTileX?.[1] ?? tileW) - speedPerSec * dtSec;
+    let xA = nextXA;
+    let xB = nextXB;
+    if (xA <= -tileW) {
+      xA = xB + tileW;
+    }
+    if (xB <= -tileW) {
+      xB = xA + tileW;
+    }
+    this.groundTileX = [xA, xB];
+    tileA.style.transform = `translate3d(${Math.round(xA)}px, 0px, 0px)`;
+    tileB.style.transform = `translate3d(${Math.round(xB)}px, 0px, 0px)`;
+  },
+  logGroundDebug() {
+    if (this.groundDebugLogged || !Number.isFinite(this.groundSurfaceY) || !this.groundTileWidth) {
+      return;
+    }
+    const xA = Math.round(this.groundTileX?.[0] ?? 0);
+    const xB = Math.round(this.groundTileX?.[1] ?? 0);
+    console.log('[run-ground] init', {
+      tileW: this.groundTileWidth,
+      xA,
+      xB,
+      groundSurfaceY: this.groundSurfaceY,
+    });
+    this.groundDebugLogged = true;
+  },
+  updateRunnerGroundAlignment(force = false) {
+    const runGround = domRefs.game.runGround;
+    const runWorld = domRefs.game.runWorld;
+    const runnerWrap = domRefs.game.runnerWrap;
+    const runner = domRefs.game.runner;
+    if (!runGround || !runWorld || !runnerWrap || !runner) {
+      return;
+    }
+    const groundRect = runGround.getBoundingClientRect();
+    const worldRect = runWorld.getBoundingClientRect();
+    const groundSurfaceInsetPx = getGroundSurfaceInsetPx();
+    const groundSurfaceY = Math.round(groundRect.bottom - groundSurfaceInsetPx);
+    const runnerFootOffset = RUNNER_FOOT_OFFSET_PX;
+    const runnerBaseLeft = Math.round(worldRect.left + RUNNER_BASE_LEFT_PX);
+    if (
+      !force
+      && this.groundSurfaceY === groundSurfaceY
+      && this.runnerFootOffset === runnerFootOffset
+      && this.runnerBaseLeft === runnerBaseLeft
+    ) {
+      return;
+    }
+    this.groundSurfaceY = groundSurfaceY;
+    this.runnerFootOffset = runnerFootOffset;
+    this.runnerBaseLeft = runnerBaseLeft;
+    gameState.run.groundSurfaceY = groundSurfaceY;
+    gameState.run.groundY = groundSurfaceY;
+    runWorld.style.setProperty('--calc-sprint-runner-foot-offset', `${runnerFootOffset}px`);
+    runnerWrap.style.bottom = 'auto';
+    runnerWrap.style.top = `${Math.round(groundSurfaceY - runnerFootOffset)}px`;
+    runnerWrap.style.left = `${runnerBaseLeft}px`;
+    this.logGroundDebug();
+  },
+  getAnswerInput() {
+    const input = domRefs.dashGame.answerInput;
+    if (input?.isConnected) {
+      return input;
+    }
+    const refreshed = document.querySelector('.calc-sprint #dash-game-answer-input');
+    if (refreshed) {
+      domRefs.dashGame.answerInput = refreshed;
+    }
+    return refreshed;
+  },
+  focusAnswerInput() {
+    const input = this.getAnswerInput();
+    if (!input) {
+      return null;
+    }
+    if (typeof input.focus === 'function') {
+      input.focus({ preventScroll: true });
+    }
+    return input;
+  },
+  setAnswer(nextValue, meta = {}) {
+    const value = `${nextValue ?? ''}`;
+    const previous = this.answerBuffer ?? '';
+    this.answerBuffer = value;
+    const input = this.getAnswerInput();
+    if (input && input.value !== value) {
+      this.isSyncingAnswer = true;
+      input.value = value;
+      this.isSyncingAnswer = false;
+    }
+    logInputDebug('setAnswer', {
+      handler: meta.handler,
+      before: previous,
+      after: value,
+      defaultPrevented: meta.defaultPrevented,
+    });
+  },
+  spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
+    if (!container) {
+      return;
+    }
+    const cloud = {};
+    const img = document.createElement('img');
+    img.src = cloudSrc;
+    img.alt = '';
+    img.className = 'run-cloud';
+    img.decoding = 'async';
+    img.loading = 'eager';
+    img.style.width = `${DEFAULT_CLOUD_WIDTH}px`;
+    img.style.height = 'auto';
+    container.appendChild(img);
+    cloud.el = img;
+    cloud.baseWidth = baseWidth || DEFAULT_CLOUD_WIDTH;
+    this.positionCloud(cloud, { initial });
+    this.clouds.push(cloud);
+  },
+  positionCloud(cloud, { initial = false } = {}) {
+    const world = domRefs.game.runWorld;
+    if (!world) {
+      return;
+    }
+    const worldWidth = world.clientWidth || 1;
+    const worldHeight = world.clientHeight || 1;
+    const xMax = worldWidth + (initial ? worldWidth * 0.6 : 0);
+    cloud.x = initial
+      ? randomBetween(0, xMax)
+      : worldWidth + randomBetween(CLOUD_GAP_MIN_PX, CLOUD_GAP_MAX_PX);
+    cloud.y = randomBetween(worldHeight * CLOUD_Y_MIN, worldHeight * CLOUD_Y_MAX);
+    cloud.scale = randomBetween(CLOUD_SCALE_MIN, CLOUD_SCALE_MAX);
+    cloud.speedFactor = randomBetween(CLOUD_SPEED_MIN, CLOUD_SPEED_MAX);
+  },
   updateRunLayerVisuals(dtMs) {
     const dtSec = dtMs / 1000;
     if (!Number.isFinite(dtSec) || dtSec <= 0) {
@@ -72,28 +388,55 @@ const dashGameScreen = {
       return;
     }
     const runWorld = domRefs.game.runWorld;
-    const runBgFar = domRefs.game.runBgFar;
-    const runBgNear = domRefs.game.runBgNear;
+    const runSky = domRefs.game.runSky;
     const speedLines = domRefs.game.speedLines;
     const runner = domRefs.game.runner;
     const runnerWrap = domRefs.game.runnerWrap;
 
     const speedValue = Math.max(0, Number(this.playerSpeed) || 0);
-    const baseOffset = speedValue * dtSec * BG_FACTOR_PX_PER_M;
-    this.bgOffsetFarPx -= baseOffset * BG_FAR_SPEED_FACTOR;
-    this.bgOffsetNearPx -= baseOffset * BG_NEAR_SPEED_FACTOR;
-    if (this.bgOffsetFarPx <= -BG_LOOP_WIDTH_PX) {
-      this.bgOffsetFarPx += BG_LOOP_WIDTH_PX;
+    const baseSpeedPerSec = speedValue * BG_BASE_SPEED_PX;
+    const skySpeedPerSec = baseSpeedPerSec * SKY_SPEED_FACTOR;
+    const groundSpeedPerSec = baseSpeedPerSec * GROUND_SPEED_FACTOR;
+    this.skyOffsetPx -= skySpeedPerSec * dtSec;
+    const worldWidth = runWorld?.clientWidth || 0;
+    if (worldWidth > 0 && this.skyOffsetPx <= -worldWidth) {
+      this.skyOffsetPx += worldWidth;
     }
-    if (this.bgOffsetNearPx <= -BG_LOOP_WIDTH_PX) {
-      this.bgOffsetNearPx += BG_LOOP_WIDTH_PX;
-    }
+    this.updateGroundLayout();
+    this.updateGround(dtSec, groundSpeedPerSec);
+    this.updateRunnerGroundAlignment();
+    this.clouds?.forEach((cloud) => {
+      if (!cloud?.el) {
+        return;
+      }
+      if (!cloud.baseWidth && cloud.el.naturalWidth) {
+        cloud.baseWidth = cloud.el.naturalWidth;
+      }
+      const cloudSpeedPx = baseSpeedPerSec * cloud.speedFactor * dtSec;
+      cloud.x -= cloudSpeedPx;
+      const cloudWidth = (cloud.baseWidth || DEFAULT_CLOUD_WIDTH) * cloud.scale;
+      if (cloud.x < -cloudWidth) {
+        this.positionCloud(cloud);
+      }
+    });
 
-    if (runBgFar) {
-      runBgFar.style.backgroundPositionX = `${this.bgOffsetFarPx.toFixed(2)}px`;
+    if (runSky) {
+      runSky.style.backgroundPositionX = `${Math.round(this.skyOffsetPx)}px`;
     }
-    if (runBgNear) {
-      runBgNear.style.backgroundPositionX = `${this.bgOffsetNearPx.toFixed(2)}px`;
+    if (domRefs.game.runGroundTiles?.length >= 2 && this.groundTileWidth > 0) {
+      const offsets = this.groundTileX ?? [0, this.groundTileWidth];
+      domRefs.game.runGroundTiles.forEach((tile, index) => {
+        const offset = offsets[index] ?? 0;
+        tile.style.transform = `translate3d(${Math.round(offset)}px, 0px, 0px)`;
+      });
+    }
+    if (this.clouds?.length) {
+      this.clouds.forEach((cloud) => {
+        if (!cloud?.el) {
+          return;
+        }
+        cloud.el.style.transform = `translate3d(${Math.round(cloud.x)}px, ${Math.round(cloud.y)}px, 0) scale(${cloud.scale})`;
+      });
     }
 
     const speedRatio = Math.max(0, Math.min(speedValue / EFFECT_MAX_SPEED_MPS, 1));
@@ -157,23 +500,23 @@ const dashGameScreen = {
     if (!this.canAcceptInput()) {
       return;
     }
-    const input = domRefs.dashGame.answerInput;
-    if (!input) {
+    const normalized = String(digit);
+    this.focusAnswerInput();
+    this.setAnswer(`${this.answerBuffer}${normalized}`, { handler: 'keypad' });
+  },
+  clearAnswer() {
+    if (!this.canAcceptInput()) {
       return;
     }
-    input.focus();
-    input.value = `${input.value}${digit}`;
+    this.focusAnswerInput();
+    this.setAnswer('', { handler: 'clear' });
   },
   handleBackspace() {
     if (!this.canAcceptInput()) {
       return;
     }
-    const input = domRefs.dashGame.answerInput;
-    if (!input) {
-      return;
-    }
-    input.focus();
-    input.value = input.value.slice(0, -1);
+    this.focusAnswerInput();
+    this.setAnswer(this.answerBuffer.slice(0, -1), { handler: 'backspace' });
   },
   setFeedback(message, type = 'correct') {
     if (!domRefs.dashGame.feedback) {
@@ -186,6 +529,22 @@ const dashGameScreen = {
     } else if (type === 'wrong') {
       domRefs.dashGame.feedback.classList.add('is-wrong');
     }
+    const problemMain = domRefs.dashGame.screen?.querySelector('.dash-problem-main');
+    if (problemMain) {
+      if (this.feedbackFxTimeout) {
+        window.clearTimeout(this.feedbackFxTimeout);
+        this.feedbackFxTimeout = null;
+      }
+      problemMain.classList.remove('is-attack', 'is-hit');
+      if (type === 'correct') {
+        problemMain.classList.add('is-attack');
+      } else if (type === 'wrong') {
+        problemMain.classList.add('is-hit');
+      }
+      this.feedbackFxTimeout = window.setTimeout(() => {
+        problemMain.classList.remove('is-attack', 'is-hit');
+      }, 160);
+    }
   },
   clearFeedback() {
     if (!domRefs.dashGame.feedback) {
@@ -193,6 +552,8 @@ const dashGameScreen = {
     }
     domRefs.dashGame.feedback.textContent = '';
     domRefs.dashGame.feedback.classList.remove('is-correct', 'is-wrong');
+    const problemMain = domRefs.dashGame.screen?.querySelector('.dash-problem-main');
+    problemMain?.classList.remove('is-attack', 'is-hit');
   },
   showStreakCue(message) {
     if (!domRefs.dashGame.streakCue) {
@@ -229,13 +590,22 @@ const dashGameScreen = {
       domRefs.dashGame.timeRemaining.textContent = String(timeSeconds);
     }
     const isLowTime = this.timeLeftMs <= LOW_TIME_THRESHOLD_MS;
-    const timeCard = domRefs.dashGame.timeRemaining?.closest('.dash-stat-card');
-    if (timeCard) {
-      if (isLowTime) {
-        timeCard.dataset.state = 'low';
-      } else {
-        delete timeCard.dataset.state;
+    const timeRatio = (() => {
+      const denom = Math.max(1, Number(this.initialTimeLimitMs) || DEFAULT_TIME_LIMIT_MS);
+      return Math.max(0, Math.min(this.timeLeftMs / denom, 1));
+    })();
+    const timeWrap = domRefs.dashGame.timeWrap;
+    if (timeWrap) {
+      let nextState = 'safe';
+      if (timeRatio <= 0.3) {
+        nextState = 'danger';
+      } else if (timeRatio <= 0.6) {
+        nextState = 'caution';
       }
+      timeWrap.dataset.state = isLowTime ? 'danger' : nextState;
+    }
+    if (domRefs.dashGame.timeBar) {
+      domRefs.dashGame.timeBar.style.width = `${(timeRatio * 100).toFixed(1)}%`;
     }
     if (domRefs.dashGame.timeNote) {
       domRefs.dashGame.timeNote.textContent = isLowTime ? '残りわずか' : '';
@@ -341,17 +711,21 @@ const dashGameScreen = {
     if (domRefs.dashGame.question) {
       domRefs.dashGame.question.textContent = this.currentQuestion.text;
     }
-    if (domRefs.dashGame.answerInput) {
-      domRefs.dashGame.answerInput.value = '';
-      domRefs.dashGame.answerInput.focus();
-    }
+    this.setAnswer('', { handler: 'load' });
+    this.focusAnswerInput();
     this.clearFeedback();
   },
   submitAnswer() {
     if (!this.canSubmit()) {
       return;
     }
-    const inputValue = domRefs.dashGame.answerInput?.value ?? '';
+    logInputDebug('submit', {
+      handler: 'submit',
+      before: this.answerBuffer,
+      after: this.answerBuffer,
+      defaultPrevented: false,
+    });
+    const inputValue = this.answerBuffer;
     if (inputValue === '') {
       return;
     }
@@ -443,11 +817,28 @@ const dashGameScreen = {
       this.rafId = null;
     }
   },
+  startBgm() {
+    if (this.isBgmActive) {
+      return;
+    }
+    this.isBgmActive = true;
+    console.log('[BGM] dash loop start');
+    audioManager.playBgm('bgm_dash', { loop: true });
+  },
+  stopBgm() {
+    if (!this.isBgmActive) {
+      return;
+    }
+    this.isBgmActive = false;
+    console.log('[BGM] dash stop');
+    audioManager.stopBgm();
+  },
   endSession(endReason = 'unknown') {
     if (this.hasEnded) {
       return;
     }
     this.hasEnded = true;
+    this.stopBgm();
     this.stopLoop();
     gameState.dash.result = {
       distanceM: gameState.dash.distanceM,
@@ -467,6 +858,7 @@ const dashGameScreen = {
     this.enemySpeed = enemyBaseSpeed;
     this.enemyGapM = collisionThreshold * 2;
     this.timeLeftMs = this.getInitialTimeLimitMs();
+    this.initialTimeLimitMs = this.timeLeftMs;
     this.lastTickTs = window.performance.now();
     this.currentQuestion = null;
     this.hasEnded = false;
@@ -482,9 +874,15 @@ const dashGameScreen = {
     this.lastNextAreaHidden = null;
     this.runLayerOriginalParent = this.runLayerOriginalParent ?? null;
     this.runLayerOriginalNextSibling = this.runLayerOriginalNextSibling ?? null;
-    this.bgOffsetFarPx = 0;
-    this.bgOffsetNearPx = 0;
+    this.skyOffsetPx = 0;
+    this.groundTileWidth = 0;
+    this.groundTileX = [0, 0];
+    this.clouds = [];
     this.runnerSpeedTier = null;
+    this.answerBuffer = '';
+    this.isSyncingAnswer = false;
+    this.isBgmActive = false;
+    this.initRunBackgrounds();
     this.updateArea(gameState.dash.distanceM);
     this.updateHud();
     this.handleBack = () => {
@@ -506,7 +904,7 @@ const dashGameScreen = {
       this.submitAnswer();
     };
     this.handleBackAction = () => {
-      const currentValue = domRefs.dashGame.answerInput?.value ?? '';
+      const currentValue = this.answerBuffer;
       if (currentValue !== '') {
         this.handleBackspace();
         return;
@@ -524,40 +922,146 @@ const dashGameScreen = {
     inputActions.on(inputActions.ACTIONS.BACK, this.handleBackAction);
     inputActions.on(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
 
+    const answerInput = this.getAnswerInput();
+    if (answerInput) {
+      answerInput.inputMode = 'numeric';
+      answerInput.autocomplete = 'off';
+      answerInput.autocapitalize = 'off';
+      answerInput.readOnly = false;
+    }
+
     this.handleKeyDown = inputActions.createKeyHandler();
-    this.events.on(domRefs.dashGame.answerInput, 'keydown', this.handleKeyDown);
-    this.handleEnterKeyDown = (event) => {
-      if (event.key !== 'Enter' || !this.isScreenActive()) {
+    this.events.on(this.getAnswerInput(), 'keydown', this.handleKeyDown);
+    this.handleAnswerInput = (event) => {
+      if (this.isSyncingAnswer) {
         return;
       }
-      event.preventDefault();
-      inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'keyboard' });
+      if (!this.canAcceptInput()) {
+        this.setAnswer(this.answerBuffer, {
+          handler: 'input-blocked',
+          defaultPrevented: event.defaultPrevented,
+        });
+        return;
+      }
+      const input = this.getAnswerInput();
+      if (!input) {
+        return;
+      }
+      const raw = input.value ?? '';
+      const sanitized = raw.replace(/\D+/g, '');
+      this.setAnswer(sanitized, {
+        handler: 'input',
+        defaultPrevented: event.defaultPrevented,
+      });
     };
-    this.events.on(window, 'keydown', this.handleEnterKeyDown);
-
-    this.handleSubmitClick = () => {
-      inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
+    this.events.on(this.getAnswerInput(), 'input', this.handleAnswerInput);
+    this.handleGlobalKeyDown = (event) => {
+      if (!this.isScreenActive() || !this.canAcceptInput()) {
+        return;
+      }
+      if (event.defaultPrevented) {
+        return;
+      }
+      const input = this.getAnswerInput();
+      const active = document.activeElement;
+      if (active === input) {
+        return;
+      }
+      if (isEditableTarget(active)) {
+        return;
+      }
+      const key = event.key;
+      if (/^\d$/.test(key)) {
+        event.preventDefault();
+        this.setAnswer(`${this.answerBuffer}${key}`, {
+          handler: 'keyboard',
+          defaultPrevented: event.defaultPrevented,
+        });
+        this.focusAnswerInput();
+        return;
+      }
+      if (key === 'Backspace' || key === 'Delete') {
+        event.preventDefault();
+        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keyboard' });
+        this.focusAnswerInput();
+        return;
+      }
+      if (key === 'Enter') {
+        event.preventDefault();
+        inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'keyboard' });
+      }
     };
-    this.events.on(domRefs.dashGame.submitButton, 'click', this.handleSubmitClick);
+    this.events.on(window, 'keydown', this.handleGlobalKeyDown);
 
     this.handleKeypadToggleClick = () => {
       inputActions.dispatch(inputActions.ACTIONS.TOGGLE_KEYPAD, { source: 'button' });
     };
     this.events.on(domRefs.dashGame.keypadToggle, 'click', this.handleKeypadToggleClick);
 
-    this.handleKeypadClick = (event) => {
-      const button = event.target.closest('[data-keypad-key]');
-      if (!button || button.disabled) {
+    const keypadRoot = domRefs.dashGame.keypad?.closest('.dash-keypad-stack') ?? domRefs.dashGame.keypad;
+    this.handleKeypadCapture = (event) => {
+      if (!DEBUG_KEYPAD) {
         return;
       }
-      const key = button.dataset.keypadKey;
-      if (key === 'back') {
-        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keypad' });
-        return;
-      }
-      this.appendKeypadDigit(key);
+      const target = event.target;
+      const button = target?.closest?.('[data-digit],[data-action]');
+      const computed = button ? window.getComputedStyle(button) : null;
+      logKeypadDebug('capture', {
+        target: formatTargetLabel(target),
+        button: formatTargetLabel(button),
+        dataset: button ? { digit: button.dataset.digit, action: button.dataset.action } : null,
+        pointerEvents: computed?.pointerEvents,
+        zIndex: computed?.zIndex,
+      });
     };
-    this.events.on(domRefs.dashGame.keypad, 'click', this.handleKeypadClick);
+    this.handleKeypadClick = (event) => {
+      const button = event.target.closest('[data-digit],[data-action]');
+      if (!button) {
+        logKeypadDebug('ignore', { reason: 'no-button' });
+        return;
+      }
+      if (button.disabled) {
+        logKeypadDebug('ignore', { reason: 'disabled', button: formatTargetLabel(button) });
+        return;
+      }
+      const digit = button.dataset.digit;
+      const action = button.dataset.action;
+      if (digit !== undefined) {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', digit });
+          return;
+        }
+        this.appendKeypadDigit(String(digit));
+        return;
+      }
+      if (action === 'backspace') {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', action });
+          return;
+        }
+        this.handleBackspace();
+        return;
+      }
+      if (action === 'clear') {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', action });
+          return;
+        }
+        this.clearAnswer();
+        return;
+      }
+      if (action === 'submit') {
+        if (!this.canSubmit()) {
+          logKeypadDebug('ignore', { reason: 'submit-blocked', action });
+          return;
+        }
+        this.submitAnswer();
+        return;
+      }
+      logKeypadDebug('ignore', { reason: 'unknown-action', action });
+    };
+    this.events.on(keypadRoot, 'click', this.handleKeypadCapture, { capture: true });
+    this.events.on(keypadRoot, 'click', this.handleKeypadClick);
 
     if (domRefs.dashGame.keypad) {
       domRefs.dashGame.keypad.hidden = true;
@@ -566,6 +1070,7 @@ const dashGameScreen = {
     domRefs.dashGame.keypadToggle?.setAttribute('aria-expanded', 'false');
 
     this.loadNextQuestion();
+    this.startBgm();
     this.startLoop();
   },
   render() {},
@@ -594,11 +1099,21 @@ const dashGameScreen = {
     this.handleBackAction = null;
     this.handleToggleKeypadAction = null;
     this.handleKeyDown = null;
-    this.handleEnterKeyDown = null;
-    this.handleSubmitClick = null;
+    this.handleAnswerInput = null;
+    this.handleGlobalKeyDown = null;
     this.handleKeypadToggleClick = null;
     this.handleKeypadClick = null;
+    this.handleKeypadCapture = null;
     this.clearStreakCue();
+    this.stopBgm();
+    if (domRefs.game.runClouds) {
+      domRefs.game.runClouds.innerHTML = '';
+    }
+    this.clouds = [];
+    if (this.feedbackFxTimeout) {
+      window.clearTimeout(this.feedbackFxTimeout);
+      this.feedbackFxTimeout = null;
+    }
   },
 };
 

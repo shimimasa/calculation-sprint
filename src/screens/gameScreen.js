@@ -15,11 +15,27 @@ const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
 const RUNNER_X_FOLLOW_RATE = 0.12;
 const RUNNER_BASE_LEFT_PX = 64;
-const BG_FAR_SPEED_FACTOR = 0.65;
-const BG_NEAR_SPEED_FACTOR = 1.1;
+const RUNNER_FOOT_OFFSET_PX = 62;
+const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
+const BG_BASE_SPEED_PX = 42;
+const SKY_SPEED_FACTOR = 0.08;
+const GROUND_SPEED_FACTOR = 1;
+const SKY_BOOST_DELTA = 0.04;
+const GROUND_BOOST_DELTA = 0.3;
 const BG_BOOST_DURATION_MS = 400; // 300-500ms window for noticeable boost without overstaying.
-const BG_BOOST_NEAR_DELTA = 0.3; // Near layer needs stronger bump to feel acceleration.
-const BG_BOOST_FAR_DELTA = 0.25; // Far layer bump kept subtle to avoid seam emphasis.
+const CLOUD_COUNT_MIN = 3;
+const CLOUD_COUNT_MAX = 7;
+const CLOUD_Y_MIN = 0.15;
+const CLOUD_Y_MAX = 0.55;
+const CLOUD_SCALE_MIN = 0.6;
+const CLOUD_SCALE_MAX = 1.2;
+const CLOUD_SPEED_MIN = 0.1;
+const CLOUD_SPEED_MAX = 0.25;
+const CLOUD_GAP_MIN_PX = 80;
+const CLOUD_GAP_MAX_PX = 260;
+const DEFAULT_CLOUD_WIDTH = 220;
+const DEBUG_INPUT = false;
+const DEBUG_KEYPAD = false;
 const COUNTDOWN_SFX_THRESHOLDS = Object.freeze([10, 5, 3, 2, 1]);
 const isReviewModeActive = (state) => Boolean(state?.isReviewMode);
 const EFFECT_BY_LEVEL = {
@@ -70,8 +86,87 @@ const getScalingLevelFromStreak = (streak) => {
   }
   return 0;
 };
+const randomBetween = (min, max) => min + Math.random() * (max - min);
+const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
+const extractCssUrl = (value) => {
+  if (!value) {
+    return '';
+  }
+  const match = value.match(/url\((['"]?)(.*?)\1\)/);
+  return match ? match[2] : '';
+};
+const waitForImageDecode = (img) => {
+  if (img.decode) {
+    return img.decode().catch(() => new Promise((resolve) => {
+      img.onload = resolve;
+      img.onerror = resolve;
+    }));
+  }
+  return new Promise((resolve) => {
+    img.onload = resolve;
+    img.onerror = resolve;
+  });
+};
+const loadCloudBaseWidth = async (src) => {
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = src;
+  await waitForImageDecode(img);
+  return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+};
+const getGroundSurfaceInsetPx = () => {
+  const inset = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--ground-surface-inset'),
+  );
+  return Number.isFinite(inset) ? inset : DEFAULT_GROUND_SURFACE_INSET_PX;
+};
+const describeActiveElement = () => {
+  const active = document.activeElement;
+  if (!active) {
+    return 'none';
+  }
+  const tag = active.tagName?.toLowerCase() ?? 'unknown';
+  const id = active.id ? `#${active.id}` : '';
+  return `${tag}${id}`;
+};
+const isEditableTarget = (target) => {
+  if (!target) {
+    return false;
+  }
+  if (target.isContentEditable) {
+    return true;
+  }
+  const tag = target.tagName?.toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select';
+};
+const logInputDebug = (label, payload = {}) => {
+  if (!DEBUG_INPUT) {
+    return;
+  }
+  console.log(`[input-debug:${label}]`, {
+    activeElement: describeActiveElement(),
+    ...payload,
+  });
+};
+const formatTargetLabel = (target) => {
+  if (!target) {
+    return 'none';
+  }
+  const tag = target.tagName?.toLowerCase() ?? 'unknown';
+  const id = target.id ? `#${target.id}` : '';
+  const classes = target.classList?.length ? `.${[...target.classList].join('.')}` : '';
+  return `${tag}${id}${classes}`;
+};
+const logKeypadDebug = (label, payload = {}) => {
+  if (!DEBUG_KEYPAD) {
+    return;
+  }
+  console.log(`[keypad-debug:${label}]`, payload);
+};
 
 const gameScreen = {
+  answerBuffer: '',
+  isSyncingAnswer: false,
   applyStageThemeHooks() {
     const stage = gameState.selectedStage;
     const shouldApplyTheme = gameState.playMode === 'stage' && stage;
@@ -122,6 +217,228 @@ const gameScreen = {
     domRefs.game.runWorld?.style.setProperty('--world-brightness', tuneValue(base.brightness));
     domRefs.game.runWorld?.style.setProperty('--world-clarity', tuneValue(base.clarity));
   },
+  getCloudImageSrc() {
+    const world = domRefs.game.runWorld;
+    if (!world) {
+      return 'assets/bg-cloud.png';
+    }
+    const computed = getComputedStyle(world);
+    const cssValue = computed.getPropertyValue('--run-cloud-image');
+    return extractCssUrl(cssValue) || 'assets/bg-cloud.png';
+  },
+  initRunBackgrounds() {
+    this.clouds = [];
+    const cloudContainer = domRefs.game.runClouds;
+    if (cloudContainer) {
+      cloudContainer.innerHTML = '';
+    }
+    const count = randomIntBetween(CLOUD_COUNT_MIN, CLOUD_COUNT_MAX);
+    const cloudSrc = this.getCloudImageSrc();
+    const loadToken = Symbol('cloud-load');
+    this.cloudLoadToken = loadToken;
+    loadCloudBaseWidth(cloudSrc).then((baseWidth) => {
+      if (this.cloudLoadToken !== loadToken) {
+        return;
+      }
+      if (!cloudContainer) {
+        return;
+      }
+      for (let i = 0; i < count; i += 1) {
+        this.spawnCloud({
+          container: cloudContainer,
+          cloudSrc,
+          initial: true,
+          baseWidth,
+        });
+      }
+    });
+    this.resetGroundTiles();
+  },
+  resetGroundTiles() {
+    this.groundTileWidth = 0;
+    this.groundTileX = [0, 0];
+    this.groundDebugLogged = false;
+    if (domRefs.game.runGroundTiles?.length >= 2) {
+      domRefs.game.runGroundTiles[0].style.transform = 'translate3d(0px, 0px, 0px)';
+      domRefs.game.runGroundTiles[1].style.transform = 'translate3d(0px, 0px, 0px)';
+    }
+    this.updateGroundLayout(true);
+    this.updateRunnerGroundAlignment(true);
+  },
+  updateGroundLayout(force = false) {
+    const runGround = domRefs.game.runGround;
+    const tileA = domRefs.game.runGroundTileA;
+    const tileB = domRefs.game.runGroundTileB;
+    if (!runGround || !tileA || !tileB) {
+      return;
+    }
+    const nextWidth = Math.round(runGround.getBoundingClientRect().width || 0);
+    if (!nextWidth) {
+      return;
+    }
+    if (force || Math.abs(nextWidth - this.groundTileWidth) > 1) {
+      this.initGround(runGround, tileA, tileB);
+    }
+  },
+  initGround(groundEl, tileA, tileB) {
+    if (!groundEl || !tileA || !tileB) {
+      return;
+    }
+    const tileW = Math.round(groundEl.getBoundingClientRect().width || 0);
+    if (!tileW) {
+      return;
+    }
+    this.groundTileWidth = tileW;
+    this.groundTileX = [0, tileW];
+    tileA.style.width = `${tileW}px`;
+    tileB.style.width = `${tileW}px`;
+    tileA.style.transform = 'translate3d(0px, 0px, 0px)';
+    tileB.style.transform = `translate3d(${Math.round(tileW)}px, 0px, 0px)`;
+    this.logGroundDebug();
+  },
+  updateGround(dtSec, speedPerSec) {
+    if (!this.groundTileWidth) {
+      return;
+    }
+    const tileA = domRefs.game.runGroundTileA;
+    const tileB = domRefs.game.runGroundTileB;
+    if (!tileA || !tileB) {
+      return;
+    }
+    const tileW = this.groundTileWidth;
+    const nextXA = (this.groundTileX?.[0] ?? 0) - speedPerSec * dtSec;
+    const nextXB = (this.groundTileX?.[1] ?? tileW) - speedPerSec * dtSec;
+    let xA = nextXA;
+    let xB = nextXB;
+    if (xA <= -tileW) {
+      xA = xB + tileW;
+    }
+    if (xB <= -tileW) {
+      xB = xA + tileW;
+    }
+    this.groundTileX = [xA, xB];
+    tileA.style.transform = `translate3d(${Math.round(xA)}px, 0px, 0px)`;
+    tileB.style.transform = `translate3d(${Math.round(xB)}px, 0px, 0px)`;
+  },
+  logGroundDebug() {
+    if (this.groundDebugLogged || !Number.isFinite(this.groundSurfaceY) || !this.groundTileWidth) {
+      return;
+    }
+    const xA = Math.round(this.groundTileX?.[0] ?? 0);
+    const xB = Math.round(this.groundTileX?.[1] ?? 0);
+    console.log('[run-ground] init', {
+      tileW: this.groundTileWidth,
+      xA,
+      xB,
+      groundSurfaceY: this.groundSurfaceY,
+    });
+    this.groundDebugLogged = true;
+  },
+  updateRunnerGroundAlignment(force = false) {
+    const runGround = domRefs.game.runGround;
+    const runWorld = domRefs.game.runWorld;
+    const runnerWrap = domRefs.game.runnerWrap;
+    const runner = domRefs.game.runner;
+    if (!runGround || !runWorld || !runnerWrap || !runner) {
+      return;
+    }
+    const groundRect = runGround.getBoundingClientRect();
+    const worldRect = runWorld.getBoundingClientRect();
+    const groundSurfaceInsetPx = getGroundSurfaceInsetPx();
+    const groundSurfaceY = Math.round(groundRect.bottom - groundSurfaceInsetPx);
+    const runnerFootOffset = RUNNER_FOOT_OFFSET_PX;
+    const runnerBaseLeft = Math.round(worldRect.left + RUNNER_BASE_LEFT_PX);
+    if (
+      !force
+      && this.groundSurfaceY === groundSurfaceY
+      && this.runnerFootOffset === runnerFootOffset
+      && this.runnerBaseLeft === runnerBaseLeft
+    ) {
+      return;
+    }
+    this.groundSurfaceY = groundSurfaceY;
+    this.runnerFootOffset = runnerFootOffset;
+    this.runnerBaseLeft = runnerBaseLeft;
+    gameState.run.groundSurfaceY = groundSurfaceY;
+    gameState.run.groundY = groundSurfaceY;
+    runWorld.style.setProperty('--calc-sprint-runner-foot-offset', `${runnerFootOffset}px`);
+    runnerWrap.style.bottom = 'auto';
+    runnerWrap.style.top = `${Math.round(groundSurfaceY - runnerFootOffset)}px`;
+    runnerWrap.style.left = `${runnerBaseLeft}px`;
+    this.logGroundDebug();
+  },
+  getAnswerInput() {
+    const input = domRefs.game.answerInput;
+    if (input?.isConnected) {
+      return input;
+    }
+    const refreshed = document.querySelector('.calc-sprint #game-answer-input');
+    if (refreshed) {
+      domRefs.game.answerInput = refreshed;
+    }
+    return refreshed;
+  },
+  focusAnswerInput() {
+    const input = this.getAnswerInput();
+    if (!input) {
+      return null;
+    }
+    if (typeof input.focus === 'function') {
+      input.focus({ preventScroll: true });
+    }
+    return input;
+  },
+  setAnswer(nextValue, meta = {}) {
+    const value = `${nextValue ?? ''}`;
+    const previous = this.answerBuffer ?? '';
+    this.answerBuffer = value;
+    const input = this.getAnswerInput();
+    if (input && input.value !== value) {
+      this.isSyncingAnswer = true;
+      input.value = value;
+      this.isSyncingAnswer = false;
+    }
+    logInputDebug('setAnswer', {
+      handler: meta.handler,
+      before: previous,
+      after: value,
+      defaultPrevented: meta.defaultPrevented,
+    });
+  },
+  spawnCloud({ container, cloudSrc, initial = false, baseWidth = DEFAULT_CLOUD_WIDTH } = {}) {
+    if (!container) {
+      return;
+    }
+    const cloud = {};
+    const img = document.createElement('img');
+    img.src = cloudSrc;
+    img.alt = '';
+    img.className = 'run-cloud';
+    img.decoding = 'async';
+    img.loading = 'eager';
+    img.style.width = `${DEFAULT_CLOUD_WIDTH}px`;
+    img.style.height = 'auto';
+    container.appendChild(img);
+    cloud.el = img;
+    cloud.baseWidth = baseWidth || DEFAULT_CLOUD_WIDTH;
+    this.positionCloud(cloud, { initial });
+    this.clouds.push(cloud);
+  },
+  positionCloud(cloud, { initial = false } = {}) {
+    const world = domRefs.game.runWorld;
+    if (!world) {
+      return;
+    }
+    const worldWidth = world.clientWidth || 1;
+    const worldHeight = world.clientHeight || 1;
+    const xMax = worldWidth + (initial ? worldWidth * 0.6 : 0);
+    cloud.x = initial
+      ? randomBetween(0, xMax)
+      : worldWidth + randomBetween(CLOUD_GAP_MIN_PX, CLOUD_GAP_MAX_PX);
+    cloud.y = randomBetween(worldHeight * CLOUD_Y_MIN, worldHeight * CLOUD_Y_MAX);
+    cloud.scale = randomBetween(CLOUD_SCALE_MIN, CLOUD_SCALE_MAX);
+    cloud.speedFactor = randomBetween(CLOUD_SPEED_MIN, CLOUD_SPEED_MAX);
+  },
   isScreenActive() {
     return Boolean(domRefs.screens.game?.classList.contains('is-active'));
   },
@@ -157,21 +474,23 @@ const gameScreen = {
     if (!this.canAcceptInput()) {
       return;
     }
-    if (!domRefs.game.answerInput) {
+    const normalized = String(digit);
+    this.focusAnswerInput();
+    this.setAnswer(`${this.answerBuffer}${normalized}`, { handler: 'keypad' });
+  },
+  clearAnswer() {
+    if (!this.canAcceptInput()) {
       return;
     }
-    domRefs.game.answerInput.focus();
-    domRefs.game.answerInput.value = `${domRefs.game.answerInput.value}${digit}`;
+    this.focusAnswerInput();
+    this.setAnswer('', { handler: 'clear' });
   },
   handleBackspace() {
     if (!this.canAcceptInput()) {
       return;
     }
-    if (!domRefs.game.answerInput) {
-      return;
-    }
-    domRefs.game.answerInput.focus();
-    domRefs.game.answerInput.value = domRefs.game.answerInput.value.slice(0, -1);
+    this.focusAnswerInput();
+    this.setAnswer(this.answerBuffer.slice(0, -1), { handler: 'backspace' });
   },
   enter() {
     uiRenderer.showScreen('game');
@@ -224,23 +543,35 @@ const gameScreen = {
     this.feedbackTimeoutId = null;
     this.effectTimeoutIds = [];
     this.setLocked(false);
-    this.bgOffsetFarPx = 0;
-    this.bgOffsetNearPx = 0;
+    this.skyOffsetPx = 0;
+    this.groundTileWidth = 0;
+    this.groundTileX = [0, 0];
     this.bgBoostRemainingMs = 0;
     this.runnerX = 0;
     this.runnerXTarget = 0;
+    this.answerBuffer = '';
+    this.isSyncingAnswer = false;
     this.resetEffects();
     this.updateScalingHud();
     this.prefersReducedMotion = window.matchMedia
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false;
     this.applyWorldTuning();
+    this.initRunBackgrounds();
 
     if (domRefs.game.keypad) {
       domRefs.game.keypad.hidden = true;
       domRefs.game.keypad.setAttribute('aria-hidden', 'true');
     }
     domRefs.game.keypadToggle?.setAttribute('aria-expanded', 'false');
+
+    const answerInput = this.getAnswerInput();
+    if (answerInput) {
+      answerInput.inputMode = 'numeric';
+      answerInput.autocomplete = 'off';
+      answerInput.autocapitalize = 'off';
+      answerInput.readOnly = false;
+    }
 
     this.handleSubmitAction = () => {
       if (!this.canSubmit()) {
@@ -270,35 +601,141 @@ const gameScreen = {
     inputActions.on(inputActions.ACTIONS.TOGGLE_KEYPAD, this.handleToggleKeypadAction);
 
     this.handleKeyDown = inputActions.createKeyHandler();
-    this.events.on(domRefs.game.answerInput, 'keydown', this.handleKeyDown);
-
-    this.handleSubmitClick = () => {
-      inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'button' });
+    this.events.on(this.getAnswerInput(), 'keydown', this.handleKeyDown);
+    this.handleAnswerInput = (event) => {
+      if (this.isSyncingAnswer) {
+        return;
+      }
+      if (!this.canAcceptInput()) {
+        this.setAnswer(this.answerBuffer, {
+          handler: 'input-blocked',
+          defaultPrevented: event.defaultPrevented,
+        });
+        return;
+      }
+      const input = this.getAnswerInput();
+      if (!input) {
+        return;
+      }
+      const raw = input.value ?? '';
+      const sanitized = raw.replace(/\D+/g, '');
+      this.setAnswer(sanitized, {
+        handler: 'input',
+        defaultPrevented: event.defaultPrevented,
+      });
     };
-    this.events.on(domRefs.game.submitButton, 'click', this.handleSubmitClick);
+    this.events.on(this.getAnswerInput(), 'input', this.handleAnswerInput);
+    this.handleGlobalKeyDown = (event) => {
+      if (!this.isScreenActive() || !this.canAcceptInput()) {
+        return;
+      }
+      if (event.defaultPrevented) {
+        return;
+      }
+      const input = this.getAnswerInput();
+      const active = document.activeElement;
+      if (active === input) {
+        return;
+      }
+      if (isEditableTarget(active)) {
+        return;
+      }
+      const key = event.key;
+      if (/^\d$/.test(key)) {
+        event.preventDefault();
+        this.setAnswer(`${this.answerBuffer}${key}`, {
+          handler: 'keyboard',
+          defaultPrevented: event.defaultPrevented,
+        });
+        this.focusAnswerInput();
+        return;
+      }
+      if (key === 'Backspace' || key === 'Delete') {
+        event.preventDefault();
+        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keyboard' });
+        this.focusAnswerInput();
+        return;
+      }
+      if (key === 'Enter') {
+        event.preventDefault();
+        inputActions.dispatch(inputActions.ACTIONS.SUBMIT, { source: 'keyboard' });
+      }
+    };
+    this.events.on(window, 'keydown', this.handleGlobalKeyDown);
 
     this.handleKeypadToggleClick = () => {
       inputActions.dispatch(inputActions.ACTIONS.TOGGLE_KEYPAD, { source: 'button' });
     };
     this.events.on(domRefs.game.keypadToggle, 'click', this.handleKeypadToggleClick);
 
-    this.handleKeypadClick = (event) => {
-      const button = event.target.closest('[data-keypad-key]');
-      if (!button || button.disabled) {
+    const keypadRoot = domRefs.game.keypad?.closest('.game-actions') ?? domRefs.game.keypad;
+    this.handleKeypadCapture = (event) => {
+      if (!DEBUG_KEYPAD) {
         return;
       }
-      const key = button.dataset.keypadKey;
-      if (key === 'back') {
-        inputActions.dispatch(inputActions.ACTIONS.BACK, { source: 'keypad' });
-        return;
-      }
-      this.appendKeypadDigit(key);
+      const target = event.target;
+      const button = target?.closest?.('[data-digit],[data-action]');
+      const computed = button ? window.getComputedStyle(button) : null;
+      logKeypadDebug('capture', {
+        target: formatTargetLabel(target),
+        button: formatTargetLabel(button),
+        dataset: button ? { digit: button.dataset.digit, action: button.dataset.action } : null,
+        pointerEvents: computed?.pointerEvents,
+        zIndex: computed?.zIndex,
+      });
     };
-    this.events.on(domRefs.game.keypad, 'click', this.handleKeypadClick);
+    this.handleKeypadClick = (event) => {
+      const button = event.target.closest('[data-digit],[data-action]');
+      if (!button) {
+        logKeypadDebug('ignore', { reason: 'no-button' });
+        return;
+      }
+      if (button.disabled) {
+        logKeypadDebug('ignore', { reason: 'disabled', button: formatTargetLabel(button) });
+        return;
+      }
+      const digit = button.dataset.digit;
+      const action = button.dataset.action;
+      if (digit !== undefined) {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', digit });
+          return;
+        }
+        this.appendKeypadDigit(String(digit));
+        return;
+      }
+      if (action === 'backspace') {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', action });
+          return;
+        }
+        this.handleBackspace();
+        return;
+      }
+      if (action === 'clear') {
+        if (!this.canAcceptInput()) {
+          logKeypadDebug('ignore', { reason: 'input-blocked', action });
+          return;
+        }
+        this.clearAnswer();
+        return;
+      }
+      if (action === 'submit') {
+        if (!this.canSubmit()) {
+          logKeypadDebug('ignore', { reason: 'submit-blocked', action });
+          return;
+        }
+        this.submitAnswer();
+        return;
+      }
+      logKeypadDebug('ignore', { reason: 'unknown-action', action });
+    };
+    this.events.on(keypadRoot, 'click', this.handleKeypadCapture, { capture: true });
+    this.events.on(keypadRoot, 'click', this.handleKeypadClick);
 
     this.loadNextQuestion();
     this.startTimer();
-    domRefs.game.answerInput?.focus();
+    this.focusAnswerInput();
     this.stumbleTimeoutId = null;
     this.runnerSpeedTier = null;
   },
@@ -337,8 +774,7 @@ const gameScreen = {
     domRefs.game.speedLines?.classList.remove('is-fast', 'is-rapid');
     domRefs.game.runner?.classList.remove('speed-glow');
     domRefs.game.runnerWrap?.classList.remove('is-fast', 'is-rapid');
-    domRefs.game.runBgFar?.style.removeProperty('--stumble-freeze-x');
-    domRefs.game.runBgNear?.style.removeProperty('--stumble-freeze-x');
+    domRefs.game.runSky?.style.removeProperty('--stumble-freeze-x');
     this.runnerSpeedTier = null;
   },
   queueEffectReset(callback, delayMs) {
@@ -397,21 +833,18 @@ const gameScreen = {
     const timeoutIds = [];
     if (!isReviewModeActive(gameState)) {
       domRefs.game.runWorld?.classList.add('stumble-freeze');
-      domRefs.game.runBgFar?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetFarPx}px`);
-      domRefs.game.runBgNear?.style.setProperty('--stumble-freeze-x', `${this.bgOffsetNearPx}px`);
+      domRefs.game.runSky?.style.setProperty('--stumble-freeze-x', `${this.skyOffsetPx}px`);
       timeoutIds.push(
         window.setTimeout(() => {
           domRefs.game.runWorld?.classList.remove('stumble-freeze');
-          domRefs.game.runBgFar?.style.removeProperty('--stumble-freeze-x');
-          domRefs.game.runBgNear?.style.removeProperty('--stumble-freeze-x');
+          domRefs.game.runSky?.style.removeProperty('--stumble-freeze-x');
         }, 120),
       );
     }
     timeoutIds.push(window.setTimeout(() => {
       domRefs.game.runner?.classList.remove('stumble');
       domRefs.game.runWorld?.classList.remove('stumble-freeze');
-      domRefs.game.runBgFar?.style.removeProperty('--stumble-freeze-x');
-      domRefs.game.runBgNear?.style.removeProperty('--stumble-freeze-x');
+      domRefs.game.runSky?.style.removeProperty('--stumble-freeze-x');
       this.stumbleTimeoutId = null;
     }, 320));
     this.stumbleTimeoutId = timeoutIds;
@@ -452,16 +885,22 @@ const gameScreen = {
       ...gameState.settings,
       reviewModes: isReviewModeActive(gameState) ? gameState.reviewModes : [],
     });
-    domRefs.game.answerInput.value = '';
+    this.setAnswer('', { handler: 'load' });
     gameState.questionStartAtMs = performance.now();
   },
   submitAnswer() {
     if (!this.canSubmit()) {
       return;
     }
+    logInputDebug('submit', {
+      handler: 'submit',
+      before: this.answerBuffer,
+      after: this.answerBuffer,
+      defaultPrevented: false,
+    });
     this.setLocked(true);
     const elapsedMs = performance.now() - gameState.questionStartAtMs;
-    const rawValue = domRefs.game.answerInput.value.trim();
+    const rawValue = this.answerBuffer.trim();
     const answerValue = Number(rawValue);
     const isCorrect = Number.isFinite(answerValue)
       && gameState.currentQuestion
@@ -534,7 +973,7 @@ const gameScreen = {
       uiRenderer.clearFeedback();
       this.loadNextQuestion();
       this.setLocked(false);
-      domRefs.game.answerInput?.focus();
+      this.focusAnswerInput();
     }, 500);
   },
   update(dtMs) {
@@ -550,23 +989,38 @@ const gameScreen = {
       gameState.speedMps - gameState.frictionMpsPerSec * dtSec,
     );
     gameState.distanceM += gameState.speedMps * dtSec;
-    const bgFactor = 42;
-    const loopWidthPx = 1200;
+    const baseSpeedPerSec = gameState.speedMps * BG_BASE_SPEED_PX;
     const isBgFrozen = domRefs.game.runWorld?.classList.contains('stumble-freeze');
     if (!isBgFrozen) {
       const boostRatio = Math.max(0, this.bgBoostRemainingMs / BG_BOOST_DURATION_MS);
       const easedBoost = boostRatio * (2 - boostRatio);
-      const farBoost = BG_FAR_SPEED_FACTOR + BG_BOOST_FAR_DELTA * easedBoost;
-      const nearBoost = BG_NEAR_SPEED_FACTOR + BG_BOOST_NEAR_DELTA * easedBoost;
-      const baseOffset = gameState.speedMps * dtSec * bgFactor;
-      this.bgOffsetFarPx -= baseOffset * farBoost;
-      this.bgOffsetNearPx -= baseOffset * nearBoost;
-      if (this.bgOffsetFarPx <= -loopWidthPx) {
-        this.bgOffsetFarPx += loopWidthPx;
+      const groundSpeedPerSec = baseSpeedPerSec * (
+        GROUND_SPEED_FACTOR + GROUND_BOOST_DELTA * easedBoost
+      );
+      const skySpeedPerSec = baseSpeedPerSec * (SKY_SPEED_FACTOR + SKY_BOOST_DELTA * easedBoost);
+      this.skyOffsetPx -= skySpeedPerSec * dtSec;
+      const worldWidth = domRefs.game.runWorld?.clientWidth || 0;
+      if (worldWidth > 0 && this.skyOffsetPx <= -worldWidth) {
+        this.skyOffsetPx += worldWidth;
       }
-      if (this.bgOffsetNearPx <= -loopWidthPx) {
-        this.bgOffsetNearPx += loopWidthPx;
-      }
+      this.updateGroundLayout();
+      this.updateGround(dtSec, groundSpeedPerSec);
+      this.updateRunnerGroundAlignment();
+      const cloudMotionFactor = this.prefersReducedMotion ? 0.35 : 1;
+      this.clouds?.forEach((cloud) => {
+        if (!cloud?.el) {
+          return;
+        }
+        if (!cloud.baseWidth && cloud.el.naturalWidth) {
+          cloud.baseWidth = cloud.el.naturalWidth;
+        }
+        const cloudSpeedPx = baseSpeedPerSec * cloud.speedFactor * cloudMotionFactor * dtSec;
+        cloud.x -= cloudSpeedPx;
+        const cloudWidth = (cloud.baseWidth || DEFAULT_CLOUD_WIDTH) * cloud.scale;
+        if (cloud.x < -cloudWidth) {
+          this.positionCloud(cloud);
+        }
+      });
     }
     if (this.bgBoostRemainingMs > 0) {
       this.bgBoostRemainingMs = Math.max(0, this.bgBoostRemainingMs - dtMs);
@@ -605,15 +1059,29 @@ const gameScreen = {
       const speedValue = isReviewModeActive(gameState) ? 0 : gameState.speedMps;
       domRefs.game.speed.textContent = speedValue.toFixed(1);
     }
-    if (domRefs.game.runBgFar) {
-      const bgOffset = isReviewModeActive(gameState) ? 0 : this.bgOffsetFarPx;
+    if (domRefs.game.runSky) {
+      const bgOffset = isReviewModeActive(gameState) ? 0 : this.skyOffsetPx;
       const parallaxFar = this.worldParallax?.far ?? 1;
-      domRefs.game.runBgFar.style.backgroundPositionX = `${(bgOffset * parallaxFar).toFixed(2)}px`;
+      domRefs.game.runSky.style.backgroundPositionX = `${Math.round(bgOffset * parallaxFar)}px`;
     }
-    if (domRefs.game.runBgNear) {
-      const bgOffset = isReviewModeActive(gameState) ? 0 : this.bgOffsetNearPx;
-      const parallaxNear = this.worldParallax?.near ?? 1;
-      domRefs.game.runBgNear.style.backgroundPositionX = `${(bgOffset * parallaxNear).toFixed(2)}px`;
+    if (domRefs.game.runGroundTiles?.length >= 2 && this.groundTileWidth > 0) {
+      const offsets = isReviewModeActive(gameState)
+        ? [0, this.groundTileWidth]
+        : this.groundTileX;
+      domRefs.game.runGroundTiles.forEach((tile, index) => {
+        const offset = offsets?.[index] ?? 0;
+        tile.style.transform = `translate3d(${Math.round(offset)}px, 0px, 0px)`;
+      });
+    }
+    if (this.clouds?.length) {
+      this.clouds.forEach((cloud) => {
+        if (!cloud?.el) {
+          return;
+        }
+        const x = isReviewModeActive(gameState) ? 0 : cloud.x;
+        const y = isReviewModeActive(gameState) ? 0 : cloud.y;
+        cloud.el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0) scale(${cloud.scale})`;
+      });
     }
     if (domRefs.game.speedLines) {
       const speedValue = isReviewModeActive(gameState) ? 0 : gameState.speedMps;
@@ -710,6 +1178,10 @@ const gameScreen = {
     this.clearEffectTimeouts();
     this.clearStumbleTimeout();
     this.resetEffects();
+    if (domRefs.game.runClouds) {
+      domRefs.game.runClouds.innerHTML = '';
+    }
+    this.clouds = [];
     this.setLocked(false);
   },
 };
