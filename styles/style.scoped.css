@@ -956,8 +956,8 @@
   position: relative;
   display: grid;
   grid-template-rows: 38% 40% 22%;
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%;
+  max-height: 100%;
   --ground-surface-inset: 140px;
 }
 .calc-sprint #dash-game-screen .screen__title {
@@ -996,7 +996,14 @@
   min-height: 0;
 }
 
+.calc-sprint #dash-game-screen .dash-run-zone {
+  grid-row: 2;
+  position: relative;
+  z-index: 10;
+}
+
 .calc-sprint #dash-game-screen .dash-top-hud {
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   gap: clamp(6px, 1.2vh, 10px);
@@ -1050,12 +1057,32 @@
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud {
+  grid-row: 3;
   display: flex;
   flex-direction: column;
   gap: clamp(6px, 1.2vh, 10px);
   justify-content: flex-end;
   align-self: stretch;
   pointer-events: none;
+  padding: clamp(10px, 1.6vh, 14px) clamp(12px, 2vw, 16px);
+  background: rgba(255, 255, 255, 0.96);
+  overflow: hidden;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud #dash-game-time-wrap,
+.calc-sprint #dash-game-screen .dash-bottom-hud .dash-time-hud,
+.calc-sprint #dash-game-screen .dash-bottom-hud .dash-bottom-stats,
+.calc-sprint #dash-game-screen .dash-bottom-hud .dash-bottom-side,
+.calc-sprint #dash-game-screen .dash-bottom-hud .dash-stats--footer,
+.calc-sprint #dash-game-screen .dash-bottom-hud .title-actions,
+.calc-sprint #dash-game-screen .dash-bottom-hud #dash-game-enemy {
+  position: static;
+  transform: none;
+  margin-top: 0;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud .dash-time {
@@ -1089,9 +1116,10 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: clamp(8px, 1.6vw, 14px);
   pointer-events: none;
+  width: 100%;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-side .dash-proximity,
@@ -1111,7 +1139,7 @@
   height: 100%;
 }
 .calc-sprint #dash-game-screen > .screen-main {
-  margin-bottom: -14px;
+  margin-bottom: 0;
 }
 .calc-sprint #dash-game-screen .dash-hud {
   position: relative;
