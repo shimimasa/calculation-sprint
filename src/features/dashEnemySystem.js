@@ -1,6 +1,8 @@
 const ENEMY_TYPES = ['plus', 'minus', 'multi', 'divide'];
 const ENEMY_STATES = ['walk', 'hit', 'dead'];
 const ENEMY_SIZE_PX = 72;
+const MIN_SPAWN_GAP_PX = 96;
+const MIN_REACTION_DISTANCE_PX = 180;
 const HIT_DURATION_MS = 120;
 const DEAD_DURATION_MS = 300;
 const BASE_SPEED_PX_PER_SEC = 220;
@@ -14,6 +16,9 @@ export const ATTACK_WINDOW_MS = 250;
 export const PX_PER_METER = 100;
 
 const pickRandomType = () => ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
+const resolveEnemyType = (preferredType) => (
+  ENEMY_TYPES.includes(preferredType) ? preferredType : pickRandomType()
+);
 
 const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'walk');
 
@@ -94,7 +99,15 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     system.worldEl = null;
   };
 
-  system.spawnEnemy = ({ nowMs, groundY, speedPxPerSec }) => {
+  system.spawnEnemy = ({
+    nowMs,
+    groundY,
+    speedPxPerSec,
+    preferredType,
+    playerRect,
+    minGapPx = MIN_SPAWN_GAP_PX,
+    minReactionDistancePx = MIN_REACTION_DISTANCE_PX,
+  }) => {
     const worldEl = system.worldEl;
     const container = ensureEnemyContainer(worldEl, system.containerEl);
     system.containerEl = container;
@@ -105,15 +118,30 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     if (!worldWidth) {
       return null;
     }
-    const type = pickRandomType();
+    const type = resolveEnemyType(preferredType);
     const state = 'walk';
     const width = ENEMY_SIZE_PX;
     const height = ENEMY_SIZE_PX;
+    const spawnX = worldWidth + width * 0.3;
+    const rightmostEnemyX = system.enemies.reduce((maxX, enemy) => (
+      enemy?.isAlive ? Math.max(maxX, enemy.x + enemy.w) : maxX
+    ), Number.NEGATIVE_INFINITY);
+    if (Number.isFinite(rightmostEnemyX) && spawnX - rightmostEnemyX < minGapPx) {
+      // Spawn fairness: keep a minimum gap to avoid overlap with existing enemies.
+      return null;
+    }
+    if (playerRect) {
+      const playerRight = playerRect.x + playerRect.w;
+      if (spawnX - playerRight < minReactionDistancePx) {
+        // Spawn fairness: ensure reaction time by avoiding spawns inside the danger zone.
+        return null;
+      }
+    }
     const enemy = {
       id: `enemy-${system.idCounter += 1}`,
       type,
       state,
-      x: worldWidth + width * 0.3,
+      x: spawnX,
       y: Math.max(0, (groundY ?? 0) - height),
       w: width,
       h: height,
@@ -153,6 +181,7 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     groundY,
     playerRect,
     correctCount,
+    enemyType,
     attackActive,
   }) => {
     if (!Number.isFinite(dtMs) || dtMs <= 0) {
@@ -180,6 +209,8 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
         nowMs,
         groundY,
         speedPxPerSec,
+        preferredType: enemyType,
+        playerRect,
       });
       system.spawnTimerMs += spawnInterval;
     }

@@ -2069,7 +2069,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 3;
+  z-index: 2;
 }.calc-sprint .enemy-sprite {
   position: absolute;
   left: 0;
