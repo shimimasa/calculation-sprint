@@ -953,7 +953,7 @@
   overflow: hidden;
   position: relative;
   display: grid;
-  grid-template-rows: 45% 33% 22%;
+  grid-template-rows: 38% 40% 22%;
   height: 100vh;
   max-height: 100vh;
   --ground-surface-inset: 140px;
@@ -989,15 +989,17 @@
 .calc-sprint #dash-game-screen .dash-top-hud,
 .calc-sprint #dash-game-screen .dash-bottom-hud {
   position: relative;
-  z-index: 2;
-  padding: clamp(12px, 2vh, 18px) clamp(16px, 3vw, 24px);
+  z-index: 3;
+  padding: clamp(8px, 1.6vh, 12px) clamp(12px, 2.6vw, 18px);
+  min-height: 0;
 }
 
 .calc-sprint #dash-game-screen .dash-top-hud {
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 2vh, 16px);
+  gap: clamp(8px, 1.6vh, 12px);
   justify-content: center;
+  overflow: hidden;
 }
 
 .calc-sprint #dash-game-screen .dash-top-info {
@@ -1009,9 +1011,9 @@
 
 .calc-sprint #dash-game-screen .dash-top-controls {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  gap: clamp(12px, 2vw, 20px);
+  gap: clamp(24px, 3vw, 36px);
   width: 100%;
   max-width: 980px;
   margin: 0 auto;
@@ -1025,11 +1027,11 @@
 .calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-stack {
   flex: 0 0 auto;
   width: min(360px, 42vw);
-  gap: 12px;
+  gap: 10px;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-actions {
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-submit-button {
@@ -1039,8 +1041,9 @@
 .calc-sprint #dash-game-screen .dash-bottom-hud {
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 1.6vh, 12px);
-  justify-content: center;
+  gap: clamp(6px, 1.2vh, 10px);
+  justify-content: flex-end;
+  align-self: stretch;
   pointer-events: none;
 }
 
@@ -1055,6 +1058,20 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
+  min-width: 120px;
+  padding: 8px 12px;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-value {
+  font-size: 22px;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-label,
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-unit {
+  font-size: 12px;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-side {
