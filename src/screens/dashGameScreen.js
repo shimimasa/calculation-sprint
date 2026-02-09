@@ -130,21 +130,6 @@ const logKeypadDebug = (label, payload = {}) => {
   }
   console.log(`[keypad-debug:${label}]`, payload);
 };
-const operatorSymbolByMode = {
-  add: '+',
-  sub: '-',
-  mul: '×',
-  div: '÷',
-};
-const enemyTypeByOperator = {
-  '+': 'plus',
-  '-': 'minus',
-  '×': 'multi',
-  '*': 'multi',
-  '÷': 'divide',
-  '/': 'divide',
-};
-
 const dashGameScreen = {
   answerBuffer: '',
   isSyncingAnswer: false,
@@ -745,24 +730,9 @@ const dashGameScreen = {
     if (domRefs.dashGame.question) {
       domRefs.dashGame.question.textContent = this.currentQuestion.text;
     }
-    // Derive the current operator for enemy type mapping (fallback to rendered text if needed).
-    this.currentOperatorSymbol = this.getCurrentOperatorSymbol();
     this.setAnswer('', { handler: 'load' });
     this.focusAnswerInput();
     this.clearFeedback();
-  },
-  getCurrentOperatorSymbol() {
-    const mode = this.currentQuestion?.meta?.mode;
-    if (mode && operatorSymbolByMode[mode]) {
-      return operatorSymbolByMode[mode];
-    }
-    const text = this.currentQuestion?.text ?? domRefs.dashGame.question?.textContent ?? '';
-    const match = text.match(/[+\-×*÷/]/);
-    return match ? match[0] : null;
-  },
-  getCurrentEnemyType() {
-    const operatorSymbol = this.getCurrentOperatorSymbol();
-    return enemyTypeByOperator[operatorSymbol] ?? null;
   },
   submitAnswer() {
     if (!this.canSubmit()) {
@@ -784,6 +754,10 @@ const dashGameScreen = {
     }
     const isCorrect = numericValue === this.currentQuestion.answer;
     if (isCorrect) {
+      const defeatedEnemy = this.enemySystem?.defeatNearestEnemy({
+        playerRect: this.getPlayerRect(),
+        nowMs: window.performance.now(),
+      });
       audioManager.playSfx('sfx_correct');
       gameState.dash.correctCount += 1;
       gameState.dash.streak += 1;
@@ -798,7 +772,9 @@ const dashGameScreen = {
       if (gameState.dash.streak === streakDefeat) {
         this.showStreakCue(STREAK_DEFEAT_CUE_TEXT);
         audioManager.playSfx('sfx_levelup', { volume: 0.8 });
-        this.timeLeftMs += timeBonusOnDefeat;
+        if (defeatedEnemy) {
+          this.timeLeftMs += timeBonusOnDefeat;
+        }
         this.enemyGapM = collisionThreshold * 2;
         this.enemySpeed = enemyBaseSpeed;
         gameState.dash.streak = 0;
@@ -840,7 +816,6 @@ const dashGameScreen = {
       groundY,
       playerRect,
       correctCount: gameState.dash.correctCount,
-      enemyType: this.getCurrentEnemyType(),
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
     });
     if (enemyUpdate) {
