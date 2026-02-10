@@ -2915,12 +2915,12 @@
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-main {
-  width: min(300px, 100%);
+  width: min(360px, 100%);
   margin-inline: auto;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .question-area.problem-frame {
-  width: min(200px, 100%);
+  width: min(300px, 100%);
   align-items: stretch;
 }
 
