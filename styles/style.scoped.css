@@ -2915,11 +2915,12 @@
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-main {
-  width: 100%;
+  width: min(430px, 100%);
+  margin-inline: auto;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .question-area.problem-frame {
-  width: min(440px, 100%);
+  width: 100%;
   align-items: stretch;
 }
 
@@ -2932,7 +2933,12 @@
   justify-content: flex-start;
   gap: clamp(2px, 0.5vh, 6px);
   padding-top: clamp(2px, 0.4vh, 6px);
-  margin-top: clamp(-18px, -2.4vh, -10px);
+  margin-top: clamp(-24px, -3vh, -14px);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud > #dash-game-time-wrap {
+  margin-bottom: 0;
+  transform: translateY(6px);
 }
 
 .calc-sprint #dash-game-screen .dash-timebar {
