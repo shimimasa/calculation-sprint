@@ -2791,30 +2791,47 @@
   }
 }
 
-/* Dash UI fix 2nd: single-stage background + grounded runner/enemy alignment */
-.calc-sprint .screen-dash {
-  background-image: url("../assets/bg-sky.png"), url("../assets/bg-cloud.png");
-  background-size: cover, auto 160px;
-  background-position: center top, left 30% top;
-  background-repeat: no-repeat, repeat-x;
+/* Dash UI fix 2nd: pseudo-element sky/cloud background layers */
+.calc-sprint .screen-dash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("../assets/bg-sky.png");
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
 }
 
-.calc-sprint .screen-dash[data-area="1"],
-.calc-sprint .screen-dash[data-area="2"],
-.calc-sprint .screen-dash[data-area="3"],
-.calc-sprint .screen-dash[data-area="4"] {
-  background-image: url("../assets/bg-sky.png"), url("../assets/bg-cloud.png");
+.calc-sprint .screen-dash::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 220px;
+  z-index: 1;
+  pointer-events: none;
+  background-image: url("../assets/bg-cloud.png");
+  background-size: auto 160px;
+  background-position: left 30% top;
+  background-repeat: repeat-x;
 }
 
 .calc-sprint #dash-game-screen {
   --dash-ground-y: 90px;
   --ground-surface-inset: var(--dash-ground-y);
   grid-template-rows: auto 1fr minmax(56px, 80px);
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
 }
 
 .calc-sprint .screen-dash > header.dash-header,
 .calc-sprint .screen-dash > .screen-main.dash-playfield,
 .calc-sprint .screen-dash > .screen-footer,
+.calc-sprint .screen-dash > *,
 .calc-sprint #dash-game-screen > header.dash-header,
 .calc-sprint #dash-game-screen > .screen-main.dash-playfield,
 .calc-sprint #dash-game-screen > .screen-footer,
@@ -2855,6 +2872,11 @@
   border-color: transparent !important;
 }
 
+.calc-sprint .screen-dash > * {
+  position: relative;
+  z-index: 2;
+}
+
 .calc-sprint #dash-game-screen .run-world {
   border-radius: 0;
 }
@@ -2875,6 +2897,10 @@
   box-shadow: none;
 }
 
+.calc-sprint .screen-dash .speed-lines,
+.calc-sprint .screen-dash .speed-lines.is-fast,
+.calc-sprint .screen-dash .speed-lines.is-rapid,
+.calc-sprint .screen-dash .speed-lines.boost-lines,
 .calc-sprint #dash-game-screen .speed-lines,
 .calc-sprint #dash-game-screen .speed-lines.is-fast,
 .calc-sprint #dash-game-screen .speed-lines.is-rapid,
