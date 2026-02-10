@@ -772,7 +772,7 @@
 }.calc-sprint .screen-dash {
   position: relative;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow: hidden;
 }.calc-sprint .screen-dash .stage-card {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(56, 103, 255, 0.12);
@@ -2810,13 +2810,23 @@
   left: 0;
   right: 0;
   top: 0;
-  height: 220px;
+  height: 58vh;
   z-index: 1;
   pointer-events: none;
   background-image: url("../assets/bg-cloud.png");
   background-size: auto 160px;
-  background-position: left 30% top;
+  background-position: 0 top;
   background-repeat: repeat-x;
+  animation: dashCloudDrift 28s linear infinite;
+}
+
+@keyframes dashCloudDrift {
+  from {
+    background-position: 0 top;
+  }
+  to {
+    background-position: -900px top;
+  }
 }
 
 .calc-sprint #dash-game-screen {
@@ -2882,6 +2892,13 @@
 }
 
 .calc-sprint #dash-game-screen .run-sky {
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+.calc-sprint #dash-game-screen .run-zone {
+  background: transparent !important;
   background-image: none !important;
   background-color: transparent !important;
 }
