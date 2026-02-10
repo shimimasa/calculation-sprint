@@ -958,7 +958,7 @@
   height: 100%;
   max-height: 100%;
   /* Dash: ground Y is driven by this CSS var (JS reads it). */
-  --ground-surface-inset: 84px;
+  --ground-surface-inset: 68px;
 }
 .calc-sprint #dash-game-screen .screen__title {
   font-size: 24px;
@@ -1031,11 +1031,6 @@
   align-items: center;
   gap: 4px;
 }
-
-.calc-sprint #dash-game-screen .dash-top-hud #dash-game-time-wrap {
-  align-self: center;
-}
-
 
 .calc-sprint #dash-game-screen .dash-top-side {
   width: 100%;
@@ -1118,12 +1113,13 @@
 .calc-sprint #dash-game-screen .dash-bottom-hud {
   grid-row: 3;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   align-self: stretch;
   pointer-events: none;
-  padding: clamp(4px, 0.8vh, 8px) clamp(10px, 1.6vw, 14px);
+  gap: clamp(4px, 0.7vh, 8px);
+  padding: clamp(6px, 1vh, 10px) clamp(10px, 1.6vw, 14px);
   /* Show dash background (run-sky) behind bottom HUD too */
   background: rgba(255, 255, 255, 0.08);
   -webkit-backdrop-filter: blur(8px);
@@ -1165,6 +1161,16 @@
   align-items: center;
   gap: clamp(6px, 1vw, 10px);
   width: min(920px, 100%);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud > #dash-game-time-wrap {
+  width: min(920px, 100%);
+  margin: 0;
+  align-self: center;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud > #dash-game-time-wrap .dash-timevalue {
+  margin-left: auto;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
@@ -1459,7 +1465,7 @@
   z-index: 2;
 }
 .calc-sprint #dash-game-screen .dash-time-hud {
-  margin-bottom: clamp(8px, 1.6vh, 12px);
+  margin-bottom: 0;
 }
 .calc-sprint #dash-game-screen .dash-keypad-stack {
   display: flex;
@@ -1472,11 +1478,31 @@
   display: grid;
   gap: clamp(10px, 2vh, 14px);
   align-items: start;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 /* Keep the problem card visually "clean" when we detach it from the lane on wide screens. */
 .calc-sprint #dash-game-screen .dash-problem-main .question-area {
   transform: none;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.calc-sprint #dash-game-screen .problem-frame {
+  background: transparent;
+  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.34);
+}
+
+.calc-sprint #dash-game-screen .problem-frame::before,
+.calc-sprint #dash-game-screen .problem-frame::after {
+  opacity: 0;
+  box-shadow: none;
 }
 .calc-sprint #dash-game-screen .game-actions {
   margin-top: 0;
@@ -1645,6 +1671,14 @@
   margin-top: clamp(2px, 0.6vh, 6px);
   position: relative;
   z-index: 6;
+}
+
+.calc-sprint #dash-game-screen .dash-problem-grid,
+.calc-sprint #dash-game-screen .dash-keypad-stack,
+.calc-sprint #dash-game-screen #dash-game-keypad {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
 }
 .calc-sprint #dash-game-screen .dash-submit-button {
   width: min(380px, 100%);
