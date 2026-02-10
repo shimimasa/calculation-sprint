@@ -2818,20 +2818,20 @@
   pointer-events: none;
   background-image:
     url("../assets/bg-cloud.png"),
-    url("../assets/bg-cloud.png"),
     url("../assets/bg-cloud.png");
-  background-repeat: repeat-x, repeat-x, repeat-x;
-  background-size: auto 120px, auto 90px, auto 150px;
-  background-position: 0px 20px, 260px 110px, 740px 180px;
-  animation: dashCloudDrift 28s linear infinite;
+  background-repeat: repeat-x, no-repeat;
+  background-size: auto 210px, auto 290px;
+  background-position: 0px 48px, right 15% top 168px;
+  opacity: 0.62;
+  animation: dashCloudDrift 44s linear infinite;
 }
 
 @keyframes dashCloudDrift {
   from {
-    background-position: 0px 20px, 260px 110px, 740px 180px;
+    background-position: 0px 48px, right 15% top 168px;
   }
   to {
-    background-position: -900px 20px, -640px 110px, -160px 180px;
+    background-position: -880px 48px, right 35% top 168px;
   }
 }
 
@@ -2912,6 +2912,27 @@
 .calc-sprint #dash-game-screen .run-ground {
   bottom: 0;
   transform: none;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls .dash-problem-main {
+  width: 100%;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls .question-area.problem-frame {
+  width: min(440px, 100%);
+  align-items: stretch;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls .dash-problem-panel,
+.calc-sprint #dash-game-screen .dash-top-controls .answer-input {
+  width: 100%;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud {
+  justify-content: flex-start;
+  gap: clamp(2px, 0.5vh, 6px);
+  padding-top: clamp(2px, 0.4vh, 6px);
+  margin-top: clamp(-18px, -2.4vh, -10px);
 }
 
 .calc-sprint #dash-game-screen .dash-timebar {
