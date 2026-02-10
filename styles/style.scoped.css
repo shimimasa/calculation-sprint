@@ -1032,6 +1032,24 @@
   align-self: center;
 }
 
+
+.calc-sprint #dash-game-screen .dash-top-side {
+  width: min(980px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(8px, 1.4vw, 14px);
+  pointer-events: auto;
+}
+
+.calc-sprint #dash-game-screen .dash-top-side .dash-proximity {
+  min-width: min(220px, 60vw);
+  max-width: 320px;
+  padding: 8px 10px;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
 .calc-sprint #dash-game-screen .dash-top-controls {
   display: flex;
   align-items: center;
@@ -1078,12 +1096,12 @@
 .calc-sprint #dash-game-screen .dash-bottom-hud {
   grid-row: 3;
   display: flex;
-  flex-direction: column;
-  gap: clamp(4px, 0.8vh, 8px);
-  justify-content: flex-end;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
   align-self: stretch;
   pointer-events: none;
-  padding: clamp(6px, 1.1vh, 10px) clamp(12px, 2vw, 16px);
+  padding: clamp(4px, 0.8vh, 8px) clamp(10px, 1.6vw, 14px);
   /* Show dash background (run-sky) behind bottom HUD too */
   background: rgba(255, 255, 255, 0.08);
   -webkit-backdrop-filter: blur(8px);
@@ -1119,46 +1137,17 @@
   left: auto;
 }
 
-.calc-sprint #dash-game-screen .dash-bottom-hud .dash-time {
-  width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
-}
-
-.calc-sprint #dash-game-screen .dash-bottom-hud .dash-time-hud {
-  order: 0;
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto;
-  align-items: center;
-  gap: clamp(8px, 1.4vw, 14px);
-  margin-bottom: clamp(6px, 1vh, 12px);
-}
-
-.calc-sprint #dash-game-screen .dash-bottom-hud .dash-timebar {
-  flex: 1 1 auto;
-}
-
-.calc-sprint #dash-game-screen .dash-bottom-hud .dash-timevalue {
-  justify-content: flex-end;
-}
-
-.calc-sprint #dash-game-screen .dash-bottom-hud .dash-time-note {
-  grid-column: 1 / -1;
-}
-
 .calc-sprint #dash-game-screen .dash-bottom-stats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  order: 1;
-  max-width: min(820px, 100%);
-  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: clamp(6px, 1vw, 10px);
+  width: min(920px, 100%);
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
-  min-width: 110px;
-  padding: 5px 8px;
+  min-width: 0;
+  padding: clamp(2px, 0.5vh, 4px) clamp(6px, 1vw, 10px);
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-value {
@@ -1170,36 +1159,6 @@
   font-size: 11px;
 }
 
-.calc-sprint #dash-game-screen .dash-bottom-side {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: clamp(6px, 1.4vw, 12px);
-  pointer-events: none;
-  width: 100%;
-  order: 2;
-  align-self: flex-end;
-  max-width: min(520px, 100%);
-}
-
-.calc-sprint #dash-game-screen .dash-bottom-side .dash-proximity {
-  min-width: min(240px, 70vw);
-  max-width: 320px;
-  padding: 8px 10px;
-  gap: 6px;
-  display: none;
-}
-
-.calc-sprint #dash-game-screen .dash-bottom-side .dash-proximity-bar {
-  height: 10px;
-}
-
-.calc-sprint #dash-game-screen .dash-bottom-side .dash-proximity,
-.calc-sprint #dash-game-screen .dash-bottom-side .title-actions,
-.calc-sprint #dash-game-screen .dash-bottom-side button {
-  pointer-events: auto;
-}
 .calc-sprint #dash-game-screen > .screen-main.dash-playfield {
   max-width: 980px;
   margin: 0 auto;
