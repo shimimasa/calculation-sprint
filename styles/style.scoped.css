@@ -958,7 +958,7 @@
   height: 100%;
   max-height: 100%;
   /* Dash: ground Y is driven by this CSS var (JS reads it). */
-  --ground-surface-inset: 170px;
+  --ground-surface-inset: 84px;
 }
 .calc-sprint #dash-game-screen .screen__title {
   font-size: 24px;
@@ -1008,6 +1008,10 @@
 
 .calc-sprint #dash-game-screen .run-ground {
   bottom: var(--ground-surface-inset, 0px);
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  z-index: 2;
 }
 
 .calc-sprint #dash-game-screen .dash-top-hud {
@@ -1015,9 +1019,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: clamp(4px, 0.8vh, 8px);
-  padding: clamp(4px, 0.8vh, 8px) clamp(8px, 1.6vw, 12px);
+  padding: clamp(6px, 1.1vh, 12px) clamp(8px, 1.6vw, 12px) clamp(4px, 0.8vh, 8px);
   overflow: visible;
 }
 
@@ -1063,33 +1067,39 @@
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls {
-  display: flex;
-  align-items: center;
+  display: grid;
+  align-items: start;
   justify-content: center;
-  gap: clamp(10px, 1.8vw, 18px);
+  gap: clamp(8px, 1.4vw, 14px);
   width: 100%;
   max-width: 980px;
   margin: 0 auto;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-top-cluster {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  align-items: start;
   justify-content: center;
-  gap: clamp(12px, 2vw, 20px);
+  gap: clamp(10px, 1.8vw, 16px);
   width: 100%;
   max-width: 980px;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-grid {
-  flex: 1 1 320px;
-  max-width: 520px;
+  min-width: 0;
+  max-width: 560px;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-stack {
-  flex: 0 0 auto;
-  width: min(360px, 42vw);
+  width: min(360px, 100%);
   gap: 8px;
+}
+
+.calc-sprint #dash-game-screen #dash-game-enemy,
+.calc-sprint #dash-game-screen #dash-game-back-button,
+.calc-sprint #dash-game-screen #dash-game-next-area {
+  display: none !important;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-actions {
@@ -1772,8 +1782,10 @@
     width: 100%;
   }
   .calc-sprint #dash-game-screen .dash-top-controls {
-    flex-direction: column;
-    align-items: stretch;
+    justify-content: stretch;
+  }
+  .calc-sprint #dash-game-screen .dash-top-controls .dash-top-cluster {
+    grid-template-columns: 1fr;
   }
   .calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-stack {
     width: 100%;
