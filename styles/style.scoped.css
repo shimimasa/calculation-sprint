@@ -2933,7 +2933,7 @@
   justify-content: flex-start;
   gap: clamp(2px, 0.5vh, 6px);
   padding-top: clamp(2px, 0.4vh, 6px);
-  margin-top: clamp(-72px, -10vh, -56px);
+  margin-top: clamp(-88px, -12vh, -72px);
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud > #dash-game-time-wrap {
