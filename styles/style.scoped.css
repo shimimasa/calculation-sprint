@@ -1034,7 +1034,9 @@
 
 
 .calc-sprint #dash-game-screen .dash-top-side {
-  width: min(980px, 100%);
+  width: 100%;
+  max-width: 980px;
+  align-self: stretch;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -1048,6 +1050,16 @@
   padding: 8px 10px;
   gap: 6px;
   background: rgba(255, 255, 255, 0.18);
+}
+
+
+.calc-sprint #dash-game-screen .dash-top-side #dash-game-back-button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(29, 36, 51, 0.56);
+  color: #fff;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls {
