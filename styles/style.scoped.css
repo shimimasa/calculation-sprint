@@ -2964,7 +2964,8 @@
 }
 
 .calc-sprint #dash-game-screen {
-  --dash-hud-border: rgba(218, 233, 255, 0.76);
+  --dash-hud-border: rgba(224, 237, 255, 0.92);
+  --dash-hud-outline: rgba(120, 172, 246, 0.42);
   --dash-hud-surface: rgba(186, 213, 255, 0.2);
   --dash-hud-surface-strong: rgba(164, 200, 255, 0.26);
   --dash-hud-text-main: rgba(16, 28, 48, 0.98);
@@ -2972,25 +2973,27 @@
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud {
-  gap: clamp(6px, 1.2vh, 12px);
-  padding-top: clamp(4px, 0.8vh, 8px);
-  padding-bottom: max(2px, env(safe-area-inset-bottom));
+  max-height: clamp(140px, 22vh, 220px);
+  gap: clamp(4px, 0.7vh, 8px);
+  padding-top: clamp(2px, 0.4vh, 5px);
+  padding-bottom: max(1px, env(safe-area-inset-bottom));
+  margin-top: 0;
 }
 
 .calc-sprint #dash-game-screen #dash-game-time-wrap {
   background: linear-gradient(180deg, rgba(189, 219, 255, 0.2) 0%, rgba(152, 193, 255, 0.16) 100%) !important;
-  border: 1px solid var(--dash-hud-border) !important;
+  border: 2px solid var(--dash-hud-border) !important;
   border-radius: 14px;
-  padding: clamp(8px, 1.1vh, 12px) clamp(10px, 1.8vw, 16px);
-  box-shadow: 0 3px 12px rgba(19, 35, 62, 0.2) !important;
+  padding: clamp(6px, 0.9vh, 10px) clamp(8px, 1.5vw, 13px);
+  box-shadow: 0 0 0 2px var(--dash-hud-outline), inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
 }
 
 .calc-sprint #dash-game-screen .dash-timebar {
   min-height: clamp(13px, 1.9vh, 18px);
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(251, 254, 255, 0.72) 0%, rgba(213, 229, 255, 0.62) 100%) !important;
-  border: 1px solid rgba(34, 52, 82, 0.32) !important;
-  box-shadow: inset 0 1px 3px rgba(20, 33, 54, 0.26), 0 1px 6px rgba(20, 33, 54, 0.18) !important;
+  border: 2px solid rgba(34, 52, 82, 0.48) !important;
+  box-shadow: 0 0 0 2px rgba(150, 186, 241, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 1px 3px rgba(20, 33, 54, 0.26) !important;
 }
 
 .calc-sprint #dash-game-screen .dash-timebar__fill {
@@ -2998,17 +3001,17 @@
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats {
-  gap: clamp(8px, 1vw, 12px);
+  gap: clamp(5px, 0.7vw, 8px);
   overflow: hidden;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
   min-width: 0;
-  padding: clamp(6px, 1vh, 10px) clamp(8px, 1.3vw, 12px);
+  padding: clamp(5px, 0.8vh, 8px) clamp(7px, 1.1vw, 10px);
   border-radius: 14px;
-  border: 1px solid var(--dash-hud-border) !important;
+  border: 2px solid var(--dash-hud-border) !important;
   background: linear-gradient(180deg, var(--dash-hud-surface-strong) 0%, var(--dash-hud-surface) 100%) !important;
-  box-shadow: none !important;
+  box-shadow: 0 0 0 2px var(--dash-hud-outline), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
 }
 
 .calc-sprint #dash-game-screen .dash-stat-value {
@@ -3033,13 +3036,15 @@
   }
 
   .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
-    min-width: min(100%, 150px);
+    min-width: min(100%, 138px);
   }
 }
 
 @media (max-width: 640px) {
   .calc-sprint #dash-game-screen .dash-bottom-hud {
-    width: min(100%, 100vw - 16px);
+    width: min(100%, 100vw - 12px);
+    max-height: clamp(132px, 24vh, 196px);
+    gap: 4px;
   }
 
   .calc-sprint #dash-game-screen #dash-game-time-wrap {
@@ -3048,7 +3053,8 @@
   }
 
   .calc-sprint #dash-game-screen .dash-bottom-stats {
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    grid-template-columns: repeat(2, minmax(112px, 1fr));
+    gap: 4px 6px;
     width: 100%;
   }
 
