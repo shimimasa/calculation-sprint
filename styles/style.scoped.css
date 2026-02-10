@@ -773,6 +773,9 @@
   position: relative;
   min-height: 100vh;
   overflow: hidden;
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
 }.calc-sprint .screen-dash .stage-card {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(56, 103, 255, 0.12);
@@ -2798,10 +2801,10 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("../assets/bg-sky.png");
-  background-size: cover;
-  background-position: center top;
-  background-repeat: no-repeat;
+  background-image: url("../assets/bg-sky.png") !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
 }
 
 .calc-sprint .screen-dash::after {
@@ -2810,22 +2813,25 @@
   left: 0;
   right: 0;
   top: 0;
-  height: 58vh;
+  height: 60vh;
   z-index: 1;
   pointer-events: none;
-  background-image: url("../assets/bg-cloud.png");
-  background-size: auto 160px;
-  background-position: 0 top;
-  background-repeat: repeat-x;
+  background-image:
+    url("../assets/bg-cloud.png"),
+    url("../assets/bg-cloud.png"),
+    url("../assets/bg-cloud.png");
+  background-repeat: repeat-x, repeat-x, repeat-x;
+  background-size: auto 120px, auto 90px, auto 150px;
+  background-position: 0px 20px, 260px 110px, 740px 180px;
   animation: dashCloudDrift 28s linear infinite;
 }
 
 @keyframes dashCloudDrift {
   from {
-    background-position: 0 top;
+    background-position: 0px 20px, 260px 110px, 740px 180px;
   }
   to {
-    background-position: -900px top;
+    background-position: -900px 20px, -640px 110px, -160px 180px;
   }
 }
 
@@ -2918,10 +2924,12 @@
 .calc-sprint .screen-dash .speed-lines.is-fast,
 .calc-sprint .screen-dash .speed-lines.is-rapid,
 .calc-sprint .screen-dash .speed-lines.boost-lines,
+.calc-sprint .screen-dash [class*="speed-lines"],
 .calc-sprint #dash-game-screen .speed-lines,
 .calc-sprint #dash-game-screen .speed-lines.is-fast,
 .calc-sprint #dash-game-screen .speed-lines.is-rapid,
-.calc-sprint #dash-game-screen .speed-lines.boost-lines {
+.calc-sprint #dash-game-screen .speed-lines.boost-lines,
+.calc-sprint #dash-game-screen [class*="speed-lines"] {
   background: none !important;
   background-image: none !important;
   opacity: 0 !important;
