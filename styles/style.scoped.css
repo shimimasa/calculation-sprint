@@ -2920,7 +2920,7 @@
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .question-area.problem-frame {
-  width: 100%;
+  width: min(200px, 100%);
   align-items: stretch;
 }
 
