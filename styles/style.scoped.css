@@ -956,12 +956,16 @@
   position: relative;
   display: grid;
   --dash-run-h: clamp(260px, 42vh, 420px);
+<<<<<<< HEAD
   /* Bottom HUD was too tall -> make it tighter */
   --dash-bottom-min: clamp(96px, 14vh, 160px);
+=======
+  --dash-bottom-min: clamp(120px, 18vh, 200px);
+>>>>>>> 43c5380c643093a6b1999c371e76d834439619af
   grid-template-rows: auto var(--dash-run-h) minmax(var(--dash-bottom-min), auto);
   height: 100%;
   max-height: 100%;
-  --ground-surface-inset: 140px;
+  --ground-surface-inset: 170px;
 }
 .calc-sprint #dash-game-screen .screen__title {
   font-size: 24px;
@@ -1013,8 +1017,10 @@
   grid-row: 1;
   display: flex;
   flex-direction: column;
-  gap: clamp(6px, 1.2vh, 10px);
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 0.8vh, 8px);
+  padding: clamp(4px, 0.8vh, 8px) clamp(8px, 1.6vw, 12px);
   overflow: visible;
 }
 
@@ -1022,14 +1028,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(12px, 2vw, 20px);
+  gap: clamp(10px, 1.8vw, 18px);
   width: 100%;
   max-width: 980px;
   margin: 0 auto;
@@ -1039,7 +1045,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(16px, 2.4vw, 24px);
+  gap: clamp(12px, 2vw, 20px);
   width: 100%;
   max-width: 980px;
 }
@@ -1052,21 +1058,27 @@
 .calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-stack {
   flex: 0 0 auto;
   width: min(360px, 42vw);
-  gap: 10px;
+  gap: 8px;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-keypad-actions {
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-submit-button {
-  width: 100%;
+  width: min(380px, 100%);
+  height: 52px;
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-size: 18px;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud {
   grid-row: 3;
   display: flex;
   flex-direction: column;
+<<<<<<< HEAD
   gap: clamp(4px, 0.8vh, 8px);
   justify-content: flex-end;
   align-self: stretch;
@@ -1089,6 +1101,20 @@
 /* Ensure the run viewport (sky/ground) is the base layer everywhere */
 .calc-sprint #dash-game-screen .dash-run-zone {
   background: transparent;
+=======
+  gap: clamp(6px, 1.1vh, 10px);
+  justify-content: flex-end;
+  align-self: stretch;
+  pointer-events: none;
+  padding: clamp(4px, 0.8vh, 8px) clamp(10px, 1.8vw, 14px) clamp(20px, 3vh, 28px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  overflow: visible;
+}
+
+.calc-sprint #dash-game-screen .dash-run-zone #dash-game-time-wrap {
+  display: none;
+>>>>>>> 43c5380c643093a6b1999c371e76d834439619af
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud #dash-game-time-wrap,
@@ -1113,25 +1139,49 @@
   margin: 0 auto;
 }
 
+.calc-sprint #dash-game-screen .dash-bottom-hud .dash-time-hud {
+  order: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: clamp(8px, 1.4vw, 14px);
+  margin-bottom: clamp(6px, 1vh, 12px);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud .dash-timebar {
+  flex: 1 1 auto;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud .dash-timevalue {
+  justify-content: flex-end;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud .dash-time-note {
+  grid-column: 1 / -1;
+}
+
 .calc-sprint #dash-game-screen .dash-bottom-stats {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
+  order: 1;
+  max-width: min(820px, 100%);
+  margin: 0 auto;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
-  min-width: 120px;
-  padding: 6px 10px;
+  min-width: 110px;
+  padding: 5px 8px;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-value {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-label,
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-unit {
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-side {
@@ -1139,9 +1189,24 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: clamp(8px, 1.6vw, 14px);
+  gap: clamp(6px, 1.4vw, 12px);
   pointer-events: none;
   width: 100%;
+  order: 2;
+  align-self: flex-end;
+  max-width: min(520px, 100%);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-side .dash-proximity {
+  min-width: min(240px, 70vw);
+  max-width: 320px;
+  padding: 8px 10px;
+  gap: 6px;
+  display: none;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-side .dash-proximity-bar {
+  height: 10px;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-side .dash-proximity,
@@ -1610,13 +1675,15 @@
   display: flex;
   justify-content: center;
   width: 100%;
-  margin-top: clamp(4px, 1vh, 10px);
+  margin-top: clamp(2px, 0.6vh, 6px);
   position: relative;
   z-index: 6;
 }
 .calc-sprint #dash-game-screen .dash-submit-button {
-  width: min(520px, 100%);
-  min-height: clamp(48px, 6vh, 56px);
+  width: min(380px, 100%);
+  height: 52px;
+  min-height: 52px;
+  font-size: 18px;
   opacity: 0.95;
   box-shadow: none;
 }
