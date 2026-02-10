@@ -770,18 +770,9 @@
 }.calc-sprint .form-label {
   font-weight: 600;
 }.calc-sprint .screen-dash {
-  background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
   position: relative;
   min-height: 100vh;
   overflow-x: hidden;
-}.calc-sprint .screen-dash[data-area="1"] {
-  background: linear-gradient(180deg, #eef2f9 0%, #dfe6f4 100%);
-}.calc-sprint .screen-dash[data-area="2"] {
-  background: linear-gradient(180deg, #ebf4f3 0%, #d8e8e7 100%);
-}.calc-sprint .screen-dash[data-area="3"] {
-  background: linear-gradient(180deg, #f1f0f9 0%, #e1e2f3 100%);
-}.calc-sprint .screen-dash[data-area="4"] {
-  background: linear-gradient(180deg, #f5f0e7 0%, #e7decd 100%);
 }.calc-sprint .screen-dash .stage-card {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(56, 103, 255, 0.12);
@@ -2801,21 +2792,35 @@
 }
 
 /* Dash UI fix 2nd: single-stage background + grounded runner/enemy alignment */
-.calc-sprint #dash-game-screen {
-  --dash-stage-sky: url("../assets/bg-sky.png");
-  --dash-stage-cloud: url("../assets/bg-cloud.png");
-  --dash-ground-y: 90px;
-  --ground-surface-inset: var(--dash-ground-y);
-  grid-template-rows: auto 1fr minmax(56px, 80px);
-  background-image: var(--dash-stage-sky), var(--dash-stage-cloud);
-  background-size: cover, auto 168px;
-  background-position: center top, left top;
+.calc-sprint .screen-dash {
+  background-image: url("../assets/bg-sky.png"), url("../assets/bg-cloud.png");
+  background-size: cover, auto 160px;
+  background-position: center top, left 30% top;
   background-repeat: no-repeat, repeat-x;
 }
 
+.calc-sprint .screen-dash[data-area="1"],
+.calc-sprint .screen-dash[data-area="2"],
+.calc-sprint .screen-dash[data-area="3"],
+.calc-sprint .screen-dash[data-area="4"] {
+  background-image: url("../assets/bg-sky.png"), url("../assets/bg-cloud.png");
+}
+
+.calc-sprint #dash-game-screen {
+  --dash-ground-y: 90px;
+  --ground-surface-inset: var(--dash-ground-y);
+  grid-template-rows: auto 1fr minmax(56px, 80px);
+}
+
+.calc-sprint .screen-dash > header.dash-header,
+.calc-sprint .screen-dash > .screen-main.dash-playfield,
+.calc-sprint .screen-dash > .screen-footer,
 .calc-sprint #dash-game-screen > header.dash-header,
 .calc-sprint #dash-game-screen > .screen-main.dash-playfield,
 .calc-sprint #dash-game-screen > .screen-footer,
+.calc-sprint .screen-dash .dash-top-hud,
+.calc-sprint .screen-dash .dash-run-zone,
+.calc-sprint .screen-dash .dash-bottom-hud,
 .calc-sprint #dash-game-screen .dash-top-hud,
 .calc-sprint #dash-game-screen .dash-run-zone,
 .calc-sprint #dash-game-screen .dash-bottom-hud,
