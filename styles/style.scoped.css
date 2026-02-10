@@ -1028,6 +1028,10 @@
   gap: 4px;
 }
 
+.calc-sprint #dash-game-screen .dash-top-hud #dash-game-time-wrap {
+  align-self: center;
+}
+
 .calc-sprint #dash-game-screen .dash-top-controls {
   display: flex;
   align-items: center;

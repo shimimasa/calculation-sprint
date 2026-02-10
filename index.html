@@ -164,6 +164,16 @@
             <p id="dash-game-next-area" class="dash-next-area" aria-live="off"></p>
             <p class="dash-rules-hint">正解で時間＋／まちがいで時間−／ぶつかると終了</p>
           </div>
+          <div id="dash-game-time-wrap" class="dash-time dash-time-hud" aria-label="残り時間">
+            <div class="dash-timebar" aria-hidden="true">
+              <div id="dash-game-timebar" class="dash-timebar__fill"></div>
+            </div>
+            <div class="dash-timevalue" aria-label="残り秒数">
+              <strong id="dash-game-time" class="dash-time-seconds">30</strong>
+              <span class="dash-time-unit">秒</span>
+            </div>
+            <div id="dash-game-time-note" class="dash-time-note" aria-live="polite"></div>
+          </div>
           <div class="dash-top-controls" aria-label="問題と入力エリア">
             <div class="dash-top-cluster">
               <div class="dash-problem-grid" aria-label="問題入力エリア">
@@ -227,16 +237,6 @@
           </div>
         </div>
         <div class="dash-bottom-hud" aria-label="ダッシュステータス">
-          <div id="dash-game-time-wrap" class="dash-time dash-time-hud" aria-label="残り時間">
-            <div class="dash-timebar" aria-hidden="true">
-              <div id="dash-game-timebar" class="dash-timebar__fill"></div>
-            </div>
-            <div class="dash-timevalue" aria-label="残り秒数">
-              <strong id="dash-game-time" class="dash-time-seconds">30</strong>
-              <span class="dash-time-unit">秒</span>
-            </div>
-            <div id="dash-game-time-note" class="dash-time-note" aria-live="polite"></div>
-          </div>
           <div class="dash-bottom-stats" aria-label="ステータス">
             <div class="dash-stat-card">
               <span class="dash-stat-label">速度</span>
