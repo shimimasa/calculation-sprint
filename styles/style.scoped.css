@@ -1194,6 +1194,16 @@
   margin-left: auto;
 }
 
+.calc-sprint #dash-game-screen .dash-bottom-hud > #dash-game-time-wrap {
+  width: min(920px, 100%);
+  margin: 0;
+  align-self: center;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud > #dash-game-time-wrap .dash-timevalue {
+  margin-left: auto;
+}
+
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
   min-width: 0;
   padding: clamp(2px, 0.5vh, 4px) clamp(6px, 1vw, 10px);
