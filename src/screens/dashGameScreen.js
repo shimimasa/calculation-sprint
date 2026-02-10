@@ -11,13 +11,17 @@ import {
   enemyBaseSpeed,
   enemySpeedIncrementPerStreak,
   collisionThreshold,
-  timePenaltyOnCollision,
   timeBonusOnCorrect,
   timePenaltyOnWrong,
   timeBonusOnDefeat,
   streakAttack,
   streakDefeat,
 } from '../features/dashConstants.js';
+import {
+  ATTACK_WINDOW_MS,
+  PX_PER_METER,
+  createDashEnemySystem,
+} from '../features/dashEnemySystem.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
@@ -25,6 +29,12 @@ const STREAK_CUE_DURATION_MS = 800;
 const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 const LOW_TIME_THRESHOLD_MS = 8000;
+const COLLISION_PENALTY_MS = 5000;
+const COLLISION_COOLDOWN_MS = 500;
+const COLLISION_SLOW_MS = 1000;
+const COLLISION_SLOW_MULT = 0.7;
+const KICK_MS = 300;
+const MAX_LUNGE_PX = 140;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
@@ -77,8 +87,9 @@ const loadCloudBaseWidth = async (src) => {
   return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
 };
 const getGroundSurfaceInsetPx = () => {
+  const target = domRefs.dashGame?.screen ?? document.documentElement;
   const inset = parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue('--ground-surface-inset'),
+    getComputedStyle(target).getPropertyValue('--ground-surface-inset'),
   );
   return Number.isFinite(inset) ? inset : DEFAULT_GROUND_SURFACE_INSET_PX;
 };
@@ -125,7 +136,6 @@ const logKeypadDebug = (label, payload = {}) => {
   }
   console.log(`[keypad-debug:${label}]`, payload);
 };
-
 const dashGameScreen = {
   answerBuffer: '',
   isSyncingAnswer: false,
@@ -307,6 +317,21 @@ const dashGameScreen = {
     runnerWrap.style.left = `${runnerBaseLeft}px`;
     this.logGroundDebug();
   },
+  getPlayerRect() {
+    const runWorld = domRefs.game.runWorld;
+    const runnerWrap = domRefs.game.runnerWrap;
+    if (!runWorld || !runnerWrap) {
+      return null;
+    }
+    const worldRect = runWorld.getBoundingClientRect();
+    const runnerRect = runnerWrap.getBoundingClientRect();
+    return {
+      x: runnerRect.left - worldRect.left,
+      y: runnerRect.top - worldRect.top,
+      w: runnerRect.width,
+      h: runnerRect.height,
+    };
+  },
   getAnswerInput() {
     const input = domRefs.dashGame.answerInput;
     if (input?.isConnected) {
@@ -379,7 +404,7 @@ const dashGameScreen = {
     cloud.scale = randomBetween(CLOUD_SCALE_MIN, CLOUD_SCALE_MAX);
     cloud.speedFactor = randomBetween(CLOUD_SPEED_MIN, CLOUD_SPEED_MAX);
   },
-  updateRunLayerVisuals(dtMs) {
+  updateRunLayerVisuals(dtMs, runSpeed = this.playerSpeed, isSlowed = false) {
     const dtSec = dtMs / 1000;
     if (!Number.isFinite(dtSec) || dtSec <= 0) {
       return;
@@ -387,13 +412,14 @@ const dashGameScreen = {
     if (this.hasEnded) {
       return;
     }
+    const nowMs = window.performance.now();
     const runWorld = domRefs.game.runWorld;
     const runSky = domRefs.game.runSky;
     const speedLines = domRefs.game.speedLines;
     const runner = domRefs.game.runner;
     const runnerWrap = domRefs.game.runnerWrap;
 
-    const speedValue = Math.max(0, Number(this.playerSpeed) || 0);
+    const speedValue = Math.max(0, Number(runSpeed) || 0);
     const baseSpeedPerSec = speedValue * BG_BASE_SPEED_PX;
     const skySpeedPerSec = baseSpeedPerSec * SKY_SPEED_FACTOR;
     const groundSpeedPerSec = baseSpeedPerSec * GROUND_SPEED_FACTOR;
@@ -449,8 +475,20 @@ const dashGameScreen = {
     runWorld?.classList.toggle('is-fast', speedRatio > 0.6);
     runWorld?.classList.toggle('is-rapid', speedRatio > 0.85);
     runner?.classList.toggle('speed-glow', speedRatio > 0.7);
+    runner?.classList.toggle('hit', isSlowed);
     runnerWrap?.classList.toggle('is-fast', speedRatio > 0.7);
     runnerWrap?.classList.toggle('is-rapid', speedRatio > 0.85);
+    if (runnerWrap) {
+      if (nowMs < (this.kickUntilMs ?? 0)) {
+        runnerWrap.classList.add('is-kicking');
+        const lungePx = Number(this.kickLungePx) || 0;
+        runnerWrap.style.setProperty('--kick-lunge-px', `${lungePx}px`);
+      } else {
+        runnerWrap.classList.remove('is-kicking');
+        runnerWrap.style.setProperty('--kick-lunge-px', '0px');
+        this.kickLungePx = 0;
+      }
+    }
 
     if (runner) {
       let nextTier = 'runner-speed-high';
@@ -585,6 +623,14 @@ const dashGameScreen = {
       domRefs.dashGame.distance.textContent = gameState.dash.distanceM.toFixed(1);
     }
     this.updateNextAreaIndicator(gameState.dash.distanceM);
+    if (domRefs.dashGame.speed) {
+      domRefs.dashGame.speed.textContent = this.playerSpeed.toFixed(1);
+    }
+    if (domRefs.dashGame.enemyCount) {
+      const enemies = this.enemySystem?.enemies ?? [];
+      const aliveCount = enemies.filter((enemy) => enemy?.isAlive && enemy.state !== 'dead').length;
+      domRefs.dashGame.enemyCount.textContent = String(aliveCount);
+    }
     if (domRefs.dashGame.timeRemaining) {
       const timeSeconds = Math.max(0, Math.ceil(this.timeLeftMs / 1000));
       domRefs.dashGame.timeRemaining.textContent = String(timeSeconds);
@@ -735,6 +781,27 @@ const dashGameScreen = {
     }
     const isCorrect = numericValue === this.currentQuestion.answer;
     if (isCorrect) {
+      const nowMs = window.performance.now();
+      const playerRect = this.getPlayerRect();
+      const defeatResult = this.enemySystem?.defeatNearestEnemy({
+        playerRect,
+        nowMs,
+      });
+      if (defeatResult?.defeated) {
+        const target = defeatResult.target;
+        if (playerRect && target) {
+          const desiredRunnerRight = target.x + target.w * 0.35;
+          const currentRunnerRight = playerRect.x + playerRect.w;
+          const rawLungePx = desiredRunnerRight - currentRunnerRight;
+          this.kickLungePx = Math.max(0, Math.min(rawLungePx, MAX_LUNGE_PX));
+        } else {
+          this.kickLungePx = 0;
+        }
+        this.kickUntilMs = nowMs + KICK_MS;
+      } else {
+        this.kickUntilMs = 0;
+        this.kickLungePx = 0;
+      }
       audioManager.playSfx('sfx_correct');
       gameState.dash.correctCount += 1;
       gameState.dash.streak += 1;
@@ -742,6 +809,9 @@ const dashGameScreen = {
       this.playerSpeed += speedIncrementPerCorrect;
       this.enemySpeed = enemyBaseSpeed + enemySpeedIncrementPerStreak * gameState.dash.streak;
       this.timeLeftMs += timeBonusOnCorrect;
+      if (defeatResult?.defeated) {
+        this.timeLeftMs += timeBonusOnDefeat;
+      }
       if (gameState.dash.streak === streakAttack) {
         this.enemyGapM += collisionThreshold;
         this.showStreakCue(STREAK_ATTACK_CUE_TEXT);
@@ -749,11 +819,11 @@ const dashGameScreen = {
       if (gameState.dash.streak === streakDefeat) {
         this.showStreakCue(STREAK_DEFEAT_CUE_TEXT);
         audioManager.playSfx('sfx_levelup', { volume: 0.8 });
-        this.timeLeftMs += timeBonusOnDefeat;
         this.enemyGapM = collisionThreshold * 2;
         this.enemySpeed = enemyBaseSpeed;
         gameState.dash.streak = 0;
       }
+      this.attackUntilMs = window.performance.now() + ATTACK_WINDOW_MS;
       this.setFeedback('○', 'correct');
     } else {
       audioManager.playSfx('sfx_wrong');
@@ -773,23 +843,54 @@ const dashGameScreen = {
     if (this.timeLeftMs <= 0) {
       return;
     }
+    const nowMs = window.performance.now();
     const dtSeconds = dtMs / 1000;
-    gameState.dash.distanceM += this.playerSpeed * dtSeconds;
+    const isSlowed = nowMs < (this.slowUntilMs ?? 0);
+    const speedMultiplier = isSlowed ? COLLISION_SLOW_MULT : 1;
+    const effectivePlayerSpeed = this.playerSpeed * speedMultiplier;
+    gameState.dash.distanceM += effectivePlayerSpeed * dtSeconds;
     this.updateArea(gameState.dash.distanceM);
-    this.enemyGapM -= (this.enemySpeed - this.playerSpeed) * dtSeconds;
-    if (this.enemyGapM <= collisionThreshold) {
-      audioManager.playSfx('sfx_wrong', { volume: 0.7 });
-      this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
-      this.enemyGapM = collisionThreshold * 2;
-      this.updateHud();
-      this.endSession('collision');
-      return;
+    const runWorld = domRefs.game.runWorld;
+    const worldRect = runWorld?.getBoundingClientRect?.();
+    const runGroundY = gameState.run.groundY ?? gameState.run.groundSurfaceY;
+    const groundY = worldRect && Number.isFinite(runGroundY)
+      ? Math.round(runGroundY - worldRect.top)
+      : null;
+    const playerRect = this.getPlayerRect();
+    const enemyUpdate = this.enemySystem?.update({
+      dtMs,
+      nowMs,
+      groundY,
+      playerRect,
+      correctCount: gameState.dash.correctCount,
+      attackActive: nowMs <= (this.attackUntilMs ?? 0),
+    });
+    if (enemyUpdate) {
+      const handledCollision = enemyUpdate.collision && !enemyUpdate.attackHandled;
+      if (handledCollision) {
+        if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
+          audioManager.playSfx('sfx_wrong', { volume: 0.7 });
+          this.timeLeftMs = Math.max(0, this.timeLeftMs - COLLISION_PENALTY_MS);
+          this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
+          this.lastCollisionPenaltyAtMs = nowMs;
+          this.updateHud();
+          if (this.timeLeftMs <= 0) {
+            this.endSession('timeup');
+            return;
+          }
+        }
+        this.enemyGapM = collisionThreshold * 2;
+      } else if (Number.isFinite(enemyUpdate.nearestDistancePx)) {
+        this.enemyGapM = enemyUpdate.nearestDistancePx / PX_PER_METER;
+      } else {
+        this.enemyGapM = collisionThreshold * 2;
+      }
     }
     this.timeLeftMs -= dtMs;
     if (this.timeLeftMs <= 0) {
       this.endSession('timeup');
     }
-    this.updateRunLayerVisuals(dtMs);
+    this.updateRunLayerVisuals(dtMs, effectivePlayerSpeed, isSlowed);
     this.updateHud();
   },
   startLoop() {
@@ -857,6 +958,10 @@ const dashGameScreen = {
     this.playerSpeed = baseSpeed;
     this.enemySpeed = enemyBaseSpeed;
     this.enemyGapM = collisionThreshold * 2;
+    this.attackUntilMs = 0;
+    this.kickUntilMs = 0;
+    this.lastCollisionPenaltyAtMs = -Infinity;
+    this.slowUntilMs = 0;
     this.timeLeftMs = this.getInitialTimeLimitMs();
     this.initialTimeLimitMs = this.timeLeftMs;
     this.lastTickTs = window.performance.now();
@@ -882,6 +987,11 @@ const dashGameScreen = {
     this.answerBuffer = '';
     this.isSyncingAnswer = false;
     this.isBgmActive = false;
+    this.enemySystem = createDashEnemySystem({
+      worldEl: domRefs.game.runWorld,
+      containerEl: domRefs.game.runEnemies,
+    });
+    this.enemySystem.reset();
     this.initRunBackgrounds();
     this.updateArea(gameState.dash.distanceM);
     this.updateHud();
@@ -1110,6 +1220,8 @@ const dashGameScreen = {
       domRefs.game.runClouds.innerHTML = '';
     }
     this.clouds = [];
+    this.enemySystem?.destroy();
+    this.enemySystem = null;
     if (this.feedbackFxTimeout) {
       window.clearTimeout(this.feedbackFxTimeout);
       this.feedbackFxTimeout = null;
