@@ -2806,3 +2806,71 @@
     flex-direction: column;
   }
 }
+
+/* Dash UI fix 2nd: single-stage background + grounded runner/enemy alignment */
+.calc-sprint #dash-game-screen {
+  --dash-stage-background: url("../assets/bg/bg-sky2.png");
+  --dash-ground-y: 90px;
+  --ground-surface-inset: var(--dash-ground-y);
+  grid-template-rows: auto 1fr minmax(56px, 80px);
+  background-image: var(--dash-stage-background);
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+}
+
+.calc-sprint #dash-game-screen > header.dash-header,
+.calc-sprint #dash-game-screen > .screen-main.dash-playfield,
+.calc-sprint #dash-game-screen > .screen-footer,
+.calc-sprint #dash-game-screen .dash-top-hud,
+.calc-sprint #dash-game-screen .dash-run-zone,
+.calc-sprint #dash-game-screen .dash-bottom-hud,
+.calc-sprint #dash-game-screen .dash-top-controls,
+.calc-sprint #dash-game-screen .dash-top-controls .dash-top-cluster,
+.calc-sprint #dash-game-screen .dash-top-controls .dash-problem-grid,
+.calc-sprint #dash-game-screen .dash-keypad-stack,
+.calc-sprint #dash-game-screen .dash-bottom-stats,
+.calc-sprint #dash-game-screen .dash-stat-card,
+.calc-sprint #dash-game-screen .dash-proximity,
+.calc-sprint #dash-game-screen .dash-next-area,
+.calc-sprint #dash-game-screen #dash-game-time-wrap,
+.calc-sprint #dash-game-screen .dash-time,
+.calc-sprint #dash-game-screen .dash-time-hud,
+.calc-sprint #dash-game-screen .run-viewport,
+.calc-sprint #dash-game-screen .run-host,
+.calc-sprint #dash-game-screen .run-layer,
+.calc-sprint #dash-game-screen .run-world,
+.calc-sprint #dash-game-screen .run-world[data-bg-theme],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="default"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="theme1"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="w1"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_add"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_sub"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_mul"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_div"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_mix"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+.calc-sprint #dash-game-screen .run-world {
+  border-radius: 0;
+}
+
+.calc-sprint #dash-game-screen .run-sky {
+  background-image: none;
+  background-color: transparent;
+}
+
+.calc-sprint #dash-game-screen .run-ground {
+  bottom: 0;
+  transform: none;
+}
+
+.calc-sprint #dash-game-screen .dash-timebar {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: inset 0 1px 2px rgba(29, 36, 51, 0.16);
+}
