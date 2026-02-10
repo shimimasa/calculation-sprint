@@ -2915,7 +2915,7 @@
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-main {
-  width: min(430px, 100%);
+  width: min(300px, 100%);
   margin-inline: auto;
 }
 
@@ -2933,7 +2933,7 @@
   justify-content: flex-start;
   gap: clamp(2px, 0.5vh, 6px);
   padding-top: clamp(2px, 0.4vh, 6px);
-  margin-top: clamp(-24px, -3vh, -14px);
+  margin-top: clamp(-30px, -5vh, -14px);
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud > #dash-game-time-wrap {
