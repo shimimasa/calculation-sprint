@@ -952,19 +952,12 @@
 /* Dash Run: layout density + playfield focus (Dash-scoped overrides) */
 .calc-sprint #dash-game-screen {
   padding: 0;
-  overflow: hidden;
   position: relative;
   display: grid;
-  --dash-run-h: clamp(260px, 42vh, 420px);
-<<<<<<< HEAD
-  /* Bottom HUD was too tall -> make it tighter */
-  --dash-bottom-min: clamp(96px, 14vh, 160px);
-=======
-  --dash-bottom-min: clamp(120px, 18vh, 200px);
->>>>>>> 43c5380c643093a6b1999c371e76d834439619af
-  grid-template-rows: auto var(--dash-run-h) minmax(var(--dash-bottom-min), auto);
+  grid-template-rows: auto 1fr minmax(56px, 80px);
   height: 100%;
   max-height: 100%;
+  /* Dash: ground Y is driven by this CSS var (JS reads it). */
   --ground-surface-inset: 170px;
 }
 .calc-sprint #dash-game-screen .screen__title {
@@ -1013,6 +1006,10 @@
   isolation: isolate;
 }
 
+.calc-sprint #dash-game-screen .run-ground {
+  bottom: var(--ground-surface-inset, 0px);
+}
+
 .calc-sprint #dash-game-screen .dash-top-hud {
   grid-row: 1;
   display: flex;
@@ -1029,6 +1026,10 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
+}
+
+.calc-sprint #dash-game-screen .dash-top-hud #dash-game-time-wrap {
+  align-self: center;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls {
@@ -1078,7 +1079,6 @@
   grid-row: 3;
   display: flex;
   flex-direction: column;
-<<<<<<< HEAD
   gap: clamp(4px, 0.8vh, 8px);
   justify-content: flex-end;
   align-self: stretch;
@@ -1101,20 +1101,6 @@
 /* Ensure the run viewport (sky/ground) is the base layer everywhere */
 .calc-sprint #dash-game-screen .dash-run-zone {
   background: transparent;
-=======
-  gap: clamp(6px, 1.1vh, 10px);
-  justify-content: flex-end;
-  align-self: stretch;
-  pointer-events: none;
-  padding: clamp(4px, 0.8vh, 8px) clamp(10px, 1.8vw, 14px) clamp(20px, 3vh, 28px);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(6px);
-  overflow: visible;
-}
-
-.calc-sprint #dash-game-screen .dash-run-zone #dash-game-time-wrap {
-  display: none;
->>>>>>> 43c5380c643093a6b1999c371e76d834439619af
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud #dash-game-time-wrap,
