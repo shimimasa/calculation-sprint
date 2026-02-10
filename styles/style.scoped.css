@@ -2808,8 +2808,8 @@
   --ground-surface-inset: var(--dash-ground-y);
   grid-template-rows: auto 1fr minmax(56px, 80px);
   background-image: var(--dash-stage-sky), var(--dash-stage-cloud);
-  background-size: cover, auto 220px;
-  background-position: center top, left 30%;
+  background-size: cover, auto 168px;
+  background-position: center top, left top;
   background-repeat: no-repeat, repeat-x;
 }
 
@@ -2844,6 +2844,7 @@
 .calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_div"],
 .calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_mix"] {
   background: transparent !important;
+  background-image: none !important;
   background-color: transparent !important;
   box-shadow: none !important;
   border-color: transparent !important;
@@ -2854,8 +2855,8 @@
 }
 
 .calc-sprint #dash-game-screen .run-sky {
-  background-image: none;
-  background-color: transparent;
+  background-image: none !important;
+  background-color: transparent !important;
 }
 
 .calc-sprint #dash-game-screen .run-ground {
@@ -2873,6 +2874,7 @@
 .calc-sprint #dash-game-screen .speed-lines.is-fast,
 .calc-sprint #dash-game-screen .speed-lines.is-rapid,
 .calc-sprint #dash-game-screen .speed-lines.boost-lines {
+  background: none !important;
   background-image: none !important;
   opacity: 0 !important;
   filter: none !important;
