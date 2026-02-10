@@ -952,7 +952,6 @@
 /* Dash Run: layout density + playfield focus (Dash-scoped overrides) */
 .calc-sprint #dash-game-screen {
   padding: 0;
-  overflow: hidden;
   position: relative;
   display: grid;
   grid-template-rows: auto 1fr minmax(56px, 80px);
