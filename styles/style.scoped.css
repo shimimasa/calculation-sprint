@@ -1162,9 +1162,11 @@
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats {
+  /* Parent row for bottom 4 HUD cards */
+  --dash-stat-card-min-h: clamp(74px, 9vh, 94px);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: center;
+  align-items: stretch;
   gap: clamp(6px, 1vw, 10px);
   width: min(920px, 100%);
   max-width: 100%;
@@ -1194,8 +1196,17 @@
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
+  /* Item cards: keep all four cards top-aligned and equal-height */
+  align-self: stretch;
+  height: 100%;
+  min-height: var(--dash-stat-card-min-h);
   min-width: 0;
   padding: clamp(2px, 0.5vh, 4px) clamp(6px, 1vw, 10px);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card .dash-streak-cue {
+  min-height: 0;
+  line-height: 1.2;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-value {
