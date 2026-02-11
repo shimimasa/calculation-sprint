@@ -752,7 +752,12 @@ const dashGameScreen = {
     this.lastNextAreaText = nextText;
   },
   loadNextQuestion() {
-    this.currentQuestion = questionGenerator.next(gameState.settings);
+    this.currentQuestion = questionGenerator.next({
+      ...gameState.settings,
+      stageId: this.dashStageId,
+      questionMode: gameState.dash.currentMode,
+    });
+    gameState.dash.currentMode = this.currentQuestion?.meta?.mode ?? null;
     if (domRefs.dashGame.question) {
       domRefs.dashGame.question.textContent = this.currentQuestion.text;
     }
@@ -990,7 +995,12 @@ const dashGameScreen = {
     this.answerBuffer = '';
     this.isSyncingAnswer = false;
     this.isBgmActive = false;
+    this.dashStageId = toDashStageId(gameState.dash?.stageId);
+    gameState.dash.stageId = this.dashStageId;
+    gameState.dash.currentMode = null;
     this.enemySystem = createDashEnemySystem({
+      stageId: this.dashStageId,
+      getCurrentMode: () => gameState.dash.currentMode,
       worldEl: domRefs.game.runWorld,
       containerEl: domRefs.game.runEnemies,
     });
