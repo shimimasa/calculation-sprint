@@ -24,7 +24,7 @@ const titleScreen = {
     this.handleDashRun = () => {
       audioManager.unlock();
       audioManager.playSfx('sfx_click');
-      screenManager.changeScreen('dash-game');
+      screenManager.changeScreen('dash-stage-select');
     };
     this.events.on(domRefs.title.startButton, 'click', this.handleStageStart);
     this.events.on(domRefs.title.freeButton, 'click', this.handleFreePlay);

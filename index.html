@@ -65,6 +65,36 @@
         </footer>
       </section>
 
+      <section id="dash-stage-select-screen" class="screen screen-stage-select" hidden>
+        <h2>ダッシュステージをえらぼう</h2>
+        <p class="setting-note">えらんだステージで出る問題と敵の種類が変わります。</p>
+        <div id="dash-stage-select-list" class="stage-select-list" role="list" aria-label="ダッシュステージ一覧">
+          <button class="secondary-button" type="button" data-dash-stage-id="plus">
+            <span>たし算</span>
+            <small>たし算だけが出るステージ</small>
+          </button>
+          <button class="secondary-button" type="button" data-dash-stage-id="minus">
+            <span>ひき算</span>
+            <small>ひき算だけが出るステージ</small>
+          </button>
+          <button class="secondary-button" type="button" data-dash-stage-id="multi">
+            <span>かけ算</span>
+            <small>かけ算だけが出るステージ</small>
+          </button>
+          <button class="secondary-button" type="button" data-dash-stage-id="divide">
+            <span>わり算</span>
+            <small>わり算だけが出るステージ</small>
+          </button>
+          <button class="secondary-button" type="button" data-dash-stage-id="mix">
+            <span>ミックス</span>
+            <small>4つの演算がランダムで出るステージ</small>
+          </button>
+        </div>
+        <div class="stage-select-actions">
+          <button id="dash-stage-select-back-button" class="secondary-button" type="button">戻る（キャンセル）</button>
+        </div>
+      </section>
+
       <section
         id="stage-select-screen"
         class="screen screen-stage-select"

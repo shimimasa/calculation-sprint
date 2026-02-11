@@ -9,6 +9,7 @@ const domRefs = {
     'profile-select': byId('profile-select-screen'),
     title: byId('title-screen'),
     'stage-select': byId('stage-select-screen'),
+    'dash-stage-select': byId('dash-stage-select-screen'),
     settings: byId('settings-screen'),
     'dash-game': byId('dash-game-screen'),
     'dash-result': byId('dash-result-screen'),
@@ -24,6 +25,11 @@ const domRefs = {
     startButton: byId('title-start-button'),
     freeButton: byId('title-free-button'),
     dashButton: byId('title-dash-button'),
+  },
+  dashStageSelect: {
+    list: byId('dash-stage-select-list'),
+    buttons: qsa('#dash-stage-select-list [data-dash-stage-id]'),
+    backButton: byId('dash-stage-select-back-button'),
   },
   dashGame: {
     screen: byId('dash-game-screen'),
