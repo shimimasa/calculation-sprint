@@ -1004,7 +1004,6 @@
 
 /* Dash Run: layout density + playfield focus (Dash-scoped overrides) */
 .calc-sprint #dash-game-screen {
-  --dash-sky-image: url("../assets/bg-sky.png");
   --dash-cloud-image: url("../assets/bg-cloud.png");
   --run-air-image: none;
   --run-map-image: none;
@@ -2396,24 +2395,24 @@
   --run-map-image: none;
 }
 
-.calc-sprint .screen-dash[data-bg-theme="bg_add"],
-.calc-sprint .screen-dash[data-bg-theme="bg_plus"] {
-  --dash-sky-image: url("../assets/plus/bg-sky.png"), url("../assets/bg-sky.png");
+.calc-sprint .screen-dash[data-bg-theme="bg_add"] #dash-game-screen,
+.calc-sprint .screen-dash[data-bg-theme="bg_plus"] #dash-game-screen {
+  --dash-sky-image: url("../assets/plus/bg-sky.png");
 }
 
-.calc-sprint .screen-dash[data-bg-theme="bg_sub"],
-.calc-sprint .screen-dash[data-bg-theme="bg_minus"] {
-  --dash-sky-image: url("../assets/minus/bg-sky.png"), url("../assets/bg-sky.png");
+.calc-sprint .screen-dash[data-bg-theme="bg_sub"] #dash-game-screen,
+.calc-sprint .screen-dash[data-bg-theme="bg_minus"] #dash-game-screen {
+  --dash-sky-image: url("../assets/minus/bg-sky.png");
 }
 
-.calc-sprint .screen-dash[data-bg-theme="bg_mul"],
-.calc-sprint .screen-dash[data-bg-theme="bg_multi"] {
-  --dash-sky-image: url("../assets/multi/bg-sky.png"), url("../assets/bg-sky.png");
+.calc-sprint .screen-dash[data-bg-theme="bg_mul"] #dash-game-screen,
+.calc-sprint .screen-dash[data-bg-theme="bg_multi"] #dash-game-screen {
+  --dash-sky-image: url("../assets/multi/bg-sky.png");
 }
 
-.calc-sprint .screen-dash[data-bg-theme="bg_div"],
-.calc-sprint .screen-dash[data-bg-theme="bg_divide"] {
-  --dash-sky-image: url("../assets/divide/bg-sky.png"), url("../assets/bg-sky.png");
+.calc-sprint .screen-dash[data-bg-theme="bg_div"] #dash-game-screen,
+.calc-sprint .screen-dash[data-bg-theme="bg_divide"] #dash-game-screen {
+  --dash-sky-image: url("../assets/divide/bg-sky.png");
 }
 .calc-sprint .run-world::after {
   content: "";
@@ -2937,10 +2936,10 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: var(--dash-sky-image, url("../assets/bg-sky.png")) !important;
-  background-size: cover !important;
-  background-position: center top !important;
-  background-repeat: no-repeat !important;
+  background-image: var(--dash-sky-image, url("../assets/bg-sky.png"));
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
 }
 
 .calc-sprint #dash-game-screen::after {
@@ -2949,7 +2948,7 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background-image: var(--dash-cloud-image, var(--run-cloud-image, url("../assets/bg-cloud.png")));
+  background-image: var(--dash-cloud-image, url("../assets/bg-cloud.png"));
   background-repeat: repeat-x;
   background-size: auto 220px;
   background-position: center top;
