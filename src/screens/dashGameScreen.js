@@ -1009,6 +1009,9 @@ const dashGameScreen = {
     this.updateArea(gameState.dash.distanceM);
     this.updateHud();
     this.handleBack = () => {
+      if (!window.confirm('ステージをやめますか？')) {
+        return;
+      }
       audioManager.playSfx('sfx_cancel');
       this.endSession('manual');
     };
@@ -1027,12 +1030,7 @@ const dashGameScreen = {
       this.submitAnswer();
     };
     this.handleBackAction = () => {
-      const currentValue = this.answerBuffer;
-      if (currentValue !== '') {
-        this.handleBackspace();
-        return;
-      }
-      this.handleBack();
+      this.handleBackspace();
     };
     this.handleToggleKeypadAction = () => {
       if (!this.isScreenActive()) {

@@ -1150,7 +1150,6 @@
 }
 
 .calc-sprint #dash-game-screen #dash-game-enemy,
-.calc-sprint #dash-game-screen #dash-game-back-button,
 .calc-sprint #dash-game-screen #dash-game-next-area {
   display: none !important;
 }
@@ -1224,7 +1223,7 @@
   /* Parent row for bottom 4 HUD cards */
   --dash-stat-card-min-h: clamp(74px, 9vh, 94px);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   align-items: stretch;
   gap: clamp(6px, 1vw, 10px);
   width: min(920px, 100%);
@@ -1252,6 +1251,23 @@
 
 .calc-sprint #dash-game-screen .dash-bottom-hud > #dash-game-time-wrap .dash-timevalue {
   margin-left: auto;
+}
+
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card #dash-game-back-button {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card {
