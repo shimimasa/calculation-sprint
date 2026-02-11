@@ -24,6 +24,7 @@ import {
 } from '../features/dashEnemySystem.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 import { toDashStageId } from '../features/dashStages.js';
+import { toDashRunBgThemeId } from '../features/backgroundThemes.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
@@ -140,6 +141,15 @@ const logKeypadDebug = (label, payload = {}) => {
 const dashGameScreen = {
   answerBuffer: '',
   isSyncingAnswer: false,
+  applyDashTheme() {
+    const bgThemeId = toDashRunBgThemeId(this.dashStageId);
+    [domRefs.dashGame.screen, domRefs.game.runWorld].forEach((element) => {
+      if (!element) {
+        return;
+      }
+      element.setAttribute('data-bg-theme', bgThemeId);
+    });
+  },
   ensureRunLayerMounted() {
     const runLayer = domRefs.game.runLayer;
     const host = domRefs.dashGame.runHost;
@@ -997,6 +1007,7 @@ const dashGameScreen = {
     this.isBgmActive = false;
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
+    this.applyDashTheme();
     gameState.dash.currentMode = null;
     this.enemySystem = createDashEnemySystem({
       stageId: this.dashStageId,
