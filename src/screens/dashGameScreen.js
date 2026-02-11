@@ -23,6 +23,7 @@ import {
   createDashEnemySystem,
 } from '../features/dashEnemySystem.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
+import { toDashStageId } from '../features/dashStages.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
@@ -947,6 +948,7 @@ const dashGameScreen = {
       defeatedCount: gameState.dash.defeatedCount,
       maxStreak: this.maxStreak,
       timeLeftMs: Math.max(0, this.timeLeftMs),
+      stageId: toDashStageId(gameState.dash?.stageId),
       endReason,
     };
     screenManager.changeScreen('dash-result');
