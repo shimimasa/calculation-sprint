@@ -2337,39 +2337,66 @@
   --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: none;
   --run-map-image: none;
-}.calc-sprint .run-world[data-bg-theme="bg_add"] {
+}.calc-sprint .run-world[data-bg-theme="bg_add"],
+.calc-sprint .run-world[data-bg-theme="bg_plus"],
+.calc-sprint .screen-dash[data-bg-theme="bg_add"],
+.calc-sprint .screen-dash[data-bg-theme="bg_plus"] {
+  --run-sky-image: url("../assets/plus/bg-sky.png"), url("../assets/bg-sky.png");
+  --run-ground-image: url("../assets/plus/bg-ground.png"), url("../assets/bg-ground.png");
+}
+.calc-sprint .run-world[data-bg-theme="bg_add"],
+.calc-sprint .run-world[data-bg-theme="bg_plus"] {
   background: #e7f1ff;
-  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
-  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(120, 170, 255, 0.2), transparent);
   --run-map-image: none;
-}.calc-sprint .run-world[data-bg-theme="bg_sub"] {
+}.calc-sprint .run-world[data-bg-theme="bg_sub"],
+.calc-sprint .run-world[data-bg-theme="bg_minus"],
+.calc-sprint .screen-dash[data-bg-theme="bg_sub"],
+.calc-sprint .screen-dash[data-bg-theme="bg_minus"] {
+  --run-sky-image: url("../assets/minus/bg-sky.png"), url("../assets/bg-sky.png");
+  --run-ground-image: url("../assets/minus/bg-ground.png"), url("../assets/bg-ground.png");
+}
+.calc-sprint .run-world[data-bg-theme="bg_sub"],
+.calc-sprint .run-world[data-bg-theme="bg_minus"] {
   background: #e7f8f0;
-  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
-  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(120, 220, 180, 0.2), transparent);
   --run-map-image: none;
-}.calc-sprint .run-world[data-bg-theme="bg_mul"] {
+}.calc-sprint .run-world[data-bg-theme="bg_mul"],
+.calc-sprint .run-world[data-bg-theme="bg_multi"],
+.calc-sprint .screen-dash[data-bg-theme="bg_mul"],
+.calc-sprint .screen-dash[data-bg-theme="bg_multi"] {
+  --run-sky-image: url("../assets/multi/bg-sky.png"), url("../assets/bg-sky.png");
+  --run-ground-image: url("../assets/multi/bg-ground.png"), url("../assets/bg-ground.png");
+}
+.calc-sprint .run-world[data-bg-theme="bg_mul"],
+.calc-sprint .run-world[data-bg-theme="bg_multi"] {
   background: #f0e8ff;
-  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
-  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(180, 140, 255, 0.2), transparent);
   --run-map-image: none;
-}.calc-sprint .run-world[data-bg-theme="bg_div"] {
+}.calc-sprint .run-world[data-bg-theme="bg_div"],
+.calc-sprint .run-world[data-bg-theme="bg_divide"],
+.calc-sprint .screen-dash[data-bg-theme="bg_div"],
+.calc-sprint .screen-dash[data-bg-theme="bg_divide"] {
+  --run-sky-image: url("../assets/divide/bg-sky.png"), url("../assets/bg-sky.png");
+  --run-ground-image: url("../assets/divide/bg-ground.png"), url("../assets/bg-ground.png");
+}
+.calc-sprint .run-world[data-bg-theme="bg_div"],
+.calc-sprint .run-world[data-bg-theme="bg_divide"] {
   background: #fff2d9;
-  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
-  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 200, 120, 0.25), transparent);
   --run-map-image: none;
-}.calc-sprint .run-world[data-bg-theme="bg_mix"] {
+}.calc-sprint .run-world[data-bg-theme="bg_mix"],
+.calc-sprint .screen-dash[data-bg-theme="bg_mix"] {
+  --run-sky-image: url("../assets/mix/bg-sky.png"), url("../assets/bg-sky.png");
+  --run-ground-image: url("../assets/mix/bg-ground.png"), url("../assets/bg-ground.png");
+}
+.calc-sprint .run-world[data-bg-theme="bg_mix"] {
   background: #ffe9e1;
-  --run-sky-image: linear-gradient(180deg, #7dbdff 0%, #9fd5ff 55%, #d6efff 100%);
   --run-cloud-image: url("../assets/bg-cloud.png");
-  --run-ground-image: url("../assets/bg-ground.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 160, 150, 0.22), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world::after {
@@ -2894,7 +2921,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("../assets/bg-sky.png") !important;
+  background-image: var(--run-sky-image, url("../assets/bg-sky.png")) !important;
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
@@ -2973,7 +3000,11 @@
 .calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_sub"],
 .calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_mul"],
 .calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_div"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_mix"] {
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_mix"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_plus"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_minus"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_multi"],
+.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_divide"] {
   background: transparent !important;
   background-image: none !important;
   background-color: transparent !important;
