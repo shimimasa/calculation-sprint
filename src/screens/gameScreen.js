@@ -7,6 +7,7 @@ import questionGenerator from '../features/questionGenerator.js';
 import buildReviewSummary from '../core/reviewSummary.js';
 import stageProgressStore from '../core/stageProgressStore.js';
 import { applyStageSettings, findStageById } from '../features/stages.js';
+import { normalizeRunBgThemeId } from '../features/backgroundThemes.js';
 import audioManager from '../core/audioManager.js';
 import inputActions from '../core/inputActions.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
@@ -185,7 +186,7 @@ const gameScreen = {
         delete dataset.worldId;
       }
       if (shouldApplyTheme) {
-        element.setAttribute('data-bg-theme', stage.theme?.bgThemeId ?? 'default');
+        element.setAttribute('data-bg-theme', normalizeRunBgThemeId(stage.theme?.bgThemeId));
         element.setAttribute('data-bgm-id', stage.theme?.bgmId ?? '');
       } else {
         element.removeAttribute('data-bg-theme');
