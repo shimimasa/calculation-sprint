@@ -2395,23 +2395,23 @@
   --run-map-image: none;
 }
 
-.calc-sprint .screen-dash[data-bg-theme="bg_add"] #dash-game-screen,
-.calc-sprint .screen-dash[data-bg-theme="bg_plus"] #dash-game-screen {
+.calc-sprint #dash-game-screen[data-bg-theme="bg_add"],
+.calc-sprint #dash-game-screen[data-bg-theme="bg_plus"] {
   --dash-sky-image: url("../assets/plus/bg-sky.png");
 }
 
-.calc-sprint .screen-dash[data-bg-theme="bg_sub"] #dash-game-screen,
-.calc-sprint .screen-dash[data-bg-theme="bg_minus"] #dash-game-screen {
+.calc-sprint #dash-game-screen[data-bg-theme="bg_sub"],
+.calc-sprint #dash-game-screen[data-bg-theme="bg_minus"] {
   --dash-sky-image: url("../assets/minus/bg-sky.png");
 }
 
-.calc-sprint .screen-dash[data-bg-theme="bg_mul"] #dash-game-screen,
-.calc-sprint .screen-dash[data-bg-theme="bg_multi"] #dash-game-screen {
+.calc-sprint #dash-game-screen[data-bg-theme="bg_mul"],
+.calc-sprint #dash-game-screen[data-bg-theme="bg_multi"] {
   --dash-sky-image: url("../assets/multi/bg-sky.png");
 }
 
-.calc-sprint .screen-dash[data-bg-theme="bg_div"] #dash-game-screen,
-.calc-sprint .screen-dash[data-bg-theme="bg_divide"] #dash-game-screen {
+.calc-sprint #dash-game-screen[data-bg-theme="bg_div"],
+.calc-sprint #dash-game-screen[data-bg-theme="bg_divide"] {
   --dash-sky-image: url("../assets/divide/bg-sky.png");
 }
 .calc-sprint .run-world::after {
