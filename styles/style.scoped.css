@@ -2398,21 +2398,30 @@
 .calc-sprint #dash-game-screen[data-bg-theme="bg_add"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_plus"] {
   --dash-sky-image: url("../assets/plus/bg-sky.png");
+  --dash-ground-image: url("../assets/plus/bg-ground.png");
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_sub"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_minus"] {
   --dash-sky-image: url("../assets/minus/bg-sky.png");
+  --dash-ground-image: url("../assets/minus/bg-ground.png");
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_mul"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_multi"] {
   --dash-sky-image: url("../assets/multi/bg-sky.png");
+  --dash-ground-image: url("../assets/multi/bg-ground.png");
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_div"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_divide"] {
   --dash-sky-image: url("../assets/divide/bg-sky.png");
+  --dash-ground-image: url("../assets/divide/bg-ground.png");
+}
+
+.calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] {
+  --dash-sky-image: url("../assets/mix/bg-sky.png");
+  --dash-ground-image: url("../assets/mix/bg-ground.png");
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] {
@@ -3004,6 +3013,14 @@
 .calc-sprint #dash-game-screen .run-ground {
   bottom: 0;
   transform: none;
+}
+
+.calc-sprint #dash-game-screen .run-ground__tile {
+  background-image: var(--dash-ground-image, var(--run-ground-image, url("../assets/bg-ground.png")));
+}
+
+.calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] .run-ground__tile {
+  background-position-y: calc(100% + 1px);
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-main {
