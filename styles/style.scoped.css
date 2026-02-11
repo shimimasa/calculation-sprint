@@ -1004,8 +1004,8 @@
 
 /* Dash Run: layout density + playfield focus (Dash-scoped overrides) */
 .calc-sprint #dash-game-screen {
-  --run-sky-image: url("../assets/bg-sky.png");
-  --run-cloud-image: url("../assets/bg-cloud.png");
+  --dash-sky-image: url("../assets/bg-sky.png");
+  --dash-cloud-image: url("../assets/bg-cloud.png");
   --run-air-image: none;
   --run-map-image: none;
   padding: 0;
@@ -2394,7 +2394,28 @@
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 160, 150, 0.22), transparent);
   --run-map-image: none;
-}.calc-sprint .run-world::after {
+}
+
+.calc-sprint .screen-dash[data-bg-theme="bg_add"],
+.calc-sprint .screen-dash[data-bg-theme="bg_plus"] {
+  --dash-sky-image: url("../assets/plus/bg-sky.png"), url("../assets/bg-sky.png");
+}
+
+.calc-sprint .screen-dash[data-bg-theme="bg_sub"],
+.calc-sprint .screen-dash[data-bg-theme="bg_minus"] {
+  --dash-sky-image: url("../assets/minus/bg-sky.png"), url("../assets/bg-sky.png");
+}
+
+.calc-sprint .screen-dash[data-bg-theme="bg_mul"],
+.calc-sprint .screen-dash[data-bg-theme="bg_multi"] {
+  --dash-sky-image: url("../assets/multi/bg-sky.png"), url("../assets/bg-sky.png");
+}
+
+.calc-sprint .screen-dash[data-bg-theme="bg_div"],
+.calc-sprint .screen-dash[data-bg-theme="bg_divide"] {
+  --dash-sky-image: url("../assets/divide/bg-sky.png"), url("../assets/bg-sky.png");
+}
+.calc-sprint .run-world::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -2910,25 +2931,25 @@
 }
 
 /* Dash UI fix 2nd: pseudo-element sky/cloud background layers */
-.calc-sprint .screen-dash::before {
+.calc-sprint #dash-game-screen::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: var(--run-sky-image, url("../assets/bg-sky.png")) !important;
+  background-image: var(--dash-sky-image, url("../assets/bg-sky.png")) !important;
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
 }
 
-.calc-sprint .screen-dash::after {
+.calc-sprint #dash-game-screen::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background-image: var(--run-cloud-image, url("../assets/bg-cloud.png"));
+  background-image: var(--dash-cloud-image, var(--run-cloud-image, url("../assets/bg-cloud.png")));
   background-repeat: repeat-x;
   background-size: auto 220px;
   background-position: center top;
