@@ -2414,6 +2414,10 @@
 .calc-sprint #dash-game-screen[data-bg-theme="bg_divide"] {
   --dash-sky-image: url("../assets/divide/bg-sky.png");
 }
+
+.calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] {
+  --dash-sky-image: url("../assets/mix/bg-sky.png");
+}
 .calc-sprint .run-world::after {
   content: "";
   position: absolute;
