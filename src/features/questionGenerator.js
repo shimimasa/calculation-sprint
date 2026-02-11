@@ -1,4 +1,5 @@
 import { randomInt } from '../core/utils.js';
+import { normalizeDashStageId, toQuestionMode } from './dashStages.js';
 
 const operators = {
   add: { symbol: '+', calc: (a, b) => a + b },
@@ -15,6 +16,62 @@ const digitRange = (digit) => (digit === 1
 
 const buildNumberFromDigits = (tens, ones) => tens * 10 + ones;
 const maxAttempts = 50;
+const mixRecentModes = [];
+
+const pickMixMode = (candidates) => {
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return 'add';
+  }
+
+  const [prev2, prev1] = mixRecentModes.slice(-2);
+  const avoidTriple = prev1 && prev1 === prev2;
+  const filteredCandidates = avoidTriple
+    ? candidates.filter((mode) => mode !== prev1)
+    : candidates;
+  const availableCandidates = filteredCandidates.length > 0 ? filteredCandidates : candidates;
+  const pickedMode = availableCandidates[randomInt(0, availableCandidates.length - 1)];
+
+  mixRecentModes.push(pickedMode);
+  if (mixRecentModes.length > 8) {
+    mixRecentModes.shift();
+  }
+
+  return pickedMode;
+};
+
+const resolveMode = (settings) => {
+  const stageId = normalizeDashStageId(settings.stageId);
+  const reviewModes = Array.isArray(settings.reviewModes)
+    ? settings.reviewModes.filter((mode) => modes.includes(mode))
+    : [];
+  const allowedMixModes = Array.isArray(settings.allowedModes)
+    ? settings.allowedModes.filter((mode) => modes.includes(mode))
+    : [];
+  const mixModes = allowedMixModes.length > 0 ? allowedMixModes : modes;
+  const fallbackMode = settings.mode === 'mix' ? pickMixMode(mixModes) : settings.mode;
+  const requestedMode = modes.includes(settings.questionMode) ? settings.questionMode : null;
+
+  if (reviewModes.length > 0) {
+    return { mode: reviewModes[randomInt(0, reviewModes.length - 1)], stageId, useDashStagePolicy: false };
+  }
+  if (requestedMode) {
+    return { mode: requestedMode, stageId, useDashStagePolicy: true };
+  }
+  if (stageId) {
+    const stageMode = toQuestionMode(stageId);
+    return {
+      mode: stageMode === 'mix' ? pickMixMode(modes) : stageMode,
+      stageId,
+      useDashStagePolicy: true,
+    };
+  }
+
+  return {
+    mode: fallbackMode,
+    stageId: null,
+    useDashStagePolicy: false,
+  };
+};
 
 const nextAddNoCarry = (digit) => {
   if (digit === 1) {
@@ -77,20 +134,42 @@ const nextSubOneDigit = (allowBorrow) => {
   return { a, b };
 };
 
+const nextDashSubOperands = () => {
+  if (Math.random() < 0.75) {
+    return {
+      a: randomInt(10, 99),
+      b: randomInt(1, 9),
+    };
+  }
+
+  let a = randomInt(10, 99);
+  let b = randomInt(10, 99);
+  if (a < b) {
+    [a, b] = [b, a];
+  }
+  return { a, b };
+};
+
+const nextDashDivOperands = () => {
+  let dividend = 0;
+  let divisor = 0;
+  let quotient = 0;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    divisor = randomInt(2, 9);
+    quotient = randomInt(2, 12);
+    dividend = divisor * quotient;
+    if (dividend >= 10 && dividend <= 99) {
+      return { a: dividend, b: divisor };
+    }
+  }
+
+  return { a: 12, b: 3 };
+};
+
 const questionGenerator = {
   next(settings) {
-    const reviewModes = Array.isArray(settings.reviewModes)
-      ? settings.reviewModes.filter((mode) => modes.includes(mode))
-      : [];
-    const allowedMixModes = Array.isArray(settings.allowedModes)
-      ? settings.allowedModes.filter((mode) => modes.includes(mode))
-      : [];
-    const mixModes = allowedMixModes.length > 0 ? allowedMixModes : modes;
-    const mode = reviewModes.length > 0
-      ? reviewModes[randomInt(0, reviewModes.length - 1)]
-      : (settings.mode === 'mix'
-        ? mixModes[randomInt(0, mixModes.length - 1)]
-        : settings.mode);
+    const { mode, stageId, useDashStagePolicy } = resolveMode(settings);
     const operator = operators[mode];
     if (!operator) {
       return { text: '1 + 1', answer: 2, meta: { mode: 'add', a: 1, b: 1 } };
@@ -103,7 +182,10 @@ const questionGenerator = {
       ({ a, b } = nextAddNoCarry(settings.digit));
     }
     if (mode === 'sub') {
-      if (settings.digit === 1) {
+      const isDashMinus = useDashStagePolicy && stageId === 'minus';
+      if (isDashMinus) {
+        ({ a, b } = nextDashSubOperands());
+      } else if (settings.digit === 1) {
         ({ a, b } = nextSubOneDigit(settings.carry !== false));
       } else if (settings.carry === false) {
         ({ a, b } = nextSubNoBorrow(settings.digit));
@@ -116,6 +198,10 @@ const questionGenerator = {
       b = randomInt(1, 9);
     }
     if (mode === 'div') {
+      const isDashDivide = useDashStagePolicy && stageId === 'divide';
+      if (isDashDivide) {
+        ({ a, b } = nextDashDivOperands());
+      } else {
       let dividend = 0;
       let divisor = 0;
       let quotient = 0;
@@ -151,6 +237,7 @@ const questionGenerator = {
       }
       a = dividend;
       b = divisor;
+      }
     }
 
     const answer = operator.calc(a, b);
