@@ -47,6 +47,9 @@ const dashResultScreen = {
       if (domRefs.dashResult.wrongCount) {
         domRefs.dashResult.wrongCount.textContent = String(result.wrongCount || 0);
       }
+      if (domRefs.dashResult.defeatedCount) {
+        domRefs.dashResult.defeatedCount.textContent = String(result.defeatedCount || 0);
+      }
       if (domRefs.dashResult.accuracy) {
         domRefs.dashResult.accuracy.textContent = accuracy.toFixed(1);
       }

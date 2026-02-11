@@ -48,6 +48,7 @@ const gameState = {
     distanceM: 0,
     correctCount: 0,
     wrongCount: 0,
+    defeatedCount: 0,
     streak: 0,
   },
   run: {

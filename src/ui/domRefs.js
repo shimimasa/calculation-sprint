@@ -59,6 +59,7 @@ const domRefs = {
     distance: byId('dash-result-distance'),
     correctCount: byId('dash-result-correct'),
     wrongCount: byId('dash-result-wrong'),
+    defeatedCount: byId('dash-result-defeated'),
     accuracy: byId('dash-result-accuracy'),
     missRate: byId('dash-result-miss-rate'),
     maxStreak: byId('dash-result-max-streak'),

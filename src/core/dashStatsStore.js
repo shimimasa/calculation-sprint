@@ -39,6 +39,7 @@ const normalizeSession = (session) => ({
   distanceM: Number.isFinite(session?.distanceM) ? session.distanceM : 0,
   correctCount: Number.isFinite(session?.correctCount) ? session.correctCount : 0,
   wrongCount: Number.isFinite(session?.wrongCount) ? session.wrongCount : 0,
+  defeatedCount: Number.isFinite(session?.defeatedCount) ? session.defeatedCount : 0,
   maxStreak: Number.isFinite(session?.maxStreak) ? session.maxStreak : 0,
   timeLeftMs: Number.isFinite(session?.timeLeftMs) ? session.timeLeftMs : 0,
   endReason: normalizeEndReason(session?.endReason),

@@ -508,7 +508,7 @@ const dashGameScreen = {
   // State model (local-only, per spec):
   // - playerSpeed (m/s), enemySpeed (m/s), enemyGapM (meters behind), timeLeftMs (ms), lastTickTs (ms)
   // - currentQuestion / inputBuffer are managed locally via questionGenerator + input element.
-  // Global results persist ONLY to gameState.dash: distanceM, correctCount, wrongCount, streak.
+  // Global results persist ONLY to gameState.dash: distanceM, correctCount, wrongCount, defeatedCount, streak.
   getInitialTimeLimitMs() {
     const limitSeconds = Number(gameState?.timeLimit);
     if (Number.isFinite(limitSeconds) && limitSeconds > 0) {
@@ -627,9 +627,7 @@ const dashGameScreen = {
       domRefs.dashGame.speed.textContent = this.playerSpeed.toFixed(1);
     }
     if (domRefs.dashGame.enemyCount) {
-      const enemies = this.enemySystem?.enemies ?? [];
-      const aliveCount = enemies.filter((enemy) => enemy?.isAlive && enemy.state !== 'dead').length;
-      domRefs.dashGame.enemyCount.textContent = String(aliveCount);
+      domRefs.dashGame.enemyCount.textContent = String(gameState.dash.defeatedCount || 0);
     }
     if (domRefs.dashGame.timeRemaining) {
       const timeSeconds = Math.max(0, Math.ceil(this.timeLeftMs / 1000));
@@ -810,6 +808,7 @@ const dashGameScreen = {
       this.enemySpeed = enemyBaseSpeed + enemySpeedIncrementPerStreak * gameState.dash.streak;
       this.timeLeftMs += timeBonusOnCorrect;
       if (defeatResult?.defeated) {
+        gameState.dash.defeatedCount += 1;
         this.timeLeftMs += timeBonusOnDefeat;
       }
       if (gameState.dash.streak === streakAttack) {
@@ -945,6 +944,7 @@ const dashGameScreen = {
       distanceM: gameState.dash.distanceM,
       correctCount: gameState.dash.correctCount,
       wrongCount: gameState.dash.wrongCount,
+      defeatedCount: gameState.dash.defeatedCount,
       maxStreak: this.maxStreak,
       timeLeftMs: Math.max(0, this.timeLeftMs),
       endReason,
@@ -972,6 +972,7 @@ const dashGameScreen = {
     gameState.dash.distanceM = 0;
     gameState.dash.correctCount = 0;
     gameState.dash.wrongCount = 0;
+    gameState.dash.defeatedCount = 0;
     gameState.dash.streak = 0;
     gameState.dash.result = null;
     this.currentArea = null;
