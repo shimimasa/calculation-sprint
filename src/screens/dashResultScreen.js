@@ -5,7 +5,7 @@ import audioManager from '../core/audioManager.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 import gameState from '../core/gameState.js';
 import dashStatsStore from '../core/dashStatsStore.js';
-import { getDashStageLabelJa, toDashStageId } from '../features/dashStages.js';
+import { getDashStageLabelJa, normalizeDashStageId, toDashStageId } from '../features/dashStages.js';
 
 const dashResultScreen = {
   enter() {
@@ -95,7 +95,9 @@ const dashResultScreen = {
     };
     this.handleReplay = () => {
       audioManager.playSfx('sfx_confirm');
-      screenManager.changeScreen('dash-game');
+      const stageId = gameState.dash?.stageId;
+      const nextScreen = normalizeDashStageId(stageId) ? 'dash-game' : 'dash-stage-select';
+      screenManager.changeScreen(nextScreen);
     };
     this.events.on(domRefs.dashResult.backButton, 'click', this.handleBack);
     this.events.on(domRefs.dashResult.replayButton, 'click', this.handleReplay);
