@@ -18,6 +18,8 @@ const buildNumberFromDigits = (tens, ones) => tens * 10 + ones;
 const maxAttempts = 50;
 const mixRecentModes = [];
 
+const normalizeQuestionMode = (mode) => (modes.includes(mode) ? mode : null);
+
 const pickMixMode = (candidates) => {
   if (!Array.isArray(candidates) || candidates.length === 0) {
     return 'add';
@@ -48,22 +50,38 @@ const resolveMode = (settings) => {
     ? settings.allowedModes.filter((mode) => modes.includes(mode))
     : [];
   const mixModes = allowedMixModes.length > 0 ? allowedMixModes : modes;
-  const fallbackMode = settings.mode === 'mix' ? pickMixMode(mixModes) : settings.mode;
-  const requestedMode = modes.includes(settings.questionMode) ? settings.questionMode : null;
+  const fallbackMode = settings.mode === 'mix'
+    ? pickMixMode(mixModes)
+    : (normalizeQuestionMode(settings.mode) ?? 'add');
+  const requestedMode = normalizeQuestionMode(settings.questionMode);
 
   if (reviewModes.length > 0) {
-    return { mode: reviewModes[randomInt(0, reviewModes.length - 1)], stageId, useDashStagePolicy: false };
+    return {
+      mode: reviewModes[randomInt(0, reviewModes.length - 1)],
+      stageId,
+      useDashStagePolicy: false,
+    };
   }
-  if (requestedMode) {
-    return { mode: requestedMode, stageId, useDashStagePolicy: true };
-  }
+
   if (stageId) {
     const stageMode = toQuestionMode(stageId);
+    if (stageMode === 'mix') {
+      return {
+        mode: requestedMode ?? pickMixMode(modes),
+        stageId,
+        useDashStagePolicy: true,
+      };
+    }
+
     return {
-      mode: stageMode === 'mix' ? pickMixMode(modes) : stageMode,
+      mode: normalizeQuestionMode(stageMode) ?? 'add',
       stageId,
       useDashStagePolicy: true,
     };
+  }
+
+  if (requestedMode) {
+    return { mode: requestedMode, stageId: null, useDashStagePolicy: true };
   }
 
   return {
@@ -79,7 +97,6 @@ const nextAddNoCarry = (digit) => {
     const b = randomInt(1, 9 - a);
     return { a, b };
   }
-  const maxAttempts = 50;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const aTens = randomInt(1, 8);
     const bTens = randomInt(1, 9 - aTens);
@@ -150,22 +167,40 @@ const nextDashSubOperands = () => {
   return { a, b };
 };
 
-const nextDashDivOperands = () => {
-  let dividend = 0;
-  let divisor = 0;
-  let quotient = 0;
-
+const generateDivisionOperands = ({
+  minDividend,
+  maxDividend,
+  minDivisor,
+  maxDivisor,
+  minQuotient,
+  maxQuotient,
+  fallback,
+}) => {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    divisor = randomInt(2, 9);
-    quotient = randomInt(2, 12);
-    dividend = divisor * quotient;
-    if (dividend >= 10 && dividend <= 99) {
+    const divisor = randomInt(minDivisor, maxDivisor);
+    const quotient = randomInt(minQuotient, maxQuotient);
+    const dividend = divisor * quotient;
+    if (
+      divisor > 0
+      && quotient > 0
+      && dividend >= minDividend
+      && dividend <= maxDividend
+    ) {
       return { a: dividend, b: divisor };
     }
   }
-
-  return { a: 12, b: 3 };
+  return fallback;
 };
+
+const nextDashDivOperands = () => generateDivisionOperands({
+  minDividend: 10,
+  maxDividend: 99,
+  minDivisor: 2,
+  maxDivisor: 9,
+  minQuotient: 2,
+  maxQuotient: 12,
+  fallback: { a: 12, b: 3 },
+});
 
 const questionGenerator = {
   next(settings) {
@@ -202,41 +237,25 @@ const questionGenerator = {
       if (isDashDivide) {
         ({ a, b } = nextDashDivOperands());
       } else {
-      let dividend = 0;
-      let divisor = 0;
-      let quotient = 0;
-      let attempts = 0;
-      if (settings.digit === 1) {
-        do {
-          divisor = randomInt(2, 9);
-          quotient = randomInt(1, 9);
-          dividend = divisor * quotient;
-          attempts += 1;
-        } while (attempts < maxAttempts && (quotient < 1 || quotient > 9));
-        if (attempts >= maxAttempts) {
-          divisor = 2;
-          quotient = 1;
-          dividend = 2;
-        }
-      } else {
-        const divisorMin = 2;
-        const divisorMax = 12;
-        const quotientMin = 2;
-        const quotientMax = 12;
-        do {
-          divisor = randomInt(divisorMin, divisorMax);
-          quotient = randomInt(quotientMin, quotientMax);
-          dividend = divisor * quotient;
-          attempts += 1;
-        } while (attempts < maxAttempts && (dividend < min || dividend > max));
-        if (attempts >= maxAttempts) {
-          divisor = 2;
-          quotient = 5;
-          dividend = 10;
-        }
-      }
-      a = dividend;
-      b = divisor;
+        ({ a, b } = settings.digit === 1
+          ? generateDivisionOperands({
+            minDividend: 1,
+            maxDividend: 9,
+            minDivisor: 2,
+            maxDivisor: 9,
+            minQuotient: 1,
+            maxQuotient: 4,
+            fallback: { a: 8, b: 2 },
+          })
+          : generateDivisionOperands({
+            minDividend: min,
+            maxDividend: max,
+            minDivisor: 2,
+            maxDivisor: 12,
+            minQuotient: 2,
+            maxQuotient: 12,
+            fallback: { a: 10, b: 2 },
+          }));
       }
     }
 
