@@ -2423,10 +2423,6 @@
   --dash-sky-image: url("../assets/mix/bg-sky.png");
   --dash-ground-image: url("../assets/mix/bg-ground.png");
 }
-
-.calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] {
-  --dash-sky-image: url("../assets/mix/bg-sky.png");
-}
 .calc-sprint .run-world::after {
   content: "";
   position: absolute;
@@ -3020,7 +3016,7 @@
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] .run-ground__tile {
-  background-position-y: calc(100% + 1px);
+  background-position-y: calc(100% + 7px);
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-main {
