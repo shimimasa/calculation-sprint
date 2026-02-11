@@ -1,3 +1,5 @@
+import { isScreenBlocked, resolveSafeScreen } from './modeAvailability.js';
+
 let currentScreen = null;
 let currentName = null;
 const screens = {};
@@ -56,17 +58,18 @@ const screenManager = {
     });
   },
   changeScreen(nextName, params = {}) {
-    if (isTransitioning || !screens[nextName]) {
+    const targetName = isScreenBlocked(nextName) ? resolveSafeScreen(screens) : nextName;
+    if (isTransitioning || !screens[targetName]) {
       return;
     }
     isTransitioning = true;
     const prevName = currentName;
     if (currentScreen && typeof currentScreen.exit === 'function') {
-      currentScreen.exit(nextName);
+      currentScreen.exit(targetName);
     }
-    currentScreen = screens[nextName];
-    currentName = nextName;
-    setScreenVisibility(nextName);
+    currentScreen = screens[targetName];
+    currentName = targetName;
+    setScreenVisibility(targetName);
     if (currentScreen && typeof currentScreen.enter === 'function') {
       currentScreen.enter(prevName, params);
     }
