@@ -185,6 +185,7 @@ export const createDashEnemySystem = ({
     system.enemies = [];
     system.spawnTimerMs = START_GRACE_MS;
     system.elapsedMs = 0;
+    system.previousEnemyType = null;
   };
 
   system.destroy = () => {
