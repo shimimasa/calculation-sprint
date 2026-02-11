@@ -3015,6 +3015,10 @@
   background-image: var(--dash-ground-image, var(--run-ground-image, url("../assets/bg-ground.png")));
 }
 
+.calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] .run-ground__tile {
+  background-position-y: calc(100% + 1px);
+}
+
 .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-main {
   width: min(360px, 100%);
   margin-inline: auto;
