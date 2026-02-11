@@ -812,6 +812,7 @@ const dashGameScreen = {
           this.kickLungePx = 0;
         }
         this.kickUntilMs = nowMs + KICK_MS;
+        audioManager.playSfx('sfx_attack');
       } else {
         this.kickUntilMs = 0;
         this.kickLungePx = 0;
@@ -884,7 +885,7 @@ const dashGameScreen = {
       const handledCollision = enemyUpdate.collision && !enemyUpdate.attackHandled;
       if (handledCollision) {
         if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
-          audioManager.playSfx('sfx_wrong', { volume: 0.7 });
+          audioManager.playSfx('sfx_damage');
           this.timeLeftMs = Math.max(0, this.timeLeftMs - COLLISION_PENALTY_MS);
           this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
