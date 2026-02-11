@@ -189,7 +189,7 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     let nearestEnemy = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
     system.enemies.forEach((enemy) => {
-      if (!enemy?.isAlive || enemy.state === 'dead') {
+      if (!enemy?.isAlive || enemy.state !== 'walk') {
         return;
       }
       if (enemy.x + enemy.w < playerRect.x) {
