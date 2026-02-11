@@ -1,4 +1,13 @@
-const ENEMY_TYPE = 'plus';
+import { normalizeDashStageId } from './dashStages.js';
+
+const DEFAULT_ENEMY_TYPE = 'plus';
+const DASH_STAGE_TO_ENEMY_TYPE = Object.freeze({
+  plus: 'plus',
+  minus: 'minus',
+  multi: 'multi',
+  divide: 'divide',
+});
+const ENEMY_TYPES = Object.freeze(['plus', 'minus', 'multi', 'divide']);
 const ENEMY_STATES = ['walk', 'hit', 'dead'];
 const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
@@ -28,6 +37,48 @@ export const PX_PER_METER = 100;
 const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'walk');
 
 const getEnemyAssetPath = (type, state) => `assets/enemy/enemy_${type}_${state}.png`;
+
+const normalizeEnemyType = (enemyType) => (
+  ENEMY_TYPES.includes(enemyType) ? enemyType : null
+);
+
+const normalizeEnemyPool = (enemyPool) => {
+  if (!Array.isArray(enemyPool)) {
+    return [];
+  }
+  return enemyPool
+    .map((enemyType) => normalizeEnemyType(enemyType))
+    .filter((enemyType, index, list) => enemyType && list.indexOf(enemyType) === index);
+};
+
+const resolveEnemyTypeForStage = ({
+  stageId,
+  getEnemyType,
+  getEnemyPool,
+}) => {
+  const resolvedByGetter = normalizeEnemyType(getEnemyType?.());
+  if (resolvedByGetter) {
+    return resolvedByGetter;
+  }
+
+  const normalizedStageId = normalizeDashStageId(stageId);
+  if (normalizedStageId && normalizedStageId !== 'mix') {
+    return DASH_STAGE_TO_ENEMY_TYPE[normalizedStageId] ?? DEFAULT_ENEMY_TYPE;
+  }
+
+  const enemyPool = normalizeEnemyPool(getEnemyPool?.());
+  if (!normalizedStageId) {
+    if (enemyPool.length === 0) {
+      return DEFAULT_ENEMY_TYPE;
+    }
+    const poolIndex = Math.floor(Math.random() * enemyPool.length);
+    return enemyPool[poolIndex] ?? DEFAULT_ENEMY_TYPE;
+  }
+
+  const pool = enemyPool.length > 0 ? enemyPool : ENEMY_TYPES;
+  const poolIndex = Math.floor(Math.random() * pool.length);
+  return pool[poolIndex] ?? DEFAULT_ENEMY_TYPE;
+};
 
 const intersects = (a, b) => (
   a.x < b.x + b.w
@@ -85,7 +136,14 @@ const getSpeedPxPerSec = ({ correctCount = 0, elapsedSec = 0 }) => -(
   + elapsedSec * SPEED_PER_SEC_PX_PER_SEC
 );
 
-export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
+export const createDashEnemySystem = ({
+  worldEl,
+  containerEl,
+  stageId = null,
+  getEnemyType = null,
+  getEnemyPool = null,
+  getCurrentMode = null,
+} = {}) => {
   const system = {
     worldEl,
     containerEl,
@@ -93,11 +151,31 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     spawnTimerMs: START_GRACE_MS,
     elapsedMs: 0,
     idCounter: 0,
+    stageId,
+    getEnemyType,
+    getEnemyPool,
+    getCurrentMode,
   };
 
   system.setWorld = (nextWorld, nextContainer) => {
     system.worldEl = nextWorld ?? system.worldEl;
     system.containerEl = ensureEnemyContainer(system.worldEl, nextContainer ?? system.containerEl);
+  };
+
+  system.setStageId = (nextStageId) => {
+    system.stageId = nextStageId;
+  };
+
+  system.setEnemyTypeResolver = (resolver) => {
+    system.getEnemyType = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setEnemyPoolResolver = (resolver) => {
+    system.getEnemyPool = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setCurrentModeResolver = (resolver) => {
+    system.getCurrentMode = typeof resolver === 'function' ? resolver : null;
   };
 
   system.reset = () => {
@@ -136,7 +214,11 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     if (!worldWidth) {
       return null;
     }
-    const type = ENEMY_TYPE;
+    const type = resolveEnemyTypeForStage({
+      stageId: system.stageId,
+      getEnemyType: system.getEnemyType,
+      getEnemyPool: system.getEnemyPool,
+    });
     const state = 'walk';
     const width = ENEMY_SIZE_PX;
     const height = ENEMY_SIZE_PX;

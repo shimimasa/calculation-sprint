@@ -1,4 +1,5 @@
 import { randomInt } from '../core/utils.js';
+import { normalizeDashStageId, toQuestionMode } from './dashStages.js';
 
 const operators = {
   add: { symbol: '+', calc: (a, b) => a + b },
@@ -15,6 +16,65 @@ const digitRange = (digit) => (digit === 1
 
 const buildNumberFromDigits = (tens, ones) => tens * 10 + ones;
 const maxAttempts = 50;
+const normalizeQuestionMode = (mode) => (modes.includes(mode) ? mode : null);
+
+const pickRandomMode = (candidates = modes) => {
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return 'add';
+  }
+  const idx = Math.floor(Math.random() * candidates.length);
+  return candidates[idx] ?? 'add';
+};
+
+const resolveMode = (settings) => {
+  const stageId = normalizeDashStageId(settings.stageId);
+  const reviewModes = Array.isArray(settings.reviewModes)
+    ? settings.reviewModes.filter((mode) => modes.includes(mode))
+    : [];
+  const allowedMixModes = Array.isArray(settings.allowedModes)
+    ? settings.allowedModes.filter((mode) => modes.includes(mode))
+    : [];
+  const mixModes = allowedMixModes.length > 0 ? allowedMixModes : modes;
+  const fallbackMode = settings.mode === 'mix'
+    ? pickRandomMode(mixModes)
+    : (normalizeQuestionMode(settings.mode) ?? 'add');
+  const requestedMode = normalizeQuestionMode(settings.questionMode);
+
+  if (reviewModes.length > 0) {
+    return {
+      mode: reviewModes[randomInt(0, reviewModes.length - 1)],
+      stageId,
+      useDashStagePolicy: false,
+    };
+  }
+
+  if (stageId) {
+    const stageMode = toQuestionMode(stageId);
+    if (stageMode === 'mix') {
+      return {
+        mode: pickRandomMode(modes),
+        stageId,
+        useDashStagePolicy: true,
+      };
+    }
+
+    return {
+      mode: normalizeQuestionMode(stageMode) ?? 'add',
+      stageId,
+      useDashStagePolicy: true,
+    };
+  }
+
+  if (requestedMode) {
+    return { mode: requestedMode, stageId: null, useDashStagePolicy: true };
+  }
+
+  return {
+    mode: fallbackMode,
+    stageId: null,
+    useDashStagePolicy: false,
+  };
+};
 
 const nextAddNoCarry = (digit) => {
   if (digit === 1) {
@@ -22,7 +82,6 @@ const nextAddNoCarry = (digit) => {
     const b = randomInt(1, 9 - a);
     return { a, b };
   }
-  const maxAttempts = 50;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const aTens = randomInt(1, 8);
     const bTens = randomInt(1, 9 - aTens);
@@ -77,20 +136,57 @@ const nextSubOneDigit = (allowBorrow) => {
   return { a, b };
 };
 
+const nextDashSubOperands = () => {
+  if (Math.random() < 0.35) {
+    const b = randomInt(1, 9);
+    const a = randomInt(b, 9);
+    return { a, b };
+  }
+
+  return {
+    a: randomInt(10, 99),
+    b: randomInt(1, 9),
+  };
+};
+
+const generateDivisionOperands = ({
+  minDividend,
+  maxDividend,
+  minDivisor,
+  maxDivisor,
+  minQuotient,
+  maxQuotient,
+  fallback,
+}) => {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const divisor = randomInt(minDivisor, maxDivisor);
+    const quotient = randomInt(minQuotient, maxQuotient);
+    const dividend = divisor * quotient;
+    if (
+      divisor > 0
+      && quotient > 0
+      && dividend >= minDividend
+      && dividend <= maxDividend
+    ) {
+      return { a: dividend, b: divisor };
+    }
+  }
+  return fallback;
+};
+
+const nextDashDivOperands = () => generateDivisionOperands({
+  minDividend: 10,
+  maxDividend: 99,
+  minDivisor: 2,
+  maxDivisor: 9,
+  minQuotient: 2,
+  maxQuotient: 12,
+  fallback: { a: 12, b: 3 },
+});
+
 const questionGenerator = {
   next(settings) {
-    const reviewModes = Array.isArray(settings.reviewModes)
-      ? settings.reviewModes.filter((mode) => modes.includes(mode))
-      : [];
-    const allowedMixModes = Array.isArray(settings.allowedModes)
-      ? settings.allowedModes.filter((mode) => modes.includes(mode))
-      : [];
-    const mixModes = allowedMixModes.length > 0 ? allowedMixModes : modes;
-    const mode = reviewModes.length > 0
-      ? reviewModes[randomInt(0, reviewModes.length - 1)]
-      : (settings.mode === 'mix'
-        ? mixModes[randomInt(0, mixModes.length - 1)]
-        : settings.mode);
+    const { mode, stageId, useDashStagePolicy } = resolveMode(settings);
     const operator = operators[mode];
     if (!operator) {
       return { text: '1 + 1', answer: 2, meta: { mode: 'add', a: 1, b: 1 } };
@@ -103,7 +199,10 @@ const questionGenerator = {
       ({ a, b } = nextAddNoCarry(settings.digit));
     }
     if (mode === 'sub') {
-      if (settings.digit === 1) {
+      const isDashMinus = useDashStagePolicy && stageId === 'minus';
+      if (isDashMinus) {
+        ({ a, b } = nextDashSubOperands());
+      } else if (settings.digit === 1) {
         ({ a, b } = nextSubOneDigit(settings.carry !== false));
       } else if (settings.carry === false) {
         ({ a, b } = nextSubNoBorrow(settings.digit));
@@ -116,41 +215,30 @@ const questionGenerator = {
       b = randomInt(1, 9);
     }
     if (mode === 'div') {
-      let dividend = 0;
-      let divisor = 0;
-      let quotient = 0;
-      let attempts = 0;
-      if (settings.digit === 1) {
-        do {
-          divisor = randomInt(2, 9);
-          quotient = randomInt(1, 9);
-          dividend = divisor * quotient;
-          attempts += 1;
-        } while (attempts < maxAttempts && (quotient < 1 || quotient > 9));
-        if (attempts >= maxAttempts) {
-          divisor = 2;
-          quotient = 1;
-          dividend = 2;
-        }
+      const isDashDivide = useDashStagePolicy && stageId === 'divide';
+      if (isDashDivide) {
+        ({ a, b } = nextDashDivOperands());
       } else {
-        const divisorMin = 2;
-        const divisorMax = 12;
-        const quotientMin = 2;
-        const quotientMax = 12;
-        do {
-          divisor = randomInt(divisorMin, divisorMax);
-          quotient = randomInt(quotientMin, quotientMax);
-          dividend = divisor * quotient;
-          attempts += 1;
-        } while (attempts < maxAttempts && (dividend < min || dividend > max));
-        if (attempts >= maxAttempts) {
-          divisor = 2;
-          quotient = 5;
-          dividend = 10;
-        }
+        ({ a, b } = settings.digit === 1
+          ? generateDivisionOperands({
+            minDividend: 1,
+            maxDividend: 9,
+            minDivisor: 2,
+            maxDivisor: 9,
+            minQuotient: 1,
+            maxQuotient: 4,
+            fallback: { a: 8, b: 2 },
+          })
+          : generateDivisionOperands({
+            minDividend: min,
+            maxDividend: max,
+            minDivisor: 2,
+            maxDivisor: 12,
+            minQuotient: 2,
+            maxQuotient: 12,
+            fallback: { a: 10, b: 2 },
+          }));
       }
-      a = dividend;
-      b = divisor;
     }
 
     const answer = operator.calc(a, b);

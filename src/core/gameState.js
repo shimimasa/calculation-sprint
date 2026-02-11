@@ -45,6 +45,8 @@ const gameState = {
     div: 0,
   },
   dash: {
+    stageId: null,
+    currentMode: null,
     distanceM: 0,
     correctCount: 0,
     wrongCount: 0,
