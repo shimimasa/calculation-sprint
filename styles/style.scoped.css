@@ -2035,6 +2035,13 @@
 .calc-sprint .screen-dash-result .dash-result-record {
   width: min(920px, 92vw);
 }
+.calc-sprint .screen-dash-result .dash-result-stage {
+  font-size: 15px;
+  font-weight: 600;
+  color: #4a5570;
+  text-align: center;
+  margin-bottom: 6px;
+}
 .calc-sprint .screen-dash-result .dash-result-reason {
   font-size: 16px;
   font-weight: 600;
