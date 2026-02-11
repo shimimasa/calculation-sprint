@@ -16,29 +16,14 @@ const digitRange = (digit) => (digit === 1
 
 const buildNumberFromDigits = (tens, ones) => tens * 10 + ones;
 const maxAttempts = 50;
-const mixRecentModes = [];
-
 const normalizeQuestionMode = (mode) => (modes.includes(mode) ? mode : null);
 
-const pickMixMode = (candidates) => {
+const pickRandomMode = (candidates = modes) => {
   if (!Array.isArray(candidates) || candidates.length === 0) {
     return 'add';
   }
-
-  const [prev2, prev1] = mixRecentModes.slice(-2);
-  const avoidTriple = prev1 && prev1 === prev2;
-  const filteredCandidates = avoidTriple
-    ? candidates.filter((mode) => mode !== prev1)
-    : candidates;
-  const availableCandidates = filteredCandidates.length > 0 ? filteredCandidates : candidates;
-  const pickedMode = availableCandidates[randomInt(0, availableCandidates.length - 1)];
-
-  mixRecentModes.push(pickedMode);
-  if (mixRecentModes.length > 8) {
-    mixRecentModes.shift();
-  }
-
-  return pickedMode;
+  const idx = Math.floor(Math.random() * candidates.length);
+  return candidates[idx] ?? 'add';
 };
 
 const resolveMode = (settings) => {
@@ -51,7 +36,7 @@ const resolveMode = (settings) => {
     : [];
   const mixModes = allowedMixModes.length > 0 ? allowedMixModes : modes;
   const fallbackMode = settings.mode === 'mix'
-    ? pickMixMode(mixModes)
+    ? pickRandomMode(mixModes)
     : (normalizeQuestionMode(settings.mode) ?? 'add');
   const requestedMode = normalizeQuestionMode(settings.questionMode);
 
@@ -67,7 +52,7 @@ const resolveMode = (settings) => {
     const stageMode = toQuestionMode(stageId);
     if (stageMode === 'mix') {
       return {
-        mode: requestedMode ?? pickMixMode(modes),
+        mode: pickRandomMode(modes),
         stageId,
         useDashStagePolicy: true,
       };
@@ -152,19 +137,16 @@ const nextSubOneDigit = (allowBorrow) => {
 };
 
 const nextDashSubOperands = () => {
-  if (Math.random() < 0.75) {
-    return {
-      a: randomInt(10, 99),
-      b: randomInt(1, 9),
-    };
+  if (Math.random() < 0.35) {
+    const b = randomInt(1, 9);
+    const a = randomInt(b, 9);
+    return { a, b };
   }
 
-  let a = randomInt(10, 99);
-  let b = randomInt(10, 99);
-  if (a < b) {
-    [a, b] = [b, a];
-  }
-  return { a, b };
+  return {
+    a: randomInt(10, 99),
+    b: randomInt(1, 9),
+  };
 };
 
 const generateDivisionOperands = ({

@@ -42,13 +42,6 @@ const normalizeEnemyType = (enemyType) => (
   ENEMY_TYPES.includes(enemyType) ? enemyType : null
 );
 
-const modeToEnemyType = (mode) => ({
-  add: 'plus',
-  sub: 'minus',
-  mul: 'multi',
-  div: 'divide',
-}[mode] ?? null);
-
 const normalizeEnemyPool = (enemyPool) => {
   if (!Array.isArray(enemyPool)) {
     return [];
@@ -62,8 +55,6 @@ const resolveEnemyTypeForStage = ({
   stageId,
   getEnemyType,
   getEnemyPool,
-  getCurrentMode,
-  previousEnemyType,
 }) => {
   const resolvedByGetter = normalizeEnemyType(getEnemyType?.());
   if (resolvedByGetter) {
@@ -84,18 +75,9 @@ const resolveEnemyTypeForStage = ({
     return enemyPool[poolIndex] ?? DEFAULT_ENEMY_TYPE;
   }
 
-  const modeEnemyType = modeToEnemyType(getCurrentMode?.());
-  if (modeEnemyType) {
-    return modeEnemyType;
-  }
-
   const pool = enemyPool.length > 0 ? enemyPool : ENEMY_TYPES;
-  const filteredPool = pool.length > 1
-    ? pool.filter((enemyType) => enemyType !== previousEnemyType)
-    : pool;
-  const candidates = filteredPool.length > 0 ? filteredPool : pool;
-
-  return candidates[Math.floor(Math.random() * candidates.length)] ?? DEFAULT_ENEMY_TYPE;
+  const poolIndex = Math.floor(Math.random() * pool.length);
+  return pool[poolIndex] ?? DEFAULT_ENEMY_TYPE;
 };
 
 const intersects = (a, b) => (
@@ -173,7 +155,6 @@ export const createDashEnemySystem = ({
     getEnemyType,
     getEnemyPool,
     getCurrentMode,
-    previousEnemyType: null,
   };
 
   system.setWorld = (nextWorld, nextContainer) => {
@@ -238,10 +219,7 @@ export const createDashEnemySystem = ({
       stageId: system.stageId,
       getEnemyType: system.getEnemyType,
       getEnemyPool: system.getEnemyPool,
-      getCurrentMode: system.getCurrentMode,
-      previousEnemyType: system.previousEnemyType,
     });
-    system.previousEnemyType = type;
     const state = 'walk';
     const width = ENEMY_SIZE_PX;
     const height = ENEMY_SIZE_PX;
