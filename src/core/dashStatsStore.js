@@ -4,6 +4,7 @@ import {
   makeStoreKey,
   resolveProfileId,
 } from './storageKeys.js';
+import { toDashStageId } from '../features/dashStages.js';
 
 const readFromStorage = (storageKey) => {
   try {
@@ -42,6 +43,7 @@ const normalizeSession = (session) => ({
   defeatedCount: Number.isFinite(session?.defeatedCount) ? session.defeatedCount : 0,
   maxStreak: Number.isFinite(session?.maxStreak) ? session.maxStreak : 0,
   timeLeftMs: Number.isFinite(session?.timeLeftMs) ? session.timeLeftMs : 0,
+  stageId: toDashStageId(session?.stageId),
   endReason: normalizeEndReason(session?.endReason),
   endedAt: typeof session?.endedAt === 'string' ? session.endedAt : null,
   schemaVersion: typeof session?.schemaVersion === 'string'
