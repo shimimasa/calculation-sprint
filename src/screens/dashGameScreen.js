@@ -23,6 +23,7 @@ import {
   createDashEnemySystem,
 } from '../features/dashEnemySystem.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
+import { toDashStageId } from '../features/dashStages.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
@@ -751,7 +752,12 @@ const dashGameScreen = {
     this.lastNextAreaText = nextText;
   },
   loadNextQuestion() {
-    this.currentQuestion = questionGenerator.next(gameState.settings);
+    this.currentQuestion = questionGenerator.next({
+      ...gameState.settings,
+      stageId: this.dashStageId,
+      questionMode: gameState.dash.currentMode,
+    });
+    gameState.dash.currentMode = this.currentQuestion?.meta?.mode ?? null;
     if (domRefs.dashGame.question) {
       domRefs.dashGame.question.textContent = this.currentQuestion.text;
     }
@@ -947,6 +953,7 @@ const dashGameScreen = {
       defeatedCount: gameState.dash.defeatedCount,
       maxStreak: this.maxStreak,
       timeLeftMs: Math.max(0, this.timeLeftMs),
+      stageId: toDashStageId(gameState.dash?.stageId),
       endReason,
     };
     screenManager.changeScreen('dash-result');
@@ -988,7 +995,12 @@ const dashGameScreen = {
     this.answerBuffer = '';
     this.isSyncingAnswer = false;
     this.isBgmActive = false;
+    this.dashStageId = toDashStageId(gameState.dash?.stageId);
+    gameState.dash.stageId = this.dashStageId;
+    gameState.dash.currentMode = null;
     this.enemySystem = createDashEnemySystem({
+      stageId: this.dashStageId,
+      getCurrentMode: () => gameState.dash.currentMode,
       worldEl: domRefs.game.runWorld,
       containerEl: domRefs.game.runEnemies,
     });
