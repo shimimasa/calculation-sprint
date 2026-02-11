@@ -1004,6 +1004,10 @@
 
 /* Dash Run: layout density + playfield focus (Dash-scoped overrides) */
 .calc-sprint #dash-game-screen {
+  --run-sky-image: url("../assets/bg-sky.png");
+  --run-cloud-image: url("../assets/bg-cloud.png");
+  --run-air-image: none;
+  --run-map-image: none;
   padding: 0;
   position: relative;
   display: grid;
@@ -1053,7 +1057,7 @@
 .calc-sprint #dash-game-screen .dash-run-zone {
   grid-row: 2;
   position: relative;
-  z-index: 10;
+  z-index: 2;
   height: 100%;
   overflow: hidden;
   isolation: isolate;
@@ -2338,9 +2342,7 @@
   --run-air-image: none;
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_add"],
-.calc-sprint .run-world[data-bg-theme="bg_plus"],
-.calc-sprint .screen-dash[data-bg-theme="bg_add"],
-.calc-sprint .screen-dash[data-bg-theme="bg_plus"] {
+.calc-sprint .run-world[data-bg-theme="bg_plus"] {
   --run-sky-image: url("../assets/plus/bg-sky.png"), url("../assets/bg-sky.png");
   --run-ground-image: url("../assets/plus/bg-ground.png"), url("../assets/bg-ground.png");
 }
@@ -2351,9 +2353,7 @@
   --run-air-image: linear-gradient(180deg, rgba(120, 170, 255, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_sub"],
-.calc-sprint .run-world[data-bg-theme="bg_minus"],
-.calc-sprint .screen-dash[data-bg-theme="bg_sub"],
-.calc-sprint .screen-dash[data-bg-theme="bg_minus"] {
+.calc-sprint .run-world[data-bg-theme="bg_minus"] {
   --run-sky-image: url("../assets/minus/bg-sky.png"), url("../assets/bg-sky.png");
   --run-ground-image: url("../assets/minus/bg-ground.png"), url("../assets/bg-ground.png");
 }
@@ -2364,9 +2364,7 @@
   --run-air-image: linear-gradient(180deg, rgba(120, 220, 180, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_mul"],
-.calc-sprint .run-world[data-bg-theme="bg_multi"],
-.calc-sprint .screen-dash[data-bg-theme="bg_mul"],
-.calc-sprint .screen-dash[data-bg-theme="bg_multi"] {
+.calc-sprint .run-world[data-bg-theme="bg_multi"] {
   --run-sky-image: url("../assets/multi/bg-sky.png"), url("../assets/bg-sky.png");
   --run-ground-image: url("../assets/multi/bg-ground.png"), url("../assets/bg-ground.png");
 }
@@ -2377,9 +2375,7 @@
   --run-air-image: linear-gradient(180deg, rgba(180, 140, 255, 0.2), transparent);
   --run-map-image: none;
 }.calc-sprint .run-world[data-bg-theme="bg_div"],
-.calc-sprint .run-world[data-bg-theme="bg_divide"],
-.calc-sprint .screen-dash[data-bg-theme="bg_div"],
-.calc-sprint .screen-dash[data-bg-theme="bg_divide"] {
+.calc-sprint .run-world[data-bg-theme="bg_divide"] {
   --run-sky-image: url("../assets/divide/bg-sky.png"), url("../assets/bg-sky.png");
   --run-ground-image: url("../assets/divide/bg-ground.png"), url("../assets/bg-ground.png");
 }
@@ -2389,8 +2385,7 @@
   --run-cloud-image: url("../assets/bg-cloud.png");
   --run-air-image: linear-gradient(180deg, rgba(255, 200, 120, 0.25), transparent);
   --run-map-image: none;
-}.calc-sprint .run-world[data-bg-theme="bg_mix"],
-.calc-sprint .screen-dash[data-bg-theme="bg_mix"] {
+}.calc-sprint .run-world[data-bg-theme="bg_mix"] {
   --run-sky-image: url("../assets/mix/bg-sky.png"), url("../assets/bg-sky.png");
   --run-ground-image: url("../assets/mix/bg-ground.png"), url("../assets/bg-ground.png");
 }
@@ -2930,29 +2925,14 @@
 .calc-sprint .screen-dash::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 60vh;
+  inset: 0;
   z-index: 1;
   pointer-events: none;
-  background-image:
-    url("../assets/bg-cloud.png"),
-    url("../assets/bg-cloud.png");
-  background-repeat: repeat-x, no-repeat;
-  background-size: auto 210px, auto 290px;
-  background-position: 0px 48px, right 15% top 168px;
-  opacity: 0.62;
-  animation: dashCloudDrift 44s linear infinite;
-}
-
-@keyframes dashCloudDrift {
-  from {
-    background-position: 0px 48px, right 15% top 168px;
-  }
-  to {
-    background-position: -880px 48px, right 35% top 168px;
-  }
+  background-image: var(--run-cloud-image, url("../assets/bg-cloud.png"));
+  background-repeat: repeat-x;
+  background-size: auto 220px;
+  background-position: center top;
+  opacity: 0.58;
 }
 
 .calc-sprint #dash-game-screen {
@@ -2964,73 +2944,37 @@
   background-color: transparent !important;
 }
 
-.calc-sprint .screen-dash > header.dash-header,
-.calc-sprint .screen-dash > .screen-main.dash-playfield,
-.calc-sprint .screen-dash > .screen-footer,
-.calc-sprint .screen-dash > *,
-.calc-sprint #dash-game-screen > header.dash-header,
-.calc-sprint #dash-game-screen > .screen-main.dash-playfield,
-.calc-sprint #dash-game-screen > .screen-footer,
-.calc-sprint .screen-dash .dash-top-hud,
-.calc-sprint .screen-dash .dash-run-zone,
-.calc-sprint .screen-dash .dash-bottom-hud,
-.calc-sprint #dash-game-screen .dash-top-hud,
-.calc-sprint #dash-game-screen .dash-run-zone,
-.calc-sprint #dash-game-screen .dash-bottom-hud,
-.calc-sprint #dash-game-screen .dash-top-controls,
-.calc-sprint #dash-game-screen .dash-top-controls .dash-top-cluster,
-.calc-sprint #dash-game-screen .dash-top-controls .dash-problem-grid,
-.calc-sprint #dash-game-screen .dash-keypad-stack,
-.calc-sprint #dash-game-screen .dash-bottom-stats,
-.calc-sprint #dash-game-screen .dash-stat-card,
-.calc-sprint #dash-game-screen .dash-proximity,
-.calc-sprint #dash-game-screen .dash-next-area,
-.calc-sprint #dash-game-screen #dash-game-time-wrap,
-.calc-sprint #dash-game-screen .dash-time,
-.calc-sprint #dash-game-screen .dash-time-hud,
+.calc-sprint #dash-game-screen > .dash-top-hud,
+.calc-sprint #dash-game-screen > .dash-run-zone,
+.calc-sprint #dash-game-screen > .dash-bottom-hud,
 .calc-sprint #dash-game-screen .run-viewport,
 .calc-sprint #dash-game-screen .run-host,
 .calc-sprint #dash-game-screen .run-layer,
 .calc-sprint #dash-game-screen .run-world,
-.calc-sprint #dash-game-screen .run-world[data-bg-theme],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="default"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="theme1"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="w1"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_add"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_sub"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_mul"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_div"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_mix"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_plus"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_minus"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_multi"],
-.calc-sprint #dash-game-screen .run-world[data-bg-theme="bg_divide"] {
+.calc-sprint #dash-game-screen .run-zone {
   background: transparent !important;
   background-image: none !important;
   background-color: transparent !important;
-  box-shadow: none !important;
-  border-color: transparent !important;
-}
-
-.calc-sprint .screen-dash > * {
-  position: relative;
-  z-index: 2;
 }
 
 .calc-sprint #dash-game-screen .run-world {
   border-radius: 0;
+  box-shadow: none !important;
+  border-color: transparent !important;
 }
 
+.calc-sprint #dash-game-screen > .dash-run-zone {
+  position: relative;
+  z-index: 2;
+}
 .calc-sprint #dash-game-screen .run-sky {
   background: transparent !important;
   background-image: none !important;
   background-color: transparent !important;
 }
 
-.calc-sprint #dash-game-screen .run-zone {
-  background: transparent !important;
-  background-image: none !important;
-  background-color: transparent !important;
+.calc-sprint #dash-game-screen .run-clouds {
+  display: none !important;
 }
 
 .calc-sprint #dash-game-screen .run-ground {
