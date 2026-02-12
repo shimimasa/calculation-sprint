@@ -1,4 +1,5 @@
 import { isScreenBlocked, resolveSafeScreen } from './modeAvailability.js';
+import { perfLog } from './perf.js';
 
 let currentScreen = null;
 let currentName = null;
@@ -64,6 +65,7 @@ const screenManager = {
     }
     isTransitioning = true;
     const prevName = currentName;
+    perfLog('screen.change.start', { from: prevName ?? 'none', to: targetName });
     if (currentScreen && typeof currentScreen.exit === 'function') {
       currentScreen.exit(targetName);
     }

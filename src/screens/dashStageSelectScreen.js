@@ -4,6 +4,8 @@ import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import audioManager from '../core/audioManager.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
+import { perfLog } from '../core/perf.js';
+import { preloadStageCoreImages } from '../core/stageAssetPreloader.js';
 import {
   DASH_STAGE_IDS,
   findDashStageById,
@@ -30,6 +32,7 @@ const dashStageSelectScreen = {
         return;
       }
       const stageId = toDashStageId(button.dataset.dashStageId);
+      perfLog('dash.stage.select.click', { stageId });
       const stage = findDashStageById(stageId) ?? getDashStageOrFallback(stageId);
       if (!stage || !DASH_STAGE_IDS.includes(stage.id)) {
         return;
@@ -38,6 +41,7 @@ const dashStageSelectScreen = {
       audioManager.playSfx('sfx_confirm');
       gameState.dash.stageId = stage.id;
       gameState.dash.currentMode = null;
+      preloadStageCoreImages(stage.id, { mode: 'dash' });
       screenManager.changeScreen('dash-game');
     };
 
