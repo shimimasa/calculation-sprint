@@ -62,6 +62,7 @@ const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
 const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
 const EFFECT_MAX_SPEED_MPS = 8;
+const DASH_BUILD_TAG = 'damagefix-20260212-01';
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
 const DASH_STAGE_TO_BGM_ID = Object.freeze({
@@ -156,15 +157,15 @@ const dashGameScreen = {
     if (!this.isDebugEnabled()) {
       return;
     }
-    const screen = domRefs.dashGame.screen;
-    if (!screen) {
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
       return;
     }
-    if (!this.debugToastEl || !screen.contains(this.debugToastEl)) {
+    if (!this.debugToastEl || !overlayRoot.contains(this.debugToastEl)) {
       const toast = document.createElement('div');
       toast.className = 'dash-debug-toast';
       toast.setAttribute('aria-live', 'polite');
-      screen.appendChild(toast);
+      overlayRoot.appendChild(toast);
       this.debugToastEl = toast;
     }
     this.debugToastEl.textContent = message;
@@ -178,6 +179,64 @@ const dashGameScreen = {
       }
       this.debugToastTimeout = null;
     }, 800);
+  },
+  ensureDashOverlayRoot() {
+    const host = domRefs.dashGame.screen ?? document.body;
+    if (!host) {
+      return null;
+    }
+    if (!this.overlayRootEl || !this.overlayRootEl.isConnected || this.overlayRootEl.parentElement !== host) {
+      this.overlayRootEl?.remove();
+      const root = document.createElement('div');
+      root.className = 'dash-overlay-root';
+      host.appendChild(root);
+      this.overlayRootEl = root;
+    }
+    return this.overlayRootEl;
+  },
+  showBuildBadge() {
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return;
+    }
+    if (!this.buildBadgeEl || !overlayRoot.contains(this.buildBadgeEl)) {
+      const badge = document.createElement('div');
+      badge.className = 'dash-build-badge';
+      overlayRoot.appendChild(badge);
+      this.buildBadgeEl = badge;
+    }
+    this.buildBadgeEl.textContent = `DASH BUILD: ${DASH_BUILD_TAG}`;
+    this.buildBadgeEl.hidden = false;
+    if (this.buildBadgeTimeout) {
+      window.clearTimeout(this.buildBadgeTimeout);
+    }
+    this.buildBadgeTimeout = window.setTimeout(() => {
+      if (this.buildBadgeEl) {
+        this.buildBadgeEl.hidden = true;
+      }
+      this.buildBadgeTimeout = null;
+    }, 2000);
+  },
+  updateDebugHud({ hasPlayerRect, collided, attackHandled, cooldownMs }) {
+    const debugEnabled = this.isDebugEnabled();
+    if (!debugEnabled) {
+      if (this.debugHudEl) {
+        this.debugHudEl.hidden = true;
+      }
+      return;
+    }
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return;
+    }
+    if (!this.debugHudEl || !overlayRoot.contains(this.debugHudEl)) {
+      const hud = document.createElement('div');
+      hud.className = 'dash-debug-hud';
+      overlayRoot.appendChild(hud);
+      this.debugHudEl = hud;
+    }
+    this.debugHudEl.hidden = false;
+    this.debugHudEl.textContent = `PR:${hasPlayerRect ? 1 : 0} COLL:${collided ? 1 : 0} ATK:${attackHandled ? 1 : 0} CD:${Math.max(0, Math.round(cooldownMs))}`;
   },
   verifyRunnerDom() {
     const screen = domRefs.dashGame.screen;
@@ -989,6 +1048,8 @@ const dashGameScreen = {
       ? Math.round(runGroundY - worldRect.top)
       : null;
     const playerRect = this.getPlayerRect();
+    let debugCollision = false;
+    let debugAttackHandled = false;
     const enemyUpdate = this.enemySystem?.update({
       dtMs,
       nowMs,
@@ -998,6 +1059,8 @@ const dashGameScreen = {
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
     });
     if (enemyUpdate) {
+      debugCollision = Boolean(enemyUpdate.collision);
+      debugAttackHandled = Boolean(enemyUpdate.attackHandled);
       const handledCollision = enemyUpdate.collision && !enemyUpdate.attackHandled;
       if (handledCollision) {
         if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
@@ -1023,6 +1086,12 @@ const dashGameScreen = {
         this.enemyGapM = collisionThreshold * 2;
       }
     }
+    this.updateDebugHud({
+      hasPlayerRect: Boolean(playerRect),
+      collided: debugCollision,
+      attackHandled: debugAttackHandled,
+      cooldownMs: COLLISION_COOLDOWN_MS - (nowMs - (this.lastCollisionPenaltyAtMs ?? -Infinity)),
+    });
     this.timeLeftMs -= dtMs;
     if (this.timeLeftMs <= 0) {
       this.endSession('timeup');
@@ -1133,6 +1202,10 @@ const dashGameScreen = {
     this.stumbleTimeout = null;
     this.debugToastTimeout = null;
     this.debugToastEl = null;
+    this.overlayRootEl = null;
+    this.buildBadgeEl = null;
+    this.buildBadgeTimeout = null;
+    this.debugHudEl = null;
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
     this.applyDashTheme();
@@ -1345,6 +1418,7 @@ const dashGameScreen = {
     this.loadNextQuestion();
     this.startBgm();
     this.startLoop();
+    this.showBuildBadge();
   },
   render() {},
   exit() {
@@ -1392,6 +1466,22 @@ const dashGameScreen = {
     if (this.debugToastEl) {
       this.debugToastEl.remove();
       this.debugToastEl = null;
+    }
+    if (this.buildBadgeTimeout) {
+      window.clearTimeout(this.buildBadgeTimeout);
+      this.buildBadgeTimeout = null;
+    }
+    if (this.debugHudEl) {
+      this.debugHudEl.remove();
+      this.debugHudEl = null;
+    }
+    if (this.buildBadgeEl) {
+      this.buildBadgeEl.remove();
+      this.buildBadgeEl = null;
+    }
+    if (this.overlayRootEl) {
+      this.overlayRootEl.remove();
+      this.overlayRootEl = null;
     }
     if (domRefs.dashGame.screen) {
       delete domRefs.dashGame.screen.dataset.debugRunnerwrap;
