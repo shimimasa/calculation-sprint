@@ -2977,10 +2977,10 @@
     inset: 0;
     z-index: 1; /* ::before の上、UIの下 */
     pointer-events: none;
-    background-image: var(--dash-air-image, none);
+    background-image: none;
     background-repeat: no-repeat;
     background-size: cover;
-    opacity: var(--dash-air-opacity, 1);
+    opacity: 0;
   }
 
 .calc-sprint #dash-game-screen {
@@ -3024,6 +3024,10 @@
   box-shadow: none !important;
   border-color: transparent !important;
   outline: 0 !important;
+}
+
+.calc-sprint #dash-game-screen .run-world::before {
+  background-image: none !important;
 }
 
 .calc-sprint #dash-game-screen > .dash-run-zone {
