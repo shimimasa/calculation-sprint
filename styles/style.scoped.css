@@ -2504,6 +2504,51 @@
   inset: 0;
   pointer-events: none;
   z-index: 2;
+  overflow: visible;
+}.calc-sprint .enemy-wrap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 72px;
+  height: 72px;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 1;
+  --enemy-hit-pull: 0px;
+  --enemy-hit-scale: 1;
+}.calc-sprint .enemy-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  min-width: 68px;
+  max-width: 96px;
+  padding: 4px 6px 5px;
+  border-radius: 7px;
+  background: rgba(9, 14, 34, 0.72);
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}.calc-sprint .enemy-name {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 3px;
+  white-space: nowrap;
+}.calc-sprint .enemy-hp {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+}.calc-sprint .enemy-hp__fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff9f68 0%, #ff4d4f 100%);
+  transform-origin: left center;
+  transform: scaleX(1);
 }.calc-sprint .enemy-sprite {
   position: absolute;
   left: 0;
@@ -2511,10 +2556,7 @@
   width: 72px;
   height: 72px;
   object-fit: contain;
-  will-change: transform;
-  z-index: 1;
-  --enemy-hit-pull: 0px;
-  --enemy-hit-scale: 1;
+  pointer-events: none;
 }.calc-sprint .run-world.stumble-freeze .run-sky {
   background-position-x: var(--stumble-freeze-x, 0px);
   transition: none;
