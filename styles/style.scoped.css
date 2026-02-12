@@ -2751,15 +2751,18 @@
   --runner-bob-duration: 0.34s;
 }.calc-sprint #runner-sprite.runner-speed-high {
   --runner-bob-duration: 0.26s;
-}.calc-sprint #dash-game-screen .runner-wrap.is-stumble #runner-sprite {
+}.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-stumble #runner-sprite {
   animation:
     calc-sprint-runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite,
     calc-sprint-runner-stumble 0.52s cubic-bezier(0.18, 0.9, 0.2, 1) 1;
   opacity: 1 !important;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.42));
-}.calc-sprint #dash-game-screen .runner-wrap.is-stumble .runner-shadow {
+}.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-stumble .runner-shadow {
   transform: scale(1.28, 0.76);
   opacity: 0.9;
+}.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-debug-stumble #runner-sprite {
+  outline: 2px solid rgba(255, 0, 0, 0.4);
+  outline-offset: 2px;
 }.calc-sprint #runner-sprite.boost {
   transform: translate(
       var(--calc-sprint-runner-bob-x, 0px),
@@ -2786,9 +2789,9 @@
 
 @media (prefers-reduced-motion: reduce) {.calc-sprint .run-layer #runner-sprite.runner-bob {
     animation: none;
-  }.calc-sprint #dash-game-screen .runner-wrap.is-stumble #runner-sprite {
+  }.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-stumble #runner-sprite {
     animation: calc-sprint-runner-stumble 0.16s linear 1;
-  }.calc-sprint #dash-game-screen .runner-wrap.is-stumble .runner-shadow {
+  }.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-stumble .runner-shadow {
     transform: scale(1.12, 0.9);
   }
 }.calc-sprint #game-speed.glow {
@@ -3678,3 +3681,5 @@
   box-shadow: none !important;
   background: rgba(0, 0, 0, 0.18) !important;
 }
+
+.calc-sprint .screen-dash .dash-debug-toast { position: fixed; top: 16px; right: 16px; z-index: 2147483647; padding: 8px 12px; border-radius: 10px; background: rgba(13,20,36,.9); color:#fff; font-weight:800; letter-spacing:.02em; box-shadow:0 10px 24px rgba(0,0,0,.35); pointer-events:none; }
