@@ -41,6 +41,9 @@ const COLLISION_SLOW_MULT = 0.7;
 const STUMBLE_DURATION_MS = 520;
 const KICK_MS = 300;
 const MAX_LUNGE_PX = 140;
+const LOOP_WATCHDOG_INTERVAL_MS = 1000;
+const LOOP_STOPPED_THRESHOLD_MS = 1500;
+const LOOP_RECOVERY_MAX_ATTEMPTS = 3;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
@@ -61,8 +64,11 @@ const DEFAULT_CLOUD_WIDTH = 220;
 const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
 const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
+const DOM_COLLISION_HITBOX_INSET_PX = 8;
+const HIT_ENEMY_CLEANUP_MARGIN_PX = 48;
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
+const DASH_DEBUG_ALWAYS_ON = false;
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
 const DASH_STAGE_TO_BGM_ID = Object.freeze({
@@ -147,11 +153,7 @@ const dashGameScreen = {
   answerBuffer: '',
   isSyncingAnswer: false,
   isDebugEnabled() {
-    try {
-      return window.localStorage.getItem('calcSprintDebug') === '1';
-    } catch {
-      return false;
-    }
+    return DASH_DEBUG_ALWAYS_ON === true;
   },
   showDebugToast(message) {
     if (!this.isDebugEnabled()) {
@@ -217,7 +219,186 @@ const dashGameScreen = {
       this.buildBadgeTimeout = null;
     }, 2000);
   },
-  updateDebugHud({ hasPlayerRect, collided, attackHandled, cooldownMs }) {
+  ensureLoopMonitorBadge() {
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return null;
+    }
+    if (!this.loopMonitorBadgeEl || !overlayRoot.contains(this.loopMonitorBadgeEl)) {
+      const badge = document.createElement('div');
+      badge.className = 'dash-loop-monitor-badge';
+      overlayRoot.appendChild(badge);
+      this.loopMonitorBadgeEl = badge;
+    }
+    return this.loopMonitorBadgeEl;
+  },
+  getLastFrameAgoMs(nowMs = window.performance.now()) {
+    if (!Number.isFinite(this.lastFrameAtMs)) {
+      return null;
+    }
+    return Math.max(0, Math.round(nowMs - this.lastFrameAtMs));
+  },
+  isLoopStopped(nowMs = window.performance.now()) {
+    if (!this.isRunning) {
+      return true;
+    }
+    const lastFrameAgoMs = this.getLastFrameAgoMs(nowMs);
+    return lastFrameAgoMs === null || lastFrameAgoMs >= LOOP_STOPPED_THRESHOLD_MS;
+  },
+  updateLoopMonitorBadge(nowMs = window.performance.now()) {
+    const badge = this.ensureLoopMonitorBadge();
+    if (!badge) {
+      return;
+    }
+    const lastFrameAgoMs = this.getLastFrameAgoMs(nowMs);
+    const status = this.isLoopStopped(nowMs) ? 'STOPPED' : 'OK';
+    const agoText = lastFrameAgoMs === null ? '--' : String(lastFrameAgoMs);
+    const errorText = this.lastLoopErrorMessage ? `\nLAST ERROR: ${this.lastLoopErrorMessage}` : '';
+    badge.textContent = [
+      `RUN LOOP: ${status}`,
+      `frameCount: ${this.loopFrameCount}`,
+      `lastFrameAgo(ms): ${agoText}`,
+      `recoveries: ${this.loopRecoveryCount}/${LOOP_RECOVERY_MAX_ATTEMPTS}`,
+    ].join('\n') + errorText;
+    badge.setAttribute('data-status', status.toLowerCase());
+  },
+  noteLoopError(error) {
+    const message = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+    this.lastLoopErrorMessage = message;
+    console.error('[dash-game] loop error', error);
+    this.updateLoopMonitorBadge();
+  },
+  startLoopWatchdog() {
+    this.stopLoopWatchdog();
+    this.watchdogTimerId = window.setInterval(() => {
+      if (!this.isScreenActive() || this.hasEnded) {
+        return;
+      }
+      const nowMs = window.performance.now();
+      this.updateLoopMonitorBadge(nowMs);
+      if (!this.isLoopStopped(nowMs)) {
+        return;
+      }
+      if (this.loopRecoveryCount >= LOOP_RECOVERY_MAX_ATTEMPTS) {
+        return;
+      }
+      this.loopRecoveryCount += 1;
+      this.startLoop({ isRecovery: true });
+      this.updateLoopMonitorBadge();
+    }, LOOP_WATCHDOG_INTERVAL_MS);
+  },
+  stopLoopWatchdog() {
+    if (this.watchdogTimerId) {
+      window.clearInterval(this.watchdogTimerId);
+      this.watchdogTimerId = null;
+    }
+  },
+  ensureDiagnosticsHud() {
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return null;
+    }
+    if (!this.diagnosticsHudEl || !overlayRoot.contains(this.diagnosticsHudEl)) {
+      const hud = document.createElement('div');
+      hud.className = 'dash-diagnostics-hud';
+      overlayRoot.appendChild(hud);
+      this.diagnosticsHudEl = hud;
+    }
+    return this.diagnosticsHudEl;
+  },
+  ensureDiagnosticsHitboxes() {
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return null;
+    }
+    if (!this.playerHitboxEl || !overlayRoot.contains(this.playerHitboxEl)) {
+      const playerBox = document.createElement('div');
+      playerBox.className = 'dash-hitbox-player';
+      playerBox.hidden = true;
+      overlayRoot.appendChild(playerBox);
+      this.playerHitboxEl = playerBox;
+    }
+    if (!this.enemyHitboxEl || !overlayRoot.contains(this.enemyHitboxEl)) {
+      const enemyBox = document.createElement('div');
+      enemyBox.className = 'dash-hitbox-enemy';
+      enemyBox.hidden = true;
+      overlayRoot.appendChild(enemyBox);
+      this.enemyHitboxEl = enemyBox;
+    }
+    return {
+      player: this.playerHitboxEl,
+      enemy: this.enemyHitboxEl,
+    };
+  },
+  formatDiagnosticRect(label, rect) {
+    if (!rect) {
+      return `${label}:0 x:null y:null w:null h:null`;
+    }
+    return `${label}:1 x:${Math.round(rect.x)} y:${Math.round(rect.y)} w:${Math.round(rect.w)} h:${Math.round(rect.h)}`;
+  },
+  applyHitboxRect(hitboxEl, worldRect, rect) {
+    if (!hitboxEl) {
+      return;
+    }
+    if (!worldRect || !rect) {
+      hitboxEl.hidden = true;
+      return;
+    }
+    hitboxEl.hidden = false;
+    hitboxEl.style.left = `${Math.round(worldRect.left + rect.x)}px`;
+    hitboxEl.style.top = `${Math.round(worldRect.top + rect.y)}px`;
+    hitboxEl.style.width = `${Math.max(0, Math.round(rect.w))}px`;
+    hitboxEl.style.height = `${Math.max(0, Math.round(rect.h))}px`;
+  },
+  updateDiagnostics({
+    playerRect,
+    enemyRect,
+    worldRect,
+    groundY,
+    collision,
+    attackHandled,
+  }) {
+    const debugEnabled = this.isDebugEnabled();
+    if (!debugEnabled) {
+      if (this.diagnosticsHudEl) {
+        this.diagnosticsHudEl.hidden = true;
+      }
+      if (this.playerHitboxEl) {
+        this.playerHitboxEl.hidden = true;
+      }
+      if (this.enemyHitboxEl) {
+        this.enemyHitboxEl.hidden = true;
+      }
+      return;
+    }
+    const hud = this.ensureDiagnosticsHud();
+    if (!hud) {
+      return;
+    }
+    const dx = playerRect && enemyRect ? Math.round(enemyRect.x - playerRect.x) : null;
+    const dy = playerRect && enemyRect ? Math.round(enemyRect.y - playerRect.y) : null;
+    hud.textContent = [
+      `ENEMY_SYS:${this.enemySystem ? 1 : 0} UPD:${this.enemyUpdateCount}`,
+      `GROUND_Y:${groundY === null ? 'null' : Math.round(groundY)}`,
+      this.formatDiagnosticRect('PLAYER', playerRect),
+      this.formatDiagnosticRect('ENEMY', enemyRect),
+      `DX:${dx ?? 'null'} DY:${dy ?? 'null'}`,
+      `COLL:${collision ? 1 : 0} ATK:${attackHandled ? 1 : 0}`,
+    ].join('\n');
+
+    this.ensureDiagnosticsHitboxes();
+    this.applyHitboxRect(this.playerHitboxEl, worldRect, playerRect);
+    this.applyHitboxRect(this.enemyHitboxEl, worldRect, enemyRect);
+  },
+  updateDebugHud({
+    hasPlayerRect,
+    collided,
+    attackHandled,
+    cooldownMs,
+    enemyRect,
+    nearestDxPx,
+    nearestDyPx,
+  }) {
     const debugEnabled = this.isDebugEnabled();
     if (!debugEnabled) {
       if (this.debugHudEl) {
@@ -236,45 +417,13 @@ const dashGameScreen = {
       this.debugHudEl = hud;
     }
     this.debugHudEl.hidden = false;
-    this.debugHudEl.textContent = `PR:${hasPlayerRect ? 1 : 0} COLL:${collided ? 1 : 0} ATK:${attackHandled ? 1 : 0} CD:${Math.max(0, Math.round(cooldownMs))}`;
-  },
-  ensureDebugTestHitButton() {
-    const debugEnabled = this.isDebugEnabled();
-    if (!debugEnabled) {
-      if (this.debugHitButtonEl) {
-        this.debugHitButtonEl.remove();
-        this.debugHitButtonEl = null;
-      }
-      return;
-    }
-    const overlayRoot = this.ensureDashOverlayRoot();
-    if (!overlayRoot) {
-      return;
-    }
-    if (!this.debugHitButtonEl || !overlayRoot.contains(this.debugHitButtonEl)) {
-      const button = document.createElement('button');
-      button.className = 'dash-debug-hit-button';
-      button.type = 'button';
-      button.textContent = 'TEST HIT';
-      overlayRoot.appendChild(button);
-      this.debugHitButtonEl = button;
-      this.events?.on(button, 'click', () => {
-        this.applyCollisionPenaltyForDebug(window.performance.now());
-      });
-    }
-    this.debugHitButtonEl.hidden = false;
-  },
-  applyCollisionPenaltyForDebug(nowMs = window.performance.now()) {
-    audioManager.playSfx('sfx_damage');
-    this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
-    this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
-    this.lastCollisionPenaltyAtMs = nowMs;
-    this.showDebugToast('HIT -3秒 (debug)');
-    this.triggerRunnerStumble();
-    this.updateHud();
-    if (this.timeLeftMs <= 0) {
-      this.endSession('timeup');
-    }
+    const dx = Number.isFinite(nearestDxPx) ? Math.round(nearestDxPx) : '--';
+    const dy = Number.isFinite(nearestDyPx) ? Math.round(nearestDyPx) : '--';
+    const safeEnemyRect = enemyRect ?? null;
+    const enemyRectText = safeEnemyRect
+      ? `[${Math.round(safeEnemyRect.left)},${Math.round(safeEnemyRect.top)},${Math.round(safeEnemyRect.right)},${Math.round(safeEnemyRect.bottom)}]`
+      : 'none';
+    this.debugHudEl.textContent = `PR:${hasPlayerRect ? 1 : 0} COLL:${collided ? 1 : 0} ATK:${attackHandled ? 1 : 0} DX:${dx} DY:${dy} ENEMY_RECT:${enemyRectText} CD:${Math.max(0, Math.round(cooldownMs))}`;
   },
   verifyRunnerDom() {
     const screen = domRefs.dashGame.screen;
@@ -522,6 +671,140 @@ const dashGameScreen = {
       w: runnerRect.width,
       h: runnerRect.height,
     };
+  },
+  getPlayerDomRect() {
+    const runnerWrap = domRefs.game.runnerWrap;
+    if (!runnerWrap) {
+      return null;
+    }
+    const rect = runnerWrap.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      width: rect.width,
+      height: rect.height,
+    };
+  },
+  getInsetRect(rect, insetPx = DOM_COLLISION_HITBOX_INSET_PX) {
+    if (!rect) {
+      return null;
+    }
+    const widthInset = Math.max(0, Math.min(insetPx, rect.width / 2 - 1));
+    const heightInset = Math.max(0, Math.min(insetPx, rect.height / 2 - 1));
+    return {
+      left: rect.left + widthInset,
+      top: rect.top + heightInset,
+      right: rect.right - widthInset,
+      bottom: rect.bottom - heightInset,
+    };
+  },
+  intersectsDomRect(a, b) {
+    if (!a || !b) {
+      return false;
+    }
+    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+  },
+  getEnemyIdentity(enemyEl) {
+    if (!enemyEl) {
+      return null;
+    }
+    const explicitEnemyId = enemyEl.dataset?.enemyId
+      ?? enemyEl.getAttribute('data-enemy-id')
+      ?? enemyEl.querySelector?.('[data-enemy-id]')?.getAttribute('data-enemy-id')
+      ?? null;
+    if (explicitEnemyId) {
+      const enemyId = `enemy:${explicitEnemyId}`;
+      this.enemyElementById?.set(enemyId, enemyEl);
+      return enemyId;
+    }
+    if (!this.enemyDomUidByElement) {
+      this.enemyDomUidByElement = new WeakMap();
+    }
+    if (!this.enemyDomUidCounter) {
+      this.enemyDomUidCounter = 0;
+    }
+    let fallbackId = this.enemyDomUidByElement.get(enemyEl);
+    if (!fallbackId) {
+      this.enemyDomUidCounter += 1;
+      fallbackId = `dash-enemy-${this.enemyDomUidCounter}`;
+      this.enemyDomUidByElement.set(enemyEl, fallbackId);
+    }
+    this.enemyElementById?.set(fallbackId, enemyEl);
+    return fallbackId;
+  },
+  cleanupHitEnemyIds(enemyElements = [], worldRect = null) {
+    if (!this.hitEnemyIds || this.hitEnemyIds.size === 0) {
+      return;
+    }
+    const visibleEnemyIds = new Set();
+    const worldLeft = worldRect?.left;
+    enemyElements.forEach((enemyEl) => {
+      const enemyId = this.getEnemyIdentity(enemyEl);
+      if (!enemyId) {
+        return;
+      }
+      const enemyRect = enemyEl.getBoundingClientRect();
+      const isPastWorld = Number.isFinite(worldLeft)
+        ? enemyRect.right < worldLeft - HIT_ENEMY_CLEANUP_MARGIN_PX
+        : false;
+      if (isPastWorld) {
+        this.hitEnemyIds.delete(enemyId);
+        this.enemyElementById?.delete(enemyId);
+        return;
+      }
+      visibleEnemyIds.add(enemyId);
+      this.enemyElementById?.set(enemyId, enemyEl);
+    });
+    [...this.hitEnemyIds].forEach((enemyId) => {
+      if (!visibleEnemyIds.has(enemyId)) {
+        this.hitEnemyIds.delete(enemyId);
+        this.enemyElementById?.delete(enemyId);
+      }
+    });
+  },
+  getNearestEnemyDomRect(playerRect, worldRect = null) {
+    if (!playerRect) {
+      return null;
+    }
+    const runWorld = domRefs.game.runWorld;
+    if (!runWorld) {
+      return null;
+    }
+    const enemyElements = [...runWorld.querySelectorAll('.run-enemies .enemy-wrap')];
+    this.cleanupHitEnemyIds(enemyElements, worldRect);
+    if (enemyElements.length === 0) {
+      return null;
+    }
+    const playerCenterY = (playerRect.top + playerRect.bottom) / 2;
+    const scoredEnemies = enemyElements
+      .map((enemyEl) => {
+        const enemyId = this.getEnemyIdentity(enemyEl);
+        const rect = enemyEl.getBoundingClientRect();
+        const dx = rect.left - playerRect.left;
+        const dy = ((rect.top + rect.bottom) / 2) - playerCenterY;
+        return {
+          enemyId,
+          enemyEl,
+          rect,
+          dx,
+          dy,
+          rightSide: dx >= 0,
+          dxAbs: Math.abs(dx),
+        };
+      })
+      .filter((enemy) => enemy.enemyId && !this.hitEnemyIds?.has(enemy.enemyId))
+      .sort((a, b) => {
+        if (a.rightSide !== b.rightSide) {
+          return a.rightSide ? -1 : 1;
+        }
+        if (a.dxAbs !== b.dxAbs) {
+          return a.dxAbs - b.dxAbs;
+        }
+        return Math.abs(a.dy) - Math.abs(b.dy);
+      });
+    return scoredEnemies[0] ?? null;
   },
   getAnswerInput() {
     const input = domRefs.dashGame.answerInput;
@@ -1075,6 +1358,7 @@ const dashGameScreen = {
     const nowMs = window.performance.now();
     const dtSeconds = dtMs / 1000;
     const isSlowed = nowMs < (this.slowUntilMs ?? 0);
+    const defeatSequenceActive = nowMs < (this.kickUntilMs ?? 0);
     const speedMultiplier = isSlowed ? COLLISION_SLOW_MULT : 1;
     const effectivePlayerSpeed = this.playerSpeed * speedMultiplier;
     gameState.dash.distanceM += effectivePlayerSpeed * dtSeconds;
@@ -1086,8 +1370,12 @@ const dashGameScreen = {
       ? Math.round(runGroundY - worldRect.top)
       : null;
     const playerRect = this.getPlayerRect();
+    const playerDomRect = this.getPlayerDomRect();
     let debugCollision = false;
     let debugAttackHandled = false;
+    let debugEnemyRect = null;
+    let debugNearestDxPx = null;
+    let debugNearestDyPx = null;
     const enemyUpdate = this.enemySystem?.update({
       dtMs,
       nowMs,
@@ -1095,11 +1383,30 @@ const dashGameScreen = {
       playerRect,
       correctCount: gameState.dash.correctCount,
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
+      defeatSequenceActive,
     });
+    this.enemyUpdateCount += 1;
     if (enemyUpdate) {
-      debugCollision = Boolean(enemyUpdate.collision);
+      const nearestEnemyDom = this.getNearestEnemyDomRect(playerDomRect, worldRect);
+      const enemyDomRect = nearestEnemyDom?.rect ?? null;
+      debugEnemyRect = enemyDomRect ?? null;
+      debugNearestDxPx = nearestEnemyDom?.dx ?? null;
+      debugNearestDyPx = nearestEnemyDom?.dy ?? null;
+      const collisionByDomRect = this.intersectsDomRect(
+        this.getInsetRect(playerDomRect),
+        this.getInsetRect(enemyDomRect),
+      );
+      debugCollision = collisionByDomRect;
       debugAttackHandled = Boolean(enemyUpdate.attackHandled);
-      const handledCollision = enemyUpdate.collision && !enemyUpdate.attackHandled;
+      enemyUpdate.collision = collisionByDomRect;
+      if (Number.isFinite(nearestEnemyDom?.dx)) {
+        enemyUpdate.nearestDistancePx = Math.max(0, nearestEnemyDom.dx);
+      }
+      const handledCollision = (
+        collisionByDomRect
+        && !enemyUpdate.attackHandled
+        && !defeatSequenceActive
+      );
       if (handledCollision) {
         if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
           // NOTE: playSfx is ignored until audio is unlocked; keep this here so
@@ -1108,6 +1415,9 @@ const dashGameScreen = {
           this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
           this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
+          if (nearestEnemyDom?.enemyId) {
+            this.hitEnemyIds.add(nearestEnemyDom.enemyId);
+          }
           this.showDebugToast('HIT -3秒');
           this.verifyRunnerDom();
           this.triggerRunnerStumble();
@@ -1129,6 +1439,9 @@ const dashGameScreen = {
       collided: debugCollision,
       attackHandled: debugAttackHandled,
       cooldownMs: COLLISION_COOLDOWN_MS - (nowMs - (this.lastCollisionPenaltyAtMs ?? -Infinity)),
+      enemyRect: debugEnemyRect,
+      nearestDxPx: debugNearestDxPx,
+      nearestDyPx: debugNearestDyPx,
     });
     this.timeLeftMs -= dtMs;
     if (this.timeLeftMs <= 0) {
@@ -1138,6 +1451,10 @@ const dashGameScreen = {
     this.updateHud();
   },
   startLoop() {
+    if (this.isRunning && this.rafId) {
+      this.updateLoopMonitorBadge();
+      return;
+    }
     this.stopLoop();
     this.isRunning = true;
     this.lastTickTs = window.performance.now();
@@ -1145,15 +1462,33 @@ const dashGameScreen = {
       if (!this.isRunning) {
         return;
       }
-      const rawDt = Math.max(0, now - this.lastTickTs);
-      const dtMs = Math.min(rawDt, 50);
-      this.lastTickTs = now;
-      this.updateFrame(dtMs);
-      if (this.isRunning) {
-        this.rafId = window.requestAnimationFrame(tick);
+      let nextDtMs = 0;
+      try {
+        const rawDt = Math.max(0, now - this.lastTickTs);
+        nextDtMs = Math.min(rawDt, 50);
+        this.lastTickTs = now;
+        this.lastFrameAtMs = now;
+        this.loopFrameCount += 1;
+        this.updateFrame(nextDtMs);
+      } catch (error) {
+        this.noteLoopError(error);
+        this.lastTickTs = now;
+        try {
+          this.updateFrame(0);
+        } catch (nextError) {
+          this.noteLoopError(nextError);
+        }
+      } finally {
+        this.updateLoopMonitorBadge(now);
+        if (this.isRunning) {
+          this.rafId = window.requestAnimationFrame(tick);
+        } else {
+          this.rafId = null;
+        }
       }
     };
     this.rafId = window.requestAnimationFrame(tick);
+    this.updateLoopMonitorBadge();
   },
   stopLoop() {
     this.isRunning = false;
@@ -1161,6 +1496,7 @@ const dashGameScreen = {
       window.cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
+    this.updateLoopMonitorBadge();
   },
   startBgm() {
     if (this.isBgmActive) {
@@ -1244,7 +1580,20 @@ const dashGameScreen = {
     this.buildBadgeEl = null;
     this.buildBadgeTimeout = null;
     this.debugHudEl = null;
-    this.debugHitButtonEl = null;
+    this.diagnosticsHudEl = null;
+    this.playerHitboxEl = null;
+    this.enemyHitboxEl = null;
+    this.loopMonitorBadgeEl = null;
+    this.watchdogTimerId = null;
+    this.lastFrameAtMs = null;
+    this.loopFrameCount = 0;
+    this.loopRecoveryCount = 0;
+    this.lastLoopErrorMessage = '';
+    this.enemyUpdateCount = 0;
+    this.enemyDomUidByElement = new WeakMap();
+    this.enemyDomUidCounter = 0;
+    this.enemyElementById = new Map();
+    this.hitEnemyIds = new Set();
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
     this.applyDashTheme();
@@ -1457,13 +1806,16 @@ const dashGameScreen = {
     this.loadNextQuestion();
     this.startBgm();
     this.startLoop();
+    this.startLoopWatchdog();
     this.showBuildBadge();
-    this.ensureDebugTestHitButton();
+    this.ensureLoopMonitorBadge();
+    this.updateLoopMonitorBadge();
   },
   render() {},
   exit() {
     this.events?.clear();
     this.events = null;
+    this.stopLoopWatchdog();
     this.stopLoop();
     this.restoreRunLayer();
     if (domRefs.dashGame.screen) {
@@ -1499,6 +1851,10 @@ const dashGameScreen = {
     this.clouds = [];
     this.enemySystem?.destroy();
     this.enemySystem = null;
+    this.enemyDomUidByElement = null;
+    this.enemyDomUidCounter = 0;
+    this.enemyElementById = null;
+    this.hitEnemyIds = null;
     if (this.debugToastTimeout) {
       window.clearTimeout(this.debugToastTimeout);
       this.debugToastTimeout = null;
@@ -1515,18 +1871,33 @@ const dashGameScreen = {
       this.debugHudEl.remove();
       this.debugHudEl = null;
     }
+    if (this.diagnosticsHudEl) {
+      this.diagnosticsHudEl.remove();
+      this.diagnosticsHudEl = null;
+    }
     if (this.buildBadgeEl) {
       this.buildBadgeEl.remove();
       this.buildBadgeEl = null;
     }
-    if (this.debugHitButtonEl) {
-      this.debugHitButtonEl.remove();
-      this.debugHitButtonEl = null;
+    if (this.playerHitboxEl) {
+      this.playerHitboxEl.remove();
+      this.playerHitboxEl = null;
+    }
+    if (this.enemyHitboxEl) {
+      this.enemyHitboxEl.remove();
+      this.enemyHitboxEl = null;
+    }
+    if (this.loopMonitorBadgeEl) {
+      this.loopMonitorBadgeEl.remove();
+      this.loopMonitorBadgeEl = null;
     }
     if (this.overlayRootEl) {
       this.overlayRootEl.remove();
       this.overlayRootEl = null;
     }
+    document.querySelectorAll('.dash-overlay-root').forEach((overlayRoot) => {
+      overlayRoot.remove();
+    });
     if (domRefs.dashGame.screen) {
       delete domRefs.dashGame.screen.dataset.debugRunnerwrap;
     }

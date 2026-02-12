@@ -3725,25 +3725,59 @@ body > .dash-overlay-root .dash-debug-hud {
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
 }
 
-.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) .dash-debug-hit-button,
-body > .dash-overlay-root .dash-debug-hit-button {
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) .dash-loop-monitor-badge {
   position: absolute;
-  top: 68px;
+  top: 12px;
   right: 12px;
-  padding: 4px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(170, 34, 34, 0.94);
-  color: #fff;
+  border: 1px solid rgba(158, 255, 189, 0.32);
+  background: rgba(10, 18, 30, 0.92);
+  color: #dff6ff;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1.35;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   letter-spacing: 0.02em;
+  white-space: pre;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
-  pointer-events: auto;
-  cursor: pointer;
 }
 
-.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) .dash-debug-hit-button:active,
-body > .dash-overlay-root .dash-debug-hit-button:active {
-  transform: translateY(1px);
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) .dash-loop-monitor-badge[data-status='stopped'] {
+  border-color: rgba(255, 144, 144, 0.45);
+  color: #ffd7d7;
+}
+
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) .dash-diagnostics-hud {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(160, 225, 255, 0.28);
+  background: rgba(7, 12, 24, 0.9);
+  color: #dff6ff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+  white-space: pre;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.dash-hitbox-player, .dash-hitbox-enemy) {
+  position: fixed;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) .dash-hitbox-player {
+  border: 2px solid rgba(64, 245, 130, 0.9);
+  background: rgba(64, 245, 130, 0.15);
+}
+
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) .dash-hitbox-enemy {
+  border: 2px solid rgba(255, 80, 80, 0.92);
+  background: rgba(255, 80, 80, 0.16);
 }

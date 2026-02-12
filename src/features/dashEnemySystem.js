@@ -430,12 +430,26 @@ export const createDashEnemySystem = ({
     playerRect,
     correctCount,
     attackActive,
+    defeatSequenceActive = false,
   }) => {
+    const resolvedGroundY = Number.isFinite(groundY) ? groundY : null;
     if (!Number.isFinite(dtMs) || dtMs <= 0) {
-      return { nearestDistancePx: null, collision: false, attackHandled: false };
+      return {
+        nearestDistancePx: null,
+        collision: false,
+        attackHandled: false,
+        nearestEnemyRect: null,
+        resolvedGroundY,
+      };
     }
     if (!system.worldEl) {
-      return { nearestDistancePx: null, collision: false, attackHandled: false };
+      return {
+        nearestDistancePx: null,
+        collision: false,
+        attackHandled: false,
+        nearestEnemyRect: null,
+        resolvedGroundY,
+      };
     }
     system.setWorld(system.worldEl, system.containerEl);
     const dtSec = dtMs / 1000;
@@ -467,6 +481,8 @@ export const createDashEnemySystem = ({
     }
 
     let nearestDistancePx = Number.POSITIVE_INFINITY;
+    let nearestEnemyRect = null;
+    let nearestEnemyMetric = Number.POSITIVE_INFINITY;
     let collision = false;
     let attackHandled = false;
 
@@ -515,10 +531,31 @@ export const createDashEnemySystem = ({
         return false;
       }
 
+      if (enemy.isAlive) {
+        let metric = enemy.x;
+        if (playerRect) {
+          metric = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
+        }
+        if (metric < nearestEnemyMetric) {
+          nearestEnemyMetric = metric;
+          nearestEnemyRect = {
+            x: enemy.x,
+            y: enemy.y,
+            w: enemy.w,
+            h: enemy.h,
+          };
+        }
+      }
+
       if (playerRect && enemy.state === 'walk') {
         const distancePx = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
         nearestDistancePx = Math.min(nearestDistancePx, distancePx);
-        if (!collision && nowMs >= enemy.ignoreCollisionUntilMs && intersects(playerRect, enemy)) {
+        if (
+          !defeatSequenceActive
+          && !collision
+          && nowMs >= enemy.ignoreCollisionUntilMs
+          && intersects(playerRect, enemy)
+        ) {
           collision = true;
           enemy.ignoreCollisionUntilMs = nowMs + COLLISION_INVULN_MS;
           const knockbackTargetX = Math.max(
@@ -545,6 +582,8 @@ export const createDashEnemySystem = ({
       nearestDistancePx,
       collision,
       attackHandled,
+      nearestEnemyRect,
+      resolvedGroundY,
     };
   };
 
