@@ -2647,28 +2647,40 @@
         var(--calc-sprint-runner-bob-x, 0px),
         var(--calc-sprint-runner-bob-offset, 0px)
       )
-      rotate(0deg);
+      rotate(0deg)
+      scale(1);
   }
-  30% {
+  24% {
     transform: translate(
-        var(--calc-sprint-runner-bob-x, 0px),
+        calc(var(--calc-sprint-runner-bob-x, 0px) + 3px),
+        calc(var(--calc-sprint-runner-bob-offset, 0px) + 3px)
+      )
+      rotate(-14deg)
+      scale(1.01, 0.99);
+  }
+  48% {
+    transform: translate(
+        calc(var(--calc-sprint-runner-bob-x, 0px) - 2px),
+        calc(var(--calc-sprint-runner-bob-offset, 0px) + 10px)
+      )
+      rotate(18deg)
+      scale(0.95, 1.06);
+  }
+  74% {
+    transform: translate(
+        calc(var(--calc-sprint-runner-bob-x, 0px) + 1px),
         calc(var(--calc-sprint-runner-bob-offset, 0px) + 2px)
       )
-      rotate(-10deg);
-  }
-  60% {
-    transform: translate(
-        var(--calc-sprint-runner-bob-x, 0px),
-        calc(var(--calc-sprint-runner-bob-offset, 0px) - 1px)
-      )
-      rotate(6deg);
+      rotate(-7deg)
+      scale(1.01);
   }
   100% {
     transform: translate(
         var(--calc-sprint-runner-bob-x, 0px),
         var(--calc-sprint-runner-bob-offset, 0px)
       )
-      rotate(0deg);
+      rotate(0deg)
+      scale(1);
   }
 }
 
@@ -2739,10 +2751,15 @@
   --runner-bob-duration: 0.34s;
 }.calc-sprint #runner-sprite.runner-speed-high {
   --runner-bob-duration: 0.26s;
-}.calc-sprint .run-layer #runner-sprite.runner-bob.stumble {
+}.calc-sprint #dash-game-screen .runner-wrap.is-stumble #runner-sprite {
   animation:
     calc-sprint-runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite,
-    calc-sprint-runner-stumble 0.32s ease-out 1;
+    calc-sprint-runner-stumble 0.52s cubic-bezier(0.18, 0.9, 0.2, 1) 1;
+  opacity: 1 !important;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.42));
+}.calc-sprint #dash-game-screen .runner-wrap.is-stumble .runner-shadow {
+  transform: scale(1.28, 0.76);
+  opacity: 0.9;
 }.calc-sprint #runner-sprite.boost {
   transform: translate(
       var(--calc-sprint-runner-bob-x, 0px),
@@ -2769,8 +2786,10 @@
 
 @media (prefers-reduced-motion: reduce) {.calc-sprint .run-layer #runner-sprite.runner-bob {
     animation: none;
-  }.calc-sprint .run-layer #runner-sprite.runner-bob.stumble {
-    animation: none;
+  }.calc-sprint #dash-game-screen .runner-wrap.is-stumble #runner-sprite {
+    animation: calc-sprint-runner-stumble 0.16s linear 1;
+  }.calc-sprint #dash-game-screen .runner-wrap.is-stumble .runner-shadow {
+    transform: scale(1.12, 0.9);
   }
 }.calc-sprint #game-speed.glow {
   text-shadow:

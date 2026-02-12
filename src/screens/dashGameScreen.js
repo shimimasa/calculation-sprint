@@ -12,6 +12,7 @@ import {
   enemySpeedIncrementPerStreak,
   collisionThreshold,
   timeBonusOnCorrect,
+  timePenaltyOnCollision,
   timePenaltyOnWrong,
   timeBonusOnDefeat,
   streakAttack,
@@ -34,10 +35,10 @@ const STREAK_CUE_DURATION_MS = 800;
 const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 const LOW_TIME_THRESHOLD_MS = 8000;
-const COLLISION_PENALTY_MS = 5000;
 const COLLISION_COOLDOWN_MS = 500;
 const COLLISION_SLOW_MS = 1000;
 const COLLISION_SLOW_MULT = 0.7;
+const STUMBLE_DURATION_MS = 520;
 const KICK_MS = 300;
 const MAX_LUNGE_PX = 140;
 const AREA_2_START_M = 200;
@@ -519,6 +520,35 @@ const dashGameScreen = {
       runner.classList.add('runner-bob');
     }
   },
+  triggerRunnerStumble() {
+    const runnerWrap = domRefs.game.runnerWrap;
+    if (!runnerWrap) {
+      return;
+    }
+    if (this.stumbleTimeout) {
+      window.clearTimeout(this.stumbleTimeout);
+    }
+    runnerWrap.classList.add('is-stumble');
+    this.stumbleTimeout = window.setTimeout(() => {
+      runnerWrap.classList.remove('is-stumble');
+      this.stumbleTimeout = null;
+    }, STUMBLE_DURATION_MS);
+  },
+  resetDashRunnerVisibilityState() {
+    const runner = domRefs.game.runner;
+    const runnerWrap = domRefs.game.runnerWrap;
+    const runLayer = domRefs.game.runLayer;
+    document.documentElement.classList.remove('runner-missing');
+    runLayer?.classList.remove('runner-missing');
+    domRefs.dashGame.screen?.classList.remove('runner-missing');
+    runnerWrap?.classList.remove('is-stumble');
+    if (runner) {
+      runner.style.removeProperty('display');
+      runner.style.removeProperty('visibility');
+      runner.style.opacity = '1';
+      runner.classList.remove('hit');
+    }
+  },
   // State model (local-only, per spec):
   // - playerSpeed (m/s), enemySpeed (m/s), enemyGapM (meters behind), timeLeftMs (ms), lastTickTs (ms)
   // - currentQuestion / inputBuffer are managed locally via questionGenerator + input element.
@@ -889,11 +919,13 @@ const dashGameScreen = {
       const handledCollision = enemyUpdate.collision && !enemyUpdate.attackHandled;
       if (handledCollision) {
         if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
-          console.log('[SFX] damage fired', nowMs, enemyUpdate);
+          // NOTE: playSfx is ignored until audio is unlocked; keep this here so
+          // damage SFX only attempts on confirmed penalty (not cooldown skips).
           audioManager.playSfx('sfx_damage');
-          this.timeLeftMs = Math.max(0, this.timeLeftMs - COLLISION_PENALTY_MS);
+          this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
           this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
+          this.triggerRunnerStumble();
           this.updateHud();
           if (this.timeLeftMs <= 0) {
             this.endSession('timeup');
@@ -979,6 +1011,7 @@ const dashGameScreen = {
     uiRenderer.showScreen('dash-game');
     this.events = createEventRegistry('dash-game');
     this.ensureRunLayerMounted();
+    this.resetDashRunnerVisibilityState();
     this.playerSpeed = baseSpeed;
     this.enemySpeed = enemyBaseSpeed;
     this.enemyGapM = collisionThreshold * 2;
@@ -1012,6 +1045,7 @@ const dashGameScreen = {
     this.answerBuffer = '';
     this.isSyncingAnswer = false;
     this.isBgmActive = false;
+    this.stumbleTimeout = null;
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
     this.applyDashTheme();
@@ -1264,6 +1298,11 @@ const dashGameScreen = {
     this.clouds = [];
     this.enemySystem?.destroy();
     this.enemySystem = null;
+    if (this.stumbleTimeout) {
+      window.clearTimeout(this.stumbleTimeout);
+      this.stumbleTimeout = null;
+    }
+    domRefs.game.runnerWrap?.classList.remove('is-stumble');
     if (this.feedbackFxTimeout) {
       window.clearTimeout(this.feedbackFxTimeout);
       this.feedbackFxTimeout = null;
