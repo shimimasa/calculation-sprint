@@ -2399,6 +2399,7 @@
 .calc-sprint #dash-game-screen[data-bg-theme="bg_add"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_plus"] {
   --dash-sky-image: url("../assets/plus/bg-sky.png");
+  --dash-bg-image: var(--dash-sky-image);
   --dash-ground-image: url("../assets/plus/bg-ground.png");
   --run-sky-fallback: #7fb8f2;
 }
@@ -2406,6 +2407,7 @@
 .calc-sprint #dash-game-screen[data-bg-theme="bg_sub"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_minus"] {
   --dash-sky-image: url("../assets/minus/bg-sky.png");
+  --dash-bg-image: var(--dash-sky-image);
   --dash-ground-image: url("../assets/minus/bg-ground.png");
   --run-sky-fallback: #8eb8cf;
 }
@@ -2413,6 +2415,7 @@
 .calc-sprint #dash-game-screen[data-bg-theme="bg_mul"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_multi"] {
   --dash-sky-image: url("../assets/multi/bg-sky.png");
+  --dash-bg-image: var(--dash-sky-image);
   --dash-ground-image: url("../assets/multi/bg-ground.png");
   --run-sky-fallback: #b9b2ea;
 }
@@ -2420,12 +2423,14 @@
 .calc-sprint #dash-game-screen[data-bg-theme="bg_div"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_divide"] {
   --dash-sky-image: url("../assets/divide/bg-sky.png");
+  --dash-bg-image: var(--dash-sky-image);
   --dash-ground-image: url("../assets/divide/bg-ground.png");
   --run-sky-fallback: #66b2db;
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] {
   --dash-sky-image: url("../assets/mix/bg-sky.png");
+  --dash-bg-image: var(--dash-sky-image);
   --dash-ground-image: url("../assets/mix/bg-ground.png");
   --run-sky-fallback: #f3ad8e;
 }
@@ -2951,31 +2956,22 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: var(--dash-sky-image, url("../assets/bg-sky.png"));
+  background-image: var(--dash-bg-image, var(--dash-sky-image, var(--run-sky-image, url("../assets/bg-sky.png"))));
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
 }
 
-.calc-sprint #dash-game-screen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background-image: var(--dash-cloud-image, url("../assets/bg-cloud.png"));
-  background-repeat: repeat-x;
-  background-size: auto 220px;
-  background-position: center top;
-  opacity: 0.58;
-}
-
 .calc-sprint #dash-game-screen {
   --dash-ground-y: 90px;
   --dash-ground-mask-cut: 58%;
+  --dash-bg-image: var(--dash-sky-image, var(--run-sky-image, url("../assets/bg-sky.png")));
+  --run-seam-fix-safe: clamp(0px, var(--run-seam-fix, 0px), 2px);
   --ground-surface-inset: var(--dash-ground-y);
   --run-sky-fallback: #7dbdff;
   grid-template-rows: auto 1fr minmax(92px, 132px);
+  position: relative;
+  isolation: isolate;
   background: transparent !important;
   background-image: none !important;
   background-color: transparent !important;
@@ -2995,6 +2991,9 @@
 }
 
 .calc-sprint #dash-game-screen .run-world {
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
   border-radius: 0;
   box-shadow: none !important;
   border-color: transparent !important;
@@ -3006,13 +3005,8 @@
   z-index: 2;
 }
 .calc-sprint #dash-game-screen .run-sky {
-  top: 0;
-  bottom: 0;
-  background-image: var(--dash-sky-image, var(--run-sky-image, url("../assets/bg-sky.png"))) !important;
-  background-repeat: repeat-x !important;
-  background-position: center top !important;
-  background-size: auto 100% !important;
-  background-color: var(--run-sky-fallback) !important;
+  background: transparent !important;
+  background-image: none !important;
   box-shadow: none !important;
   border: 0 !important;
   outline: 0 !important;
@@ -3025,9 +3019,11 @@
 
 .calc-sprint #dash-game-screen .run-ground {
   bottom: 0;
-  height: calc(var(--ground-art-height, 240px) + var(--run-seam-fix, 0px));
+  height: calc(var(--ground-art-height, 240px) + var(--run-seam-fix-safe));
   transform: none;
   box-shadow: inset 0 -12px 14px rgba(0, 0, 0, 0.18);
+  opacity: 1;
+  mix-blend-mode: normal;
   border: 0 !important;
   outline: 0 !important;
   filter: none !important;
@@ -3052,14 +3048,23 @@
 
 .calc-sprint #dash-game-screen .run-ground__tile {
   background-image: var(--dash-ground-image, var(--run-ground-image, url("../assets/bg-ground.png")));
-  background-position: left calc(100% + var(--run-seam-fix, 0px));
+  background-position: left calc(100% + var(--run-seam-fix-safe));
   background-repeat: repeat-x;
   -webkit-clip-path: inset(var(--dash-ground-mask-cut) 0 0 0);
   clip-path: inset(var(--dash-ground-mask-cut) 0 0 0);
+  opacity: 1;
+  mix-blend-mode: normal;
   border: 0 !important;
   outline: 0 !important;
   box-shadow: none !important;
   filter: none !important;
+}
+
+.calc-sprint #dash-game-screen .dash-top-controls,
+.calc-sprint #dash-game-screen .dash-top-controls > *,
+.calc-sprint #dash-game-screen .dash-top-controls [class*="dash-"] {
+  background: transparent !important;
+  background-image: none !important;
 }
 
 .calc-sprint #dash-game-screen .dash-top-controls .dash-problem-main {
