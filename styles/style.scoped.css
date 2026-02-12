@@ -2400,29 +2400,34 @@
 .calc-sprint #dash-game-screen[data-bg-theme="bg_plus"] {
   --dash-sky-image: url("../assets/plus/bg-sky.png");
   --dash-ground-image: url("../assets/plus/bg-ground.png");
+  --run-sky-fallback: #7fb8f2;
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_sub"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_minus"] {
   --dash-sky-image: url("../assets/minus/bg-sky.png");
   --dash-ground-image: url("../assets/minus/bg-ground.png");
+  --run-sky-fallback: #8eb8cf;
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_mul"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_multi"] {
   --dash-sky-image: url("../assets/multi/bg-sky.png");
   --dash-ground-image: url("../assets/multi/bg-ground.png");
+  --run-sky-fallback: #b9b2ea;
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_div"],
 .calc-sprint #dash-game-screen[data-bg-theme="bg_divide"] {
   --dash-sky-image: url("../assets/divide/bg-sky.png");
   --dash-ground-image: url("../assets/divide/bg-ground.png");
+  --run-sky-fallback: #66b2db;
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] {
   --dash-sky-image: url("../assets/mix/bg-sky.png");
   --dash-ground-image: url("../assets/mix/bg-ground.png");
+  --run-sky-fallback: #f3ad8e;
 }
 .calc-sprint .run-world::after {
   content: "";
@@ -2968,6 +2973,7 @@
 .calc-sprint #dash-game-screen {
   --dash-ground-y: 90px;
   --ground-surface-inset: var(--dash-ground-y);
+  --run-sky-fallback: #7dbdff;
   grid-template-rows: auto 1fr minmax(92px, 132px);
   background: transparent !important;
   background-image: none !important;
@@ -2991,6 +2997,7 @@
   border-radius: 0;
   box-shadow: none !important;
   border-color: transparent !important;
+  outline: 0 !important;
 }
 
 .calc-sprint #dash-game-screen > .dash-run-zone {
@@ -2998,9 +3005,14 @@
   z-index: 2;
 }
 .calc-sprint #dash-game-screen .run-sky {
-  background: transparent !important;
-  background-image: none !important;
-  background-color: transparent !important;
+  background-image: var(--dash-sky-image, var(--run-sky-image, url("../assets/bg-sky.png"))) !important;
+  background-repeat: repeat-x !important;
+  background-position: center top !important;
+  background-size: auto 100% !important;
+  background-color: var(--run-sky-fallback) !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  outline: 0 !important;
 }
 
 .calc-sprint #dash-game-screen .run-clouds {
@@ -3010,6 +3022,37 @@
 .calc-sprint #dash-game-screen .run-ground {
   bottom: 0;
   transform: none;
+  box-shadow: inset 0 -12px 14px rgba(0, 0, 0, 0.18);
+  border: 0 !important;
+  outline: 0 !important;
+}
+
+.calc-sprint #dash-game-screen .run-bg {
+  background-color: var(--run-sky-fallback);
+  background-image: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  outline: 0 !important;
+}
+
+.calc-sprint #dash-game-screen .run-world,
+.calc-sprint #dash-game-screen .run-bg,
+.calc-sprint #dash-game-screen .run-sky,
+.calc-sprint #dash-game-screen .run-ground {
+  border: 0 !important;
+  outline: 0 !important;
+}
+
+.calc-sprint #dash-game-screen .run-ground::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(to bottom, var(--run-sky-fallback), transparent);
+  opacity: 0.12;
+  pointer-events: none;
 }
 
 .calc-sprint #dash-game-screen .run-ground__tile {
