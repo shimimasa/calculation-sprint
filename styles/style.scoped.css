@@ -3153,6 +3153,14 @@
   --dash-hud-surface-strong: rgba(164, 200, 255, 0.26);
   --dash-hud-text-main: rgba(16, 28, 48, 0.98);
   --dash-hud-text-sub: rgba(20, 35, 56, 0.88);
+  --dash-problem-bg: linear-gradient(180deg, rgba(10, 36, 94, 0.96) 0%, rgba(7, 28, 78, 0.96) 100%);
+  --dash-problem-fg: #ffffff;
+  --dash-problem-border: rgba(154, 194, 255, 0.5);
+  --dash-confirm-bg: linear-gradient(180deg, #2a7dff 0%, #1463f5 100%);
+  --dash-confirm-bg-hover: linear-gradient(180deg, #2473ef 0%, #0f57de 100%);
+  --dash-confirm-bg-active: linear-gradient(180deg, #1f66d7 0%, #0d4ec4 100%);
+  --dash-elev-shadow: 0 8px 18px rgba(7, 24, 66, 0.34);
+  --dash-focus-ring: 0 0 0 3px rgba(176, 212, 255, 0.95), 0 0 0 6px rgba(14, 88, 219, 0.42);
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud {
@@ -3213,6 +3221,53 @@
   font-weight: 800;
   color: var(--dash-hud-text-sub);
   letter-spacing: 0.01em;
+}
+
+.calc-sprint #dash-game-screen .dash-problem-main .question-area,
+.calc-sprint #dash-game-screen .dash-problem-panel {
+  background: var(--dash-problem-bg) !important;
+  border-color: var(--dash-problem-border) !important;
+  box-shadow: var(--dash-elev-shadow) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-problem-panel #dash-game-question,
+.calc-sprint #dash-game-screen .question-text {
+  color: var(--dash-problem-fg) !important;
+  font-weight: 800;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button {
+  background: var(--dash-confirm-bg) !important;
+  color: #fff;
+  border: 1px solid rgba(224, 239, 255, 0.78);
+  box-shadow: 0 10px 18px rgba(15, 80, 198, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transform: translateY(0);
+  transition: background 0.16s ease, transform 0.08s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button:hover:not(:disabled) {
+  background: var(--dash-confirm-bg-hover) !important;
+  box-shadow: 0 12px 20px rgba(13, 69, 175, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button:active:not(:disabled) {
+  background: var(--dash-confirm-bg-active) !important;
+  transform: translateY(1px);
+  box-shadow: 0 6px 12px rgba(10, 54, 144, 0.38), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button:focus-visible {
+  outline: none;
+  box-shadow: var(--dash-focus-ring), 0 10px 18px rgba(13, 69, 175, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button:disabled {
+  background: linear-gradient(180deg, rgba(96, 148, 230, 0.84) 0%, rgba(79, 130, 212, 0.84) 100%) !important;
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(205, 228, 255, 0.72);
+  box-shadow: 0 6px 12px rgba(21, 53, 106, 0.22);
+  filter: saturate(0.74);
 }
 
 @media (max-width: 900px) {
