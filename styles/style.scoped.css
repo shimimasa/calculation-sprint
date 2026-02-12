@@ -2426,6 +2426,9 @@
   --dash-bg-image: var(--dash-sky-image);
   --dash-ground-image: url("../assets/divide/bg-ground.png");
   --run-sky-fallback: #66b2db;
+  --dash-bg-color: #fff2d9; /* run-world の background を復元 */
+  --dash-air-image: linear-gradient(180deg, rgba(255, 200, 120, 0.25), transparent);
+  --dash-air-opacity: 1;
 }
 
 .calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] {
@@ -2433,6 +2436,9 @@
   --dash-bg-image: var(--dash-sky-image);
   --dash-ground-image: url("../assets/mix/bg-ground.png");
   --run-sky-fallback: #f3ad8e;
+  --dash-bg-color: #ffe9e1; /* run-world の background を復元 */
+  --dash-air-image: linear-gradient(180deg, rgba(255, 160, 150, 0.22), transparent);
+  --dash-air-opacity: 1;
 }
 .calc-sprint .run-world::after {
   content: "";
@@ -2956,11 +2962,24 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  background-color: var(--dash-bg-color, transparent);
   background-image: var(--dash-bg-image, var(--dash-sky-image, var(--run-sky-image, url("../assets/bg-sky.png"))));
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
 }
+
+.calc-sprint #dash-game-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1; /* ::before の上、UIの下 */
+    pointer-events: none;
+    background-image: var(--dash-air-image, none);
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: var(--dash-air-opacity, 1);
+  }
 
 .calc-sprint #dash-game-screen {
   --dash-ground-y: 90px;
@@ -2976,6 +2995,11 @@
   background-image: none !important;
   background-color: transparent !important;
 }
+
+.calc-sprint #dash-game-screen[data-bg-theme="bg_mix"] {
+    --dash-ground-mask-cut: 20%;
+  }
+  
 
 .calc-sprint #dash-game-screen > .dash-top-hud,
 .calc-sprint #dash-game-screen > .dash-run-zone,
