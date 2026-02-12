@@ -21,7 +21,12 @@ const ENEMY_MAX_HP_BY_TYPE = Object.freeze({
   multi: 1,
   divide: 1,
 });
-const ENEMY_STATES = ['walk', 'hit', 'dead'];
+const ENEMY_STATES = Object.freeze([
+  'approaching',
+  'collision_resolved',
+  'defeated',
+  'despawning',
+]);
 const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
 const MIN_REACTION_DISTANCE_PX = 180;
@@ -35,8 +40,7 @@ const HIT_FLASH_MS = 40;
 const HIT_FLASH_SCALE = 1.03;
 const MAX_ENEMIES = 2;
 const START_GRACE_MS = 2500;
-const COLLISION_KNOCKBACK_PX = 120;
-const COLLISION_INVULN_MS = 700;
+const COLLISION_RESOLVE_MS = 160;
 const BASE_SPEED_PX_PER_SEC = 220;
 const SPEED_PER_CORRECT_PX_PER_SEC = 2.0;
 const SPEED_PER_SEC_PX_PER_SEC = 1.5;
@@ -47,7 +51,7 @@ const SPAWN_INTERVAL_DECAY_MS_PER_SEC = 18;
 export const ATTACK_WINDOW_MS = 250;
 export const PX_PER_METER = 100;
 
-const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'walk');
+const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'approaching');
 
 const getEnemyAssetPath = (type, state) => `assets/enemy/enemy_${type}_${state}.png`;
 
@@ -164,7 +168,7 @@ const createEnemyElement = (enemy) => {
   img.alt = '';
   img.decoding = 'async';
   img.loading = 'eager';
-  img.src = getEnemyAssetPath(enemy.type, enemy.state);
+  img.src = getEnemyAssetPath(enemy.type, enemy.visualState ?? 'walk');
   img.draggable = false;
 
   const { labelEl, hpFillEl } = buildEnemyLabel(enemy);
@@ -187,12 +191,20 @@ const updateEnemyHud = (enemy) => {
   enemy.hpFillEl?.style.setProperty('transform', `scaleX(${hpRatio.toFixed(3)})`);
 };
 
-const setEnemySprite = (enemy, state) => {
-  if (!enemy?.el || enemy.visualState === state) {
+const setEnemySprite = (enemy, visualState) => {
+  if (!enemy?.el || enemy.visualState === visualState) {
     return;
   }
-  enemy.visualState = state;
-  enemy.spriteEl.src = getEnemyAssetPath(enemy.type, state);
+  enemy.visualState = visualState;
+  enemy.spriteEl.src = getEnemyAssetPath(enemy.type, visualState);
+};
+
+const applyEnemyStateClasses = (enemy) => {
+  if (!enemy?.el) {
+    return;
+  }
+  enemy.el.classList.toggle('is-collision-resolved', enemy.state === 'collision_resolved');
+  enemy.el.classList.toggle('is-defeated', enemy.state === 'defeated');
 };
 
 const getSpeedPxPerSec = ({ correctCount = 0, elapsedSec = 0 }) => -(
@@ -285,7 +297,7 @@ export const createDashEnemySystem = ({
       getEnemyType: system.getEnemyType,
       getEnemyPool: system.getEnemyPool,
     });
-    const state = 'walk';
+    const state = 'approaching';
     const width = ENEMY_SIZE_PX;
     const height = ENEMY_SIZE_PX;
     const baseOffset = width * 0.3;
@@ -316,12 +328,12 @@ export const createDashEnemySystem = ({
       w: width,
       h: height,
       vx: speedPxPerSec,
-      tStateUntil: null,
+      stateUntilMs: null,
       isAlive: true,
       hitAtTs: null,
-      visualState: state,
+      visualState: 'walk',
       pendingVisualState: null,
-      ignoreCollisionUntilMs: 0,
+      collisionEnabled: true,
       hp: maxHp,
       maxHp,
       el: null,
@@ -334,22 +346,25 @@ export const createDashEnemySystem = ({
     enemy.hpFillEl = enemyElements.hpFill;
     enemy.el.style.width = `${width}px`;
     enemy.el.style.height = `${height}px`;
+    enemy.el.dataset.enemyId = enemy.id;
     enemy.el.style.transform = getEnemyTransform(enemy);
+    enemy.el.style.opacity = '1';
     updateEnemyHud(enemy);
+    applyEnemyStateClasses(enemy);
     container.appendChild(enemy.el);
     system.enemies.push(enemy);
     return enemy;
   };
 
   system.damageEnemy = (enemy, amount = 1, nowMs = window.performance.now()) => {
-    if (!enemy?.isAlive || enemy.state !== 'walk') {
+    if (!enemy?.isAlive || enemy.state !== 'approaching') {
       return { defeated: false, hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 0 };
     }
     const damage = Number.isFinite(amount) ? Math.max(0, amount) : 0;
     enemy.hp = Math.max(0, enemy.hp - damage);
     updateEnemyHud(enemy);
     if (enemy.hp <= 0) {
-      system.setEnemyState(enemy, 'hit', nowMs);
+      system.setEnemyState(enemy, 'defeated', nowMs);
       return { defeated: true, hp: enemy.hp, maxHp: enemy.maxHp };
     }
     return { defeated: false, hp: enemy.hp, maxHp: enemy.maxHp };
@@ -362,7 +377,7 @@ export const createDashEnemySystem = ({
     let nearestEnemy = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
     system.enemies.forEach((enemy) => {
-      if (!enemy?.isAlive || enemy.state !== 'walk') {
+      if (!enemy?.isAlive || enemy.state !== 'approaching') {
         return;
       }
       if (enemy.x + enemy.w < playerRect.x) {
@@ -406,21 +421,31 @@ export const createDashEnemySystem = ({
       return;
     }
     enemy.state = state;
-    if (state === 'hit') {
+    if (state === 'defeated') {
+      enemy.collisionEnabled = false;
       enemy.hitAtTs = nowMs + HIT_START_DELAY_MS;
-      enemy.tStateUntil = enemy.hitAtTs + HIT_DURATION_MS;
+      enemy.stateUntilMs = enemy.hitAtTs + HIT_DURATION_MS;
       enemy.pendingVisualState = 'hit';
-    } else if (state === 'dead') {
+    } else if (state === 'collision_resolved') {
+      enemy.collisionEnabled = false;
       enemy.hitAtTs = null;
       enemy.pendingVisualState = null;
-      enemy.tStateUntil = nowMs + DEAD_DURATION_MS;
-      setEnemySprite(enemy, state);
+      enemy.stateUntilMs = nowMs + COLLISION_RESOLVE_MS;
+      setEnemySprite(enemy, 'walk');
+    } else if (state === 'despawning') {
+      enemy.collisionEnabled = false;
+      enemy.hitAtTs = null;
+      enemy.pendingVisualState = null;
+      enemy.stateUntilMs = nowMs + DEAD_DURATION_MS;
+      setEnemySprite(enemy, 'dead');
     } else {
+      enemy.collisionEnabled = true;
       enemy.hitAtTs = null;
       enemy.pendingVisualState = null;
-      enemy.tStateUntil = null;
-      setEnemySprite(enemy, state);
+      enemy.stateUntilMs = null;
+      setEnemySprite(enemy, 'walk');
     }
+    applyEnemyStateClasses(enemy);
   };
 
   system.update = ({
@@ -438,6 +463,7 @@ export const createDashEnemySystem = ({
         nearestDistancePx: null,
         collision: false,
         attackHandled: false,
+        events: [],
         nearestEnemyRect: null,
         resolvedGroundY,
       };
@@ -447,6 +473,7 @@ export const createDashEnemySystem = ({
         nearestDistancePx: null,
         collision: false,
         attackHandled: false,
+        events: [],
         nearestEnemyRect: null,
         resolvedGroundY,
       };
@@ -485,15 +512,18 @@ export const createDashEnemySystem = ({
     let nearestEnemyMetric = Number.POSITIVE_INFINITY;
     let collision = false;
     let attackHandled = false;
+    const events = [];
 
     system.enemies = system.enemies.filter((enemy) => {
       if (!enemy?.el) {
         return false;
       }
       enemy.vx = speedPxPerSec;
-      if (enemy.state === 'hit' && enemy.tStateUntil && nowMs >= enemy.tStateUntil) {
-        system.setEnemyState(enemy, 'dead', nowMs);
-      } else if (enemy.state === 'dead' && enemy.tStateUntil && nowMs >= enemy.tStateUntil) {
+      if (enemy.state === 'defeated' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+        system.setEnemyState(enemy, 'despawning', nowMs);
+      } else if (enemy.state === 'collision_resolved' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+        enemy.isAlive = false;
+      } else if (enemy.state === 'despawning' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
         enemy.isAlive = false;
       }
 
@@ -502,14 +532,14 @@ export const createDashEnemySystem = ({
         return false;
       }
 
-      if (enemy.state === 'hit' && enemy.pendingVisualState && nowMs >= enemy.hitAtTs) {
+      if (enemy.state === 'defeated' && enemy.pendingVisualState && nowMs >= enemy.hitAtTs) {
         setEnemySprite(enemy, enemy.pendingVisualState);
         enemy.pendingVisualState = null;
       }
 
       let hitPullPx = 0;
       let hitScale = 1;
-      if (enemy.state === 'hit' && Number.isFinite(enemy.hitAtTs)) {
+      if (enemy.state === 'defeated' && Number.isFinite(enemy.hitAtTs)) {
         const hitElapsedMs = nowMs - enemy.hitAtTs;
         if (hitElapsedMs >= 0 && hitElapsedMs < HIT_PULL_DURATION_MS) {
           const progress = hitElapsedMs / HIT_PULL_DURATION_MS;
@@ -518,6 +548,16 @@ export const createDashEnemySystem = ({
         if (hitElapsedMs >= 0 && hitElapsedMs < HIT_FLASH_MS) {
           hitScale = HIT_FLASH_SCALE;
         }
+      }
+
+      if (enemy.state === 'collision_resolved' && Number.isFinite(enemy.stateUntilMs)) {
+        const remainingMs = Math.max(0, enemy.stateUntilMs - nowMs);
+        const progress = 1 - (remainingMs / COLLISION_RESOLVE_MS);
+        const clamped = Math.max(0, Math.min(1, progress));
+        hitScale = 1 - 0.08 * clamped;
+        enemy.el.style.opacity = (1 - 0.55 * clamped).toFixed(3);
+      } else {
+        enemy.el.style.opacity = '1';
       }
       enemy.el.style.setProperty('--enemy-hit-pull', `${hitPullPx.toFixed(2)}px`);
       enemy.el.style.setProperty('--enemy-hit-scale', hitScale.toFixed(3));
@@ -531,7 +571,7 @@ export const createDashEnemySystem = ({
         return false;
       }
 
-      if (enemy.isAlive) {
+      if (enemy.isAlive && enemy.state === 'approaching') {
         let metric = enemy.x;
         if (playerRect) {
           metric = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
@@ -547,26 +587,22 @@ export const createDashEnemySystem = ({
         }
       }
 
-      if (playerRect && enemy.state === 'walk') {
+      if (playerRect && enemy.state === 'approaching' && enemy.collisionEnabled) {
         const distancePx = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
         nearestDistancePx = Math.min(nearestDistancePx, distancePx);
         if (
           !defeatSequenceActive
           && !collision
-          && nowMs >= enemy.ignoreCollisionUntilMs
           && intersects(playerRect, enemy)
         ) {
-          collision = true;
-          enemy.ignoreCollisionUntilMs = nowMs + COLLISION_INVULN_MS;
-          const knockbackTargetX = Math.max(
-            enemy.x + COLLISION_KNOCKBACK_PX,
-            playerRect.x + playerRect.w + 1,
-          );
-          enemy.x = knockbackTargetX;
-          enemy.el.style.transform = getEnemyTransform(enemy);
           if (attackActive) {
             attackHandled = true;
-            system.setEnemyState(enemy, 'hit', nowMs);
+            system.setEnemyState(enemy, 'defeated', nowMs);
+            events.push({ type: 'defeated', enemyId: enemy.id });
+          } else {
+            collision = true;
+            system.setEnemyState(enemy, 'collision_resolved', nowMs);
+            events.push({ type: 'collision', enemyId: enemy.id });
           }
         }
       }
@@ -582,6 +618,7 @@ export const createDashEnemySystem = ({
       nearestDistancePx,
       collision,
       attackHandled,
+      events,
       nearestEnemyRect,
       resolvedGroundY,
     };
