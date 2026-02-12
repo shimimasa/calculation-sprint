@@ -2516,6 +2516,12 @@
   z-index: 1;
   --enemy-hit-pull: 0px;
   --enemy-hit-scale: 1;
+  opacity: 1;
+  transition: opacity 160ms linear;
+}.calc-sprint .enemy-wrap.is-collision-resolved {
+  filter: saturate(0.75) brightness(1.08);
+}.calc-sprint .enemy-wrap.is-defeated {
+  filter: none;
 }.calc-sprint .enemy-label {
   position: absolute;
   left: 50%;

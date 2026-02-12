@@ -64,8 +64,6 @@ const DEFAULT_CLOUD_WIDTH = 220;
 const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
 const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
-const DOM_COLLISION_HITBOX_INSET_PX = 8;
-const HIT_ENEMY_CLEANUP_MARGIN_PX = 48;
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
 const DASH_DEBUG_ALWAYS_ON = false;
@@ -672,140 +670,6 @@ const dashGameScreen = {
       h: runnerRect.height,
     };
   },
-  getPlayerDomRect() {
-    const runnerWrap = domRefs.game.runnerWrap;
-    if (!runnerWrap) {
-      return null;
-    }
-    const rect = runnerWrap.getBoundingClientRect();
-    return {
-      left: rect.left,
-      top: rect.top,
-      right: rect.right,
-      bottom: rect.bottom,
-      width: rect.width,
-      height: rect.height,
-    };
-  },
-  getInsetRect(rect, insetPx = DOM_COLLISION_HITBOX_INSET_PX) {
-    if (!rect) {
-      return null;
-    }
-    const widthInset = Math.max(0, Math.min(insetPx, rect.width / 2 - 1));
-    const heightInset = Math.max(0, Math.min(insetPx, rect.height / 2 - 1));
-    return {
-      left: rect.left + widthInset,
-      top: rect.top + heightInset,
-      right: rect.right - widthInset,
-      bottom: rect.bottom - heightInset,
-    };
-  },
-  intersectsDomRect(a, b) {
-    if (!a || !b) {
-      return false;
-    }
-    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
-  },
-  getEnemyIdentity(enemyEl) {
-    if (!enemyEl) {
-      return null;
-    }
-    const explicitEnemyId = enemyEl.dataset?.enemyId
-      ?? enemyEl.getAttribute('data-enemy-id')
-      ?? enemyEl.querySelector?.('[data-enemy-id]')?.getAttribute('data-enemy-id')
-      ?? null;
-    if (explicitEnemyId) {
-      const enemyId = `enemy:${explicitEnemyId}`;
-      this.enemyElementById?.set(enemyId, enemyEl);
-      return enemyId;
-    }
-    if (!this.enemyDomUidByElement) {
-      this.enemyDomUidByElement = new WeakMap();
-    }
-    if (!this.enemyDomUidCounter) {
-      this.enemyDomUidCounter = 0;
-    }
-    let fallbackId = this.enemyDomUidByElement.get(enemyEl);
-    if (!fallbackId) {
-      this.enemyDomUidCounter += 1;
-      fallbackId = `dash-enemy-${this.enemyDomUidCounter}`;
-      this.enemyDomUidByElement.set(enemyEl, fallbackId);
-    }
-    this.enemyElementById?.set(fallbackId, enemyEl);
-    return fallbackId;
-  },
-  cleanupHitEnemyIds(enemyElements = [], worldRect = null) {
-    if (!this.hitEnemyIds || this.hitEnemyIds.size === 0) {
-      return;
-    }
-    const visibleEnemyIds = new Set();
-    const worldLeft = worldRect?.left;
-    enemyElements.forEach((enemyEl) => {
-      const enemyId = this.getEnemyIdentity(enemyEl);
-      if (!enemyId) {
-        return;
-      }
-      const enemyRect = enemyEl.getBoundingClientRect();
-      const isPastWorld = Number.isFinite(worldLeft)
-        ? enemyRect.right < worldLeft - HIT_ENEMY_CLEANUP_MARGIN_PX
-        : false;
-      if (isPastWorld) {
-        this.hitEnemyIds.delete(enemyId);
-        this.enemyElementById?.delete(enemyId);
-        return;
-      }
-      visibleEnemyIds.add(enemyId);
-      this.enemyElementById?.set(enemyId, enemyEl);
-    });
-    [...this.hitEnemyIds].forEach((enemyId) => {
-      if (!visibleEnemyIds.has(enemyId)) {
-        this.hitEnemyIds.delete(enemyId);
-        this.enemyElementById?.delete(enemyId);
-      }
-    });
-  },
-  getNearestEnemyDomRect(playerRect, worldRect = null) {
-    if (!playerRect) {
-      return null;
-    }
-    const runWorld = domRefs.game.runWorld;
-    if (!runWorld) {
-      return null;
-    }
-    const enemyElements = [...runWorld.querySelectorAll('.run-enemies .enemy-wrap')];
-    this.cleanupHitEnemyIds(enemyElements, worldRect);
-    if (enemyElements.length === 0) {
-      return null;
-    }
-    const playerCenterY = (playerRect.top + playerRect.bottom) / 2;
-    const scoredEnemies = enemyElements
-      .map((enemyEl) => {
-        const enemyId = this.getEnemyIdentity(enemyEl);
-        const rect = enemyEl.getBoundingClientRect();
-        const dx = rect.left - playerRect.left;
-        const dy = ((rect.top + rect.bottom) / 2) - playerCenterY;
-        return {
-          enemyId,
-          enemyEl,
-          rect,
-          dx,
-          dy,
-          rightSide: dx >= 0,
-          dxAbs: Math.abs(dx),
-        };
-      })
-      .filter((enemy) => enemy.enemyId && !this.hitEnemyIds?.has(enemy.enemyId))
-      .sort((a, b) => {
-        if (a.rightSide !== b.rightSide) {
-          return a.rightSide ? -1 : 1;
-        }
-        if (a.dxAbs !== b.dxAbs) {
-          return a.dxAbs - b.dxAbs;
-        }
-        return Math.abs(a.dy) - Math.abs(b.dy);
-      });
-    return scoredEnemies[0] ?? null;
-  },
   getAnswerInput() {
     const input = domRefs.dashGame.answerInput;
     if (input?.isConnected) {
@@ -1370,12 +1234,9 @@ const dashGameScreen = {
       ? Math.round(runGroundY - worldRect.top)
       : null;
     const playerRect = this.getPlayerRect();
-    const playerDomRect = this.getPlayerDomRect();
     let debugCollision = false;
     let debugAttackHandled = false;
     let debugEnemyRect = null;
-    let debugNearestDxPx = null;
-    let debugNearestDyPx = null;
     const enemyUpdate = this.enemySystem?.update({
       dtMs,
       nowMs,
@@ -1387,23 +1248,21 @@ const dashGameScreen = {
     });
     this.enemyUpdateCount += 1;
     if (enemyUpdate) {
-      const nearestEnemyDom = this.getNearestEnemyDomRect(playerDomRect, worldRect);
-      const enemyDomRect = nearestEnemyDom?.rect ?? null;
-      debugEnemyRect = enemyDomRect ?? null;
-      debugNearestDxPx = nearestEnemyDom?.dx ?? null;
-      debugNearestDyPx = nearestEnemyDom?.dy ?? null;
-      const collisionByDomRect = this.intersectsDomRect(
-        this.getInsetRect(playerDomRect),
-        this.getInsetRect(enemyDomRect),
-      );
-      debugCollision = collisionByDomRect;
+      debugCollision = Boolean(enemyUpdate.collision);
       debugAttackHandled = Boolean(enemyUpdate.attackHandled);
-      enemyUpdate.collision = collisionByDomRect;
-      if (Number.isFinite(nearestEnemyDom?.dx)) {
-        enemyUpdate.nearestDistancePx = Math.max(0, nearestEnemyDom.dx);
+      if (enemyUpdate.nearestEnemyRect) {
+        const enemyRect = enemyUpdate.nearestEnemyRect;
+        debugEnemyRect = {
+          left: enemyRect.x + (worldRect?.left ?? 0),
+          top: enemyRect.y + (worldRect?.top ?? 0),
+          right: enemyRect.x + enemyRect.w + (worldRect?.left ?? 0),
+          bottom: enemyRect.y + enemyRect.h + (worldRect?.top ?? 0),
+          width: enemyRect.w,
+          height: enemyRect.h,
+        };
       }
       const handledCollision = (
-        collisionByDomRect
+        enemyUpdate.collision
         && !enemyUpdate.attackHandled
         && !defeatSequenceActive
       );
@@ -1415,9 +1274,6 @@ const dashGameScreen = {
           this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
           this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
-          if (nearestEnemyDom?.enemyId) {
-            this.hitEnemyIds.add(nearestEnemyDom.enemyId);
-          }
           this.showDebugToast('HIT -3秒');
           this.verifyRunnerDom();
           this.triggerRunnerStumble();
@@ -1440,8 +1296,8 @@ const dashGameScreen = {
       attackHandled: debugAttackHandled,
       cooldownMs: COLLISION_COOLDOWN_MS - (nowMs - (this.lastCollisionPenaltyAtMs ?? -Infinity)),
       enemyRect: debugEnemyRect,
-      nearestDxPx: debugNearestDxPx,
-      nearestDyPx: debugNearestDyPx,
+      nearestDxPx: enemyUpdate?.nearestDistancePx ?? null,
+      nearestDyPx: null,
     });
     this.timeLeftMs -= dtMs;
     if (this.timeLeftMs <= 0) {
@@ -1590,10 +1446,6 @@ const dashGameScreen = {
     this.loopRecoveryCount = 0;
     this.lastLoopErrorMessage = '';
     this.enemyUpdateCount = 0;
-    this.enemyDomUidByElement = new WeakMap();
-    this.enemyDomUidCounter = 0;
-    this.enemyElementById = new Map();
-    this.hitEnemyIds = new Set();
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
     this.applyDashTheme();
@@ -1851,10 +1703,6 @@ const dashGameScreen = {
     this.clouds = [];
     this.enemySystem?.destroy();
     this.enemySystem = null;
-    this.enemyDomUidByElement = null;
-    this.enemyDomUidCounter = 0;
-    this.enemyElementById = null;
-    this.hitEnemyIds = null;
     if (this.debugToastTimeout) {
       window.clearTimeout(this.debugToastTimeout);
       this.debugToastTimeout = null;
