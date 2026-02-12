@@ -64,6 +64,7 @@ const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
 const DOM_COLLISION_HITBOX_INSET_PX = 8;
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
+const DASH_DEBUG_ALWAYS_ON = false;
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
 const DASH_STAGE_TO_BGM_ID = Object.freeze({
@@ -148,11 +149,7 @@ const dashGameScreen = {
   answerBuffer: '',
   isSyncingAnswer: false,
   isDebugEnabled() {
-    try {
-      return window.localStorage.getItem('calcSprintDebug') === '1';
-    } catch {
-      return false;
-    }
+    return DASH_DEBUG_ALWAYS_ON === true;
   },
   showDebugToast(message) {
     if (!this.isDebugEnabled()) {
@@ -283,6 +280,19 @@ const dashGameScreen = {
     collision,
     attackHandled,
   }) {
+    const debugEnabled = this.isDebugEnabled();
+    if (!debugEnabled) {
+      if (this.diagnosticsHudEl) {
+        this.diagnosticsHudEl.hidden = true;
+      }
+      if (this.playerHitboxEl) {
+        this.playerHitboxEl.hidden = true;
+      }
+      if (this.enemyHitboxEl) {
+        this.enemyHitboxEl.hidden = true;
+      }
+      return;
+    }
     const hud = this.ensureDiagnosticsHud();
     if (!hud) {
       return;
@@ -1651,8 +1661,6 @@ const dashGameScreen = {
     this.startLoop();
     this.showBuildBadge();
     this.ensureDebugTestHitButton();
-    this.ensureDiagnosticsHud();
-    this.ensureDiagnosticsHitboxes();
   },
   render() {},
   exit() {
@@ -1733,6 +1741,9 @@ const dashGameScreen = {
       this.overlayRootEl.remove();
       this.overlayRootEl = null;
     }
+    document.querySelectorAll('.dash-overlay-root').forEach((overlayRoot) => {
+      overlayRoot.remove();
+    });
     if (domRefs.dashGame.screen) {
       delete domRefs.dashGame.screen.dataset.debugRunnerwrap;
     }
