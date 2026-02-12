@@ -390,7 +390,15 @@ const dashGameScreen = {
     this.applyHitboxRect(this.playerHitboxEl, worldRect, playerRect);
     this.applyHitboxRect(this.enemyHitboxEl, worldRect, enemyRect);
   },
-  updateDebugHud({ hasPlayerRect, collided, attackHandled, cooldownMs }) {
+  updateDebugHud({
+    hasPlayerRect,
+    collided,
+    attackHandled,
+    cooldownMs,
+    enemyRect,
+    nearestDxPx,
+    nearestDyPx,
+  }) {
     const debugEnabled = this.isDebugEnabled();
     if (!debugEnabled) {
       if (this.debugHudEl) {
@@ -409,10 +417,11 @@ const dashGameScreen = {
       this.debugHudEl = hud;
     }
     this.debugHudEl.hidden = false;
-    const dx = Number.isFinite(this.debugNearestDxPx) ? Math.round(this.debugNearestDxPx) : '--';
-    const dy = Number.isFinite(this.debugNearestDyPx) ? Math.round(this.debugNearestDyPx) : '--';
-    const enemyRectText = this.debugEnemyRect
-      ? `[${Math.round(this.debugEnemyRect.left)},${Math.round(this.debugEnemyRect.top)},${Math.round(this.debugEnemyRect.right)},${Math.round(this.debugEnemyRect.bottom)}]`
+    const dx = Number.isFinite(nearestDxPx) ? Math.round(nearestDxPx) : '--';
+    const dy = Number.isFinite(nearestDyPx) ? Math.round(nearestDyPx) : '--';
+    const safeEnemyRect = enemyRect ?? null;
+    const enemyRectText = safeEnemyRect
+      ? `[${Math.round(safeEnemyRect.left)},${Math.round(safeEnemyRect.top)},${Math.round(safeEnemyRect.right)},${Math.round(safeEnemyRect.bottom)}]`
       : 'none';
     this.debugHudEl.textContent = `PR:${hasPlayerRect ? 1 : 0} COLL:${collided ? 1 : 0} ATK:${attackHandled ? 1 : 0} DX:${dx} DY:${dy} ENEMY_RECT:${enemyRectText} CD:${Math.max(0, Math.round(cooldownMs))}`;
   },
@@ -1363,9 +1372,9 @@ const dashGameScreen = {
     const playerDomRect = this.getPlayerDomRect();
     let debugCollision = false;
     let debugAttackHandled = false;
-    this.debugEnemyRect = null;
-    this.debugNearestDxPx = null;
-    this.debugNearestDyPx = null;
+    let debugEnemyRect = null;
+    let debugNearestDxPx = null;
+    let debugNearestDyPx = null;
     const enemyUpdate = this.enemySystem?.update({
       dtMs,
       nowMs,
@@ -1378,9 +1387,9 @@ const dashGameScreen = {
     if (enemyUpdate) {
       const nearestEnemyDom = this.getNearestEnemyDomRect(playerDomRect, worldRect);
       const enemyDomRect = nearestEnemyDom?.rect ?? null;
-      this.debugEnemyRect = enemyDomRect;
-      this.debugNearestDxPx = nearestEnemyDom?.dx ?? null;
-      this.debugNearestDyPx = nearestEnemyDom?.dy ?? null;
+      debugEnemyRect = enemyDomRect ?? null;
+      debugNearestDxPx = nearestEnemyDom?.dx ?? null;
+      debugNearestDyPx = nearestEnemyDom?.dy ?? null;
       const collisionByDomRect = this.intersectsDomRect(
         this.getInsetRect(playerDomRect),
         this.getInsetRect(enemyDomRect),
@@ -1424,6 +1433,9 @@ const dashGameScreen = {
       collided: debugCollision,
       attackHandled: debugAttackHandled,
       cooldownMs: COLLISION_COOLDOWN_MS - (nowMs - (this.lastCollisionPenaltyAtMs ?? -Infinity)),
+      enemyRect: debugEnemyRect,
+      nearestDxPx: debugNearestDxPx,
+      nearestDyPx: debugNearestDyPx,
     });
     this.timeLeftMs -= dtMs;
     if (this.timeLeftMs <= 0) {
