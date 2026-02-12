@@ -3604,3 +3604,58 @@
   color: rgba(255, 255, 255, 0.95) !important;
   box-shadow: none !important;
 }
+
+/* Dash bottom HUD wrapper/frame removal overrides (latest) */
+.calc-sprint #dash-game-screen .dash-bottom-hud,
+.calc-sprint #dash-game-screen > .dash-bottom-hud,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap,
+.calc-sprint #dash-game-screen .dash-bottom-wrap,
+.calc-sprint #dash-game-screen .dash-bottom-panel,
+.calc-sprint #dash-game-screen .dash-hud {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud::before,
+.calc-sprint #dash-game-screen .dash-bottom-hud::after,
+.calc-sprint #dash-game-screen > .dash-bottom-hud::before,
+.calc-sprint #dash-game-screen > .dash-bottom-hud::after,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap::before,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap::after,
+.calc-sprint #dash-game-screen .dash-bottom-wrap::before,
+.calc-sprint #dash-game-screen .dash-bottom-wrap::after,
+.calc-sprint #dash-game-screen .dash-bottom-panel::before,
+.calc-sprint #dash-game-screen .dash-bottom-panel::after {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.calc-sprint #dash-game-screen #dash-game-time-wrap,
+.calc-sprint #dash-game-screen .dash-bottom-hud #dash-game-time-wrap,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap #dash-game-time-wrap,
+.calc-sprint #dash-game-screen .dash-timebar__wrap,
+.calc-sprint #dash-game-screen .dash-timebar__track {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.calc-sprint #dash-game-screen .dash-timebar {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+}
