@@ -1358,6 +1358,7 @@ const dashGameScreen = {
     const nowMs = window.performance.now();
     const dtSeconds = dtMs / 1000;
     const isSlowed = nowMs < (this.slowUntilMs ?? 0);
+    const defeatSequenceActive = nowMs < (this.kickUntilMs ?? 0);
     const speedMultiplier = isSlowed ? COLLISION_SLOW_MULT : 1;
     const effectivePlayerSpeed = this.playerSpeed * speedMultiplier;
     gameState.dash.distanceM += effectivePlayerSpeed * dtSeconds;
@@ -1382,6 +1383,7 @@ const dashGameScreen = {
       playerRect,
       correctCount: gameState.dash.correctCount,
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
+      defeatSequenceActive,
     });
     this.enemyUpdateCount += 1;
     if (enemyUpdate) {
@@ -1400,7 +1402,11 @@ const dashGameScreen = {
       if (Number.isFinite(nearestEnemyDom?.dx)) {
         enemyUpdate.nearestDistancePx = Math.max(0, nearestEnemyDom.dx);
       }
-      const handledCollision = collisionByDomRect && !enemyUpdate.attackHandled;
+      const handledCollision = (
+        collisionByDomRect
+        && !enemyUpdate.attackHandled
+        && !defeatSequenceActive
+      );
       if (handledCollision) {
         if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
           // NOTE: playSfx is ignored until audio is unlocked; keep this here so

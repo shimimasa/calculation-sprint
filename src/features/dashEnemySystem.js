@@ -430,6 +430,7 @@ export const createDashEnemySystem = ({
     playerRect,
     correctCount,
     attackActive,
+    defeatSequenceActive = false,
   }) => {
     const resolvedGroundY = Number.isFinite(groundY) ? groundY : null;
     if (!Number.isFinite(dtMs) || dtMs <= 0) {
@@ -549,7 +550,12 @@ export const createDashEnemySystem = ({
       if (playerRect && enemy.state === 'walk') {
         const distancePx = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
         nearestDistancePx = Math.min(nearestDistancePx, distancePx);
-        if (!collision && nowMs >= enemy.ignoreCollisionUntilMs && intersects(playerRect, enemy)) {
+        if (
+          !defeatSequenceActive
+          && !collision
+          && nowMs >= enemy.ignoreCollisionUntilMs
+          && intersects(playerRect, enemy)
+        ) {
           collision = true;
           enemy.ignoreCollisionUntilMs = nowMs + COLLISION_INVULN_MS;
           const knockbackTargetX = Math.max(
