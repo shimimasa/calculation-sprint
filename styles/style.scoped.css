@@ -2972,6 +2972,8 @@
 
 .calc-sprint #dash-game-screen {
   --dash-ground-y: 90px;
+  --dash-ground-mask-cut: 58%;
+  --dash-ground-mask-fade: 10%;
   --ground-surface-inset: var(--dash-ground-y);
   --run-sky-fallback: #7dbdff;
   grid-template-rows: auto 1fr minmax(92px, 132px);
@@ -3051,6 +3053,26 @@
 
 .calc-sprint #dash-game-screen .run-ground__tile {
   background-image: var(--dash-ground-image, var(--run-ground-image, url("../assets/bg-ground.png")));
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--dash-ground-mask-cut) - var(--dash-ground-mask-fade)),
+    rgba(0, 0, 0, 0.35) var(--dash-ground-mask-cut),
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--dash-ground-mask-cut) - var(--dash-ground-mask-fade)),
+    rgba(0, 0, 0, 0.35) var(--dash-ground-mask-cut),
+    #000 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
   border: 0 !important;
   outline: 0 !important;
   box-shadow: none !important;
