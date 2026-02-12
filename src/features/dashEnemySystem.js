@@ -8,6 +8,19 @@ const DASH_STAGE_TO_ENEMY_TYPE = Object.freeze({
   divide: 'divide',
 });
 const ENEMY_TYPES = Object.freeze(['plus', 'minus', 'multi', 'divide']);
+const ENEMY_DEFAULT_MAX_HP = 1;
+const ENEMY_LABEL_BY_TYPE = Object.freeze({
+  plus: 'プラス',
+  minus: 'マイナス',
+  multi: 'かけ算',
+  divide: 'わり算',
+});
+const ENEMY_MAX_HP_BY_TYPE = Object.freeze({
+  plus: 1,
+  minus: 1,
+  multi: 1,
+  divide: 1,
+});
 const ENEMY_STATES = ['walk', 'hit', 'dead'];
 const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
@@ -111,15 +124,67 @@ const ensureEnemyContainer = (worldEl, containerEl) => {
   return created;
 };
 
-const createEnemyElement = (type, state) => {
+const getEnemyDisplayName = (type) => ENEMY_LABEL_BY_TYPE[type] ?? 'モンスター';
+const getEnemyMaxHp = (type) => {
+  const configuredMaxHp = ENEMY_MAX_HP_BY_TYPE[type];
+  if (Number.isFinite(configuredMaxHp) && configuredMaxHp > 0) {
+    return configuredMaxHp;
+  }
+  return ENEMY_DEFAULT_MAX_HP;
+};
+
+const buildEnemyLabel = (enemy) => {
+  const labelEl = document.createElement('div');
+  labelEl.className = 'enemy-label';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'enemy-name';
+  nameEl.textContent = enemy.name;
+
+  const hpEl = document.createElement('div');
+  hpEl.className = 'enemy-hp';
+
+  const hpFillEl = document.createElement('div');
+  hpFillEl.className = 'enemy-hp__fill';
+  hpEl.appendChild(hpFillEl);
+
+  labelEl.append(nameEl, hpEl);
+  return { labelEl, hpFillEl };
+};
+
+const createEnemyElement = (enemy) => {
+  const wrap = document.createElement('div');
+  wrap.className = 'enemy-wrap';
+  wrap.dataset.enemyName = enemy.name;
+  wrap.dataset.hp = String(enemy.hp);
+  wrap.dataset.hpMax = String(enemy.maxHp);
+
   const img = document.createElement('img');
   img.className = 'enemy-sprite';
   img.alt = '';
   img.decoding = 'async';
   img.loading = 'eager';
-  img.src = getEnemyAssetPath(type, state);
+  img.src = getEnemyAssetPath(enemy.type, enemy.state);
   img.draggable = false;
-  return img;
+
+  const { labelEl, hpFillEl } = buildEnemyLabel(enemy);
+  wrap.append(img, labelEl);
+
+  return {
+    wrap,
+    sprite: img,
+    hpFill: hpFillEl,
+  };
+};
+
+const updateEnemyHud = (enemy) => {
+  if (!enemy?.el) {
+    return;
+  }
+  const hpRatio = enemy.maxHp > 0 ? Math.max(0, Math.min(1, enemy.hp / enemy.maxHp)) : 0;
+  enemy.el.dataset.hp = String(enemy.hp);
+  enemy.el.dataset.hpMax = String(enemy.maxHp);
+  enemy.hpFillEl?.style.setProperty('transform', `scaleX(${hpRatio.toFixed(3)})`);
 };
 
 const setEnemySprite = (enemy, state) => {
@@ -127,7 +192,7 @@ const setEnemySprite = (enemy, state) => {
     return;
   }
   enemy.visualState = state;
-  enemy.el.src = getEnemyAssetPath(enemy.type, state);
+  enemy.spriteEl.src = getEnemyAssetPath(enemy.type, state);
 };
 
 const getSpeedPxPerSec = ({ correctCount = 0, elapsedSec = 0 }) => -(
@@ -240,9 +305,11 @@ export const createDashEnemySystem = ({
         return null;
       }
     }
+    const maxHp = getEnemyMaxHp(type);
     const enemy = {
       id: `enemy-${system.idCounter += 1}`,
       type,
+      name: getEnemyDisplayName(type),
       state,
       x: spawnX,
       y: Math.max(0, (groundY ?? 0) - height),
@@ -255,14 +322,37 @@ export const createDashEnemySystem = ({
       visualState: state,
       pendingVisualState: null,
       ignoreCollisionUntilMs: 0,
-      el: createEnemyElement(type, state),
+      hp: maxHp,
+      maxHp,
+      el: null,
+      spriteEl: null,
+      hpFillEl: null,
     };
+    const enemyElements = createEnemyElement(enemy);
+    enemy.el = enemyElements.wrap;
+    enemy.spriteEl = enemyElements.sprite;
+    enemy.hpFillEl = enemyElements.hpFill;
     enemy.el.style.width = `${width}px`;
     enemy.el.style.height = `${height}px`;
     enemy.el.style.transform = getEnemyTransform(enemy);
+    updateEnemyHud(enemy);
     container.appendChild(enemy.el);
     system.enemies.push(enemy);
     return enemy;
+  };
+
+  system.damageEnemy = (enemy, amount = 1, nowMs = window.performance.now()) => {
+    if (!enemy?.isAlive || enemy.state !== 'walk') {
+      return { defeated: false, hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 0 };
+    }
+    const damage = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+    enemy.hp = Math.max(0, enemy.hp - damage);
+    updateEnemyHud(enemy);
+    if (enemy.hp <= 0) {
+      system.setEnemyState(enemy, 'hit', nowMs);
+      return { defeated: true, hp: enemy.hp, maxHp: enemy.maxHp };
+    }
+    return { defeated: false, hp: enemy.hp, maxHp: enemy.maxHp };
   };
 
   system.defeatNearestEnemy = ({ playerRect, nowMs }) => {
@@ -287,7 +377,18 @@ export const createDashEnemySystem = ({
     if (!nearestEnemy) {
       return { defeated: false, target: null };
     }
-    system.setEnemyState(nearestEnemy, 'hit', nowMs);
+    const damageResult = system.damageEnemy(nearestEnemy, 1, nowMs);
+    if (!damageResult.defeated) {
+      return {
+        defeated: false,
+        target: {
+          x: nearestEnemy.x,
+          y: nearestEnemy.y,
+          w: nearestEnemy.w,
+          h: nearestEnemy.h,
+        },
+      };
+    }
     return {
       defeated: true,
       target: {
