@@ -41,6 +41,9 @@ const COLLISION_SLOW_MULT = 0.7;
 const STUMBLE_DURATION_MS = 520;
 const KICK_MS = 300;
 const MAX_LUNGE_PX = 140;
+const LOOP_WATCHDOG_INTERVAL_MS = 1000;
+const LOOP_STOPPED_THRESHOLD_MS = 1500;
+const LOOP_RECOVERY_MAX_ATTEMPTS = 3;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
@@ -219,6 +222,80 @@ const dashGameScreen = {
       this.buildBadgeTimeout = null;
     }, 2000);
   },
+  ensureLoopMonitorBadge() {
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return null;
+    }
+    if (!this.loopMonitorBadgeEl || !overlayRoot.contains(this.loopMonitorBadgeEl)) {
+      const badge = document.createElement('div');
+      badge.className = 'dash-loop-monitor-badge';
+      overlayRoot.appendChild(badge);
+      this.loopMonitorBadgeEl = badge;
+    }
+    return this.loopMonitorBadgeEl;
+  },
+  getLastFrameAgoMs(nowMs = window.performance.now()) {
+    if (!Number.isFinite(this.lastFrameAtMs)) {
+      return null;
+    }
+    return Math.max(0, Math.round(nowMs - this.lastFrameAtMs));
+  },
+  isLoopStopped(nowMs = window.performance.now()) {
+    if (!this.isRunning) {
+      return true;
+    }
+    const lastFrameAgoMs = this.getLastFrameAgoMs(nowMs);
+    return lastFrameAgoMs === null || lastFrameAgoMs >= LOOP_STOPPED_THRESHOLD_MS;
+  },
+  updateLoopMonitorBadge(nowMs = window.performance.now()) {
+    const badge = this.ensureLoopMonitorBadge();
+    if (!badge) {
+      return;
+    }
+    const lastFrameAgoMs = this.getLastFrameAgoMs(nowMs);
+    const status = this.isLoopStopped(nowMs) ? 'STOPPED' : 'OK';
+    const agoText = lastFrameAgoMs === null ? '--' : String(lastFrameAgoMs);
+    const errorText = this.lastLoopErrorMessage ? `\nLAST ERROR: ${this.lastLoopErrorMessage}` : '';
+    badge.textContent = [
+      `RUN LOOP: ${status}`,
+      `frameCount: ${this.loopFrameCount}`,
+      `lastFrameAgo(ms): ${agoText}`,
+      `recoveries: ${this.loopRecoveryCount}/${LOOP_RECOVERY_MAX_ATTEMPTS}`,
+    ].join('\n') + errorText;
+    badge.setAttribute('data-status', status.toLowerCase());
+  },
+  noteLoopError(error) {
+    const message = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+    this.lastLoopErrorMessage = message;
+    console.error('[dash-game] loop error', error);
+    this.updateLoopMonitorBadge();
+  },
+  startLoopWatchdog() {
+    this.stopLoopWatchdog();
+    this.watchdogTimerId = window.setInterval(() => {
+      if (!this.isScreenActive() || this.hasEnded) {
+        return;
+      }
+      const nowMs = window.performance.now();
+      this.updateLoopMonitorBadge(nowMs);
+      if (!this.isLoopStopped(nowMs)) {
+        return;
+      }
+      if (this.loopRecoveryCount >= LOOP_RECOVERY_MAX_ATTEMPTS) {
+        return;
+      }
+      this.loopRecoveryCount += 1;
+      this.startLoop({ isRecovery: true });
+      this.updateLoopMonitorBadge();
+    }, LOOP_WATCHDOG_INTERVAL_MS);
+  },
+  stopLoopWatchdog() {
+    if (this.watchdogTimerId) {
+      window.clearInterval(this.watchdogTimerId);
+      this.watchdogTimerId = null;
+    }
+  },
   ensureDiagnosticsHud() {
     const overlayRoot = this.ensureDashOverlayRoot();
     if (!overlayRoot) {
@@ -328,44 +405,6 @@ const dashGameScreen = {
       ? `[${Math.round(this.debugEnemyRect.left)},${Math.round(this.debugEnemyRect.top)},${Math.round(this.debugEnemyRect.right)},${Math.round(this.debugEnemyRect.bottom)}]`
       : 'none';
     this.debugHudEl.textContent = `PR:${hasPlayerRect ? 1 : 0} COLL:${collided ? 1 : 0} ATK:${attackHandled ? 1 : 0} DX:${dx} DY:${dy} ENEMY_RECT:${enemyRectText} CD:${Math.max(0, Math.round(cooldownMs))}`;
-  },
-  ensureDebugTestHitButton() {
-    const debugEnabled = this.isDebugEnabled();
-    if (!debugEnabled) {
-      if (this.debugHitButtonEl) {
-        this.debugHitButtonEl.remove();
-        this.debugHitButtonEl = null;
-      }
-      return;
-    }
-    const overlayRoot = this.ensureDashOverlayRoot();
-    if (!overlayRoot) {
-      return;
-    }
-    if (!this.debugHitButtonEl || !overlayRoot.contains(this.debugHitButtonEl)) {
-      const button = document.createElement('button');
-      button.className = 'dash-debug-hit-button';
-      button.type = 'button';
-      button.textContent = 'TEST HIT';
-      overlayRoot.appendChild(button);
-      this.debugHitButtonEl = button;
-      this.events?.on(button, 'click', () => {
-        this.applyCollisionPenaltyForDebug(window.performance.now());
-      });
-    }
-    this.debugHitButtonEl.hidden = false;
-  },
-  applyCollisionPenaltyForDebug(nowMs = window.performance.now()) {
-    audioManager.playSfx('sfx_damage');
-    this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
-    this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
-    this.lastCollisionPenaltyAtMs = nowMs;
-    this.showDebugToast('HIT -3秒 (debug)');
-    this.triggerRunnerStumble();
-    this.updateHud();
-    if (this.timeLeftMs <= 0) {
-      this.endSession('timeup');
-    }
   },
   verifyRunnerDom() {
     const screen = domRefs.dashGame.screen;
@@ -1370,14 +1409,6 @@ const dashGameScreen = {
         this.enemyGapM = collisionThreshold * 2;
       }
     }
-    this.updateDiagnostics({
-      playerRect,
-      enemyRect: debugEnemyRect,
-      worldRect,
-      groundY: debugGroundY,
-      collision: debugCollision,
-      attackHandled: debugAttackHandled,
-    });
     this.updateDebugHud({
       hasPlayerRect: Boolean(playerRect),
       collided: debugCollision,
@@ -1392,6 +1423,10 @@ const dashGameScreen = {
     this.updateHud();
   },
   startLoop() {
+    if (this.isRunning && this.rafId) {
+      this.updateLoopMonitorBadge();
+      return;
+    }
     this.stopLoop();
     this.isRunning = true;
     this.lastTickTs = window.performance.now();
@@ -1399,15 +1434,33 @@ const dashGameScreen = {
       if (!this.isRunning) {
         return;
       }
-      const rawDt = Math.max(0, now - this.lastTickTs);
-      const dtMs = Math.min(rawDt, 50);
-      this.lastTickTs = now;
-      this.updateFrame(dtMs);
-      if (this.isRunning) {
-        this.rafId = window.requestAnimationFrame(tick);
+      let nextDtMs = 0;
+      try {
+        const rawDt = Math.max(0, now - this.lastTickTs);
+        nextDtMs = Math.min(rawDt, 50);
+        this.lastTickTs = now;
+        this.lastFrameAtMs = now;
+        this.loopFrameCount += 1;
+        this.updateFrame(nextDtMs);
+      } catch (error) {
+        this.noteLoopError(error);
+        this.lastTickTs = now;
+        try {
+          this.updateFrame(0);
+        } catch (nextError) {
+          this.noteLoopError(nextError);
+        }
+      } finally {
+        this.updateLoopMonitorBadge(now);
+        if (this.isRunning) {
+          this.rafId = window.requestAnimationFrame(tick);
+        } else {
+          this.rafId = null;
+        }
       }
     };
     this.rafId = window.requestAnimationFrame(tick);
+    this.updateLoopMonitorBadge();
   },
   stopLoop() {
     this.isRunning = false;
@@ -1415,6 +1468,7 @@ const dashGameScreen = {
       window.cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
+    this.updateLoopMonitorBadge();
   },
   startBgm() {
     if (this.isBgmActive) {
@@ -1501,7 +1555,12 @@ const dashGameScreen = {
     this.diagnosticsHudEl = null;
     this.playerHitboxEl = null;
     this.enemyHitboxEl = null;
-    this.debugHitButtonEl = null;
+    this.loopMonitorBadgeEl = null;
+    this.watchdogTimerId = null;
+    this.lastFrameAtMs = null;
+    this.loopFrameCount = 0;
+    this.loopRecoveryCount = 0;
+    this.lastLoopErrorMessage = '';
     this.enemyUpdateCount = 0;
     this.enemyDomUidByElement = new WeakMap();
     this.enemyDomUidCounter = 0;
@@ -1719,15 +1778,16 @@ const dashGameScreen = {
     this.loadNextQuestion();
     this.startBgm();
     this.startLoop();
+    this.startLoopWatchdog();
     this.showBuildBadge();
-    this.ensureDebugTestHitButton();
-    this.ensureDiagnosticsHud();
-    this.ensureDiagnosticsHitboxes();
+    this.ensureLoopMonitorBadge();
+    this.updateLoopMonitorBadge();
   },
   render() {},
   exit() {
     this.events?.clear();
     this.events = null;
+    this.stopLoopWatchdog();
     this.stopLoop();
     this.restoreRunLayer();
     if (domRefs.dashGame.screen) {
@@ -1799,9 +1859,9 @@ const dashGameScreen = {
       this.enemyHitboxEl.remove();
       this.enemyHitboxEl = null;
     }
-    if (this.debugHitButtonEl) {
-      this.debugHitButtonEl.remove();
-      this.debugHitButtonEl = null;
+    if (this.loopMonitorBadgeEl) {
+      this.loopMonitorBadgeEl.remove();
+      this.loopMonitorBadgeEl = null;
     }
     if (this.overlayRootEl) {
       this.overlayRootEl.remove();
