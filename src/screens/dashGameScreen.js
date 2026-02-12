@@ -218,6 +218,90 @@ const dashGameScreen = {
       this.buildBadgeTimeout = null;
     }, 2000);
   },
+  ensureDiagnosticsHud() {
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return null;
+    }
+    if (!this.diagnosticsHudEl || !overlayRoot.contains(this.diagnosticsHudEl)) {
+      const hud = document.createElement('div');
+      hud.className = 'dash-diagnostics-hud';
+      overlayRoot.appendChild(hud);
+      this.diagnosticsHudEl = hud;
+    }
+    return this.diagnosticsHudEl;
+  },
+  ensureDiagnosticsHitboxes() {
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return null;
+    }
+    if (!this.playerHitboxEl || !overlayRoot.contains(this.playerHitboxEl)) {
+      const playerBox = document.createElement('div');
+      playerBox.className = 'dash-hitbox-player';
+      playerBox.hidden = true;
+      overlayRoot.appendChild(playerBox);
+      this.playerHitboxEl = playerBox;
+    }
+    if (!this.enemyHitboxEl || !overlayRoot.contains(this.enemyHitboxEl)) {
+      const enemyBox = document.createElement('div');
+      enemyBox.className = 'dash-hitbox-enemy';
+      enemyBox.hidden = true;
+      overlayRoot.appendChild(enemyBox);
+      this.enemyHitboxEl = enemyBox;
+    }
+    return {
+      player: this.playerHitboxEl,
+      enemy: this.enemyHitboxEl,
+    };
+  },
+  formatDiagnosticRect(label, rect) {
+    if (!rect) {
+      return `${label}:0 x:null y:null w:null h:null`;
+    }
+    return `${label}:1 x:${Math.round(rect.x)} y:${Math.round(rect.y)} w:${Math.round(rect.w)} h:${Math.round(rect.h)}`;
+  },
+  applyHitboxRect(hitboxEl, worldRect, rect) {
+    if (!hitboxEl) {
+      return;
+    }
+    if (!worldRect || !rect) {
+      hitboxEl.hidden = true;
+      return;
+    }
+    hitboxEl.hidden = false;
+    hitboxEl.style.left = `${Math.round(worldRect.left + rect.x)}px`;
+    hitboxEl.style.top = `${Math.round(worldRect.top + rect.y)}px`;
+    hitboxEl.style.width = `${Math.max(0, Math.round(rect.w))}px`;
+    hitboxEl.style.height = `${Math.max(0, Math.round(rect.h))}px`;
+  },
+  updateDiagnostics({
+    playerRect,
+    enemyRect,
+    worldRect,
+    groundY,
+    collision,
+    attackHandled,
+  }) {
+    const hud = this.ensureDiagnosticsHud();
+    if (!hud) {
+      return;
+    }
+    const dx = playerRect && enemyRect ? Math.round(enemyRect.x - playerRect.x) : null;
+    const dy = playerRect && enemyRect ? Math.round(enemyRect.y - playerRect.y) : null;
+    hud.textContent = [
+      `ENEMY_SYS:${this.enemySystem ? 1 : 0} UPD:${this.enemyUpdateCount}`,
+      `GROUND_Y:${groundY === null ? 'null' : Math.round(groundY)}`,
+      this.formatDiagnosticRect('PLAYER', playerRect),
+      this.formatDiagnosticRect('ENEMY', enemyRect),
+      `DX:${dx ?? 'null'} DY:${dy ?? 'null'}`,
+      `COLL:${collision ? 1 : 0} ATK:${attackHandled ? 1 : 0}`,
+    ].join('\n');
+
+    this.ensureDiagnosticsHitboxes();
+    this.applyHitboxRect(this.playerHitboxEl, worldRect, playerRect);
+    this.applyHitboxRect(this.enemyHitboxEl, worldRect, enemyRect);
+  },
   updateDebugHud({ hasPlayerRect, collided, attackHandled, cooldownMs }) {
     const debugEnabled = this.isDebugEnabled();
     if (!debugEnabled) {
@@ -1178,6 +1262,7 @@ const dashGameScreen = {
       correctCount: gameState.dash.correctCount,
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
     });
+    this.enemyUpdateCount += 1;
     if (enemyUpdate) {
       const nearestEnemyDom = this.getNearestEnemyDomRect(playerDomRect);
       const enemyDomRect = nearestEnemyDom?.rect ?? null;
@@ -1219,6 +1304,14 @@ const dashGameScreen = {
         this.enemyGapM = collisionThreshold * 2;
       }
     }
+    this.updateDiagnostics({
+      playerRect,
+      enemyRect: debugEnemyRect,
+      worldRect,
+      groundY: debugGroundY,
+      collision: debugCollision,
+      attackHandled: debugAttackHandled,
+    });
     this.updateDebugHud({
       hasPlayerRect: Boolean(playerRect),
       collided: debugCollision,
@@ -1339,7 +1432,11 @@ const dashGameScreen = {
     this.buildBadgeEl = null;
     this.buildBadgeTimeout = null;
     this.debugHudEl = null;
+    this.diagnosticsHudEl = null;
+    this.playerHitboxEl = null;
+    this.enemyHitboxEl = null;
     this.debugHitButtonEl = null;
+    this.enemyUpdateCount = 0;
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
     this.applyDashTheme();
@@ -1554,6 +1651,8 @@ const dashGameScreen = {
     this.startLoop();
     this.showBuildBadge();
     this.ensureDebugTestHitButton();
+    this.ensureDiagnosticsHud();
+    this.ensureDiagnosticsHitboxes();
   },
   render() {},
   exit() {
@@ -1610,9 +1709,21 @@ const dashGameScreen = {
       this.debugHudEl.remove();
       this.debugHudEl = null;
     }
+    if (this.diagnosticsHudEl) {
+      this.diagnosticsHudEl.remove();
+      this.diagnosticsHudEl = null;
+    }
     if (this.buildBadgeEl) {
       this.buildBadgeEl.remove();
       this.buildBadgeEl = null;
+    }
+    if (this.playerHitboxEl) {
+      this.playerHitboxEl.remove();
+      this.playerHitboxEl = null;
+    }
+    if (this.enemyHitboxEl) {
+      this.enemyHitboxEl.remove();
+      this.enemyHitboxEl = null;
     }
     if (this.debugHitButtonEl) {
       this.debugHitButtonEl.remove();
