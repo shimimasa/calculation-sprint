@@ -5,6 +5,8 @@ import gameState from '../core/gameState.js';
 import stageProgressStore from '../core/stageProgressStore.js';
 import audioManager from '../core/audioManager.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
+import { perfLog } from '../core/perf.js';
+import { preloadStageCoreImages } from '../core/stageAssetPreloader.js';
 import {
   STAGES,
   applyStageSettings,
@@ -145,6 +147,7 @@ const stageSelectScreen = {
       audioManager.unlock();
       audioManager.playSfx('sfx_decide');
       const stageId = button.dataset.stageId;
+      perfLog('stage.select.click', { stageId });
       const stage = findStageById(stageId);
       if (!stage) {
         return;
@@ -152,6 +155,7 @@ const stageSelectScreen = {
       gameState.playMode = 'stage';
       gameState.selectedStageId = stage.id;
       applyStageSettings(stage, gameState);
+      preloadStageCoreImages(stage.id, { mode: 'stage' });
       screenManager.changeScreen('game');
     };
 
