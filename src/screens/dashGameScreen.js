@@ -60,6 +60,14 @@ const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
 const EFFECT_MAX_SPEED_MPS = 8;
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
+const DASH_STAGE_TO_BGM_ID = Object.freeze({
+  plus: 'bgm_add',
+  minus: 'bgm_sub',
+  multi: 'bgm_mul',
+  divide: 'bgm_div',
+  mix: 'bgm_mix',
+  dash: 'bgm_dash',
+});
 const randomBetween = (min, max) => min + Math.random() * (max - min);
 const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
 const extractCssUrl = (value) => {
@@ -87,6 +95,10 @@ const loadCloudBaseWidth = async (src) => {
   img.src = src;
   await waitForImageDecode(img);
   return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+};
+const resolveDashBgmId = (stageId) => {
+  const normalizedStageId = String(stageId ?? '').trim().toLowerCase();
+  return DASH_STAGE_TO_BGM_ID[normalizedStageId] ?? DASH_STAGE_TO_BGM_ID.dash;
 };
 const getGroundSurfaceInsetPx = () => {
   const target = domRefs.dashGame?.screen ?? document.documentElement;
@@ -812,6 +824,8 @@ const dashGameScreen = {
           this.kickLungePx = 0;
         }
         this.kickUntilMs = nowMs + KICK_MS;
+        console.log('[SFX] attack fired', nowMs, defeatResult);
+        audioManager.playSfx('sfx_attack');
       } else {
         this.kickUntilMs = 0;
         this.kickLungePx = 0;
@@ -884,7 +898,8 @@ const dashGameScreen = {
       const handledCollision = enemyUpdate.collision && !enemyUpdate.attackHandled;
       if (handledCollision) {
         if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
-          audioManager.playSfx('sfx_wrong', { volume: 0.7 });
+          console.log('[SFX] damage fired', nowMs, enemyUpdate);
+          audioManager.playSfx('sfx_damage');
           this.timeLeftMs = Math.max(0, this.timeLeftMs - COLLISION_PENALTY_MS);
           this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
@@ -938,8 +953,9 @@ const dashGameScreen = {
       return;
     }
     this.isBgmActive = true;
-    console.log('[BGM] dash loop start');
-    audioManager.playBgm('bgm_dash', { loop: true });
+    const bgmId = resolveDashBgmId(gameState.dash?.stageId);
+    console.log('[BGM] dash loop start', { stageId: gameState.dash?.stageId, bgmId });
+    audioManager.playBgm(bgmId, { loop: true });
   },
   stopBgm() {
     if (!this.isBgmActive) {

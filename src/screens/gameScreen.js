@@ -38,6 +38,18 @@ const DEFAULT_CLOUD_WIDTH = 220;
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
 const COUNTDOWN_SFX_THRESHOLDS = Object.freeze([10, 5, 3, 2, 1]);
+const MODE_TO_BGM_ID = Object.freeze({
+  add: 'bgm_add',
+  plus: 'bgm_add',
+  sub: 'bgm_sub',
+  minus: 'bgm_sub',
+  mul: 'bgm_mul',
+  multi: 'bgm_mul',
+  div: 'bgm_div',
+  divide: 'bgm_div',
+  mix: 'bgm_mix',
+  dash: 'bgm_dash',
+});
 const isReviewModeActive = (state) => Boolean(state?.isReviewMode);
 const EFFECT_BY_LEVEL = {
   0: { glow: 0.8, line: 0.9, boost: 0.95 },
@@ -114,6 +126,16 @@ const loadCloudBaseWidth = async (src) => {
   img.src = src;
   await waitForImageDecode(img);
   return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+};
+const resolveStageBgmId = (stage) => {
+  if (!stage) {
+    return null;
+  }
+  if (stage.theme?.bgmId) {
+    return stage.theme.bgmId;
+  }
+  const normalizedMode = String(stage.settings?.mode ?? '').trim().toLowerCase();
+  return MODE_TO_BGM_ID[normalizedMode] ?? null;
 };
 const getGroundSurfaceInsetPx = () => {
   const inset = parseFloat(
@@ -512,7 +534,7 @@ const gameScreen = {
     }
     this.applyStageThemeHooks();
     if (gameState.playMode === 'stage' && gameState.selectedStage) {
-      const stageBgmId = gameState.selectedStage.theme?.bgmId
+      const stageBgmId = resolveStageBgmId(gameState.selectedStage)
         ?? domRefs.screens.game?.dataset?.bgmId
         ?? null;
       audioManager.setBgm(stageBgmId);
