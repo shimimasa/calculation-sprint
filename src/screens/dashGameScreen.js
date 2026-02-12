@@ -61,6 +61,7 @@ const DEFAULT_CLOUD_WIDTH = 220;
 const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
 const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
+const DOM_COLLISION_HITBOX_INSET_PX = 8;
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
 const DEBUG_INPUT = false;
@@ -236,7 +237,12 @@ const dashGameScreen = {
       this.debugHudEl = hud;
     }
     this.debugHudEl.hidden = false;
-    this.debugHudEl.textContent = `PR:${hasPlayerRect ? 1 : 0} COLL:${collided ? 1 : 0} ATK:${attackHandled ? 1 : 0} CD:${Math.max(0, Math.round(cooldownMs))}`;
+    const dx = Number.isFinite(this.debugNearestDxPx) ? Math.round(this.debugNearestDxPx) : '--';
+    const dy = Number.isFinite(this.debugNearestDyPx) ? Math.round(this.debugNearestDyPx) : '--';
+    const enemyRectText = this.debugEnemyRect
+      ? `[${Math.round(this.debugEnemyRect.left)},${Math.round(this.debugEnemyRect.top)},${Math.round(this.debugEnemyRect.right)},${Math.round(this.debugEnemyRect.bottom)}]`
+      : 'none';
+    this.debugHudEl.textContent = `PR:${hasPlayerRect ? 1 : 0} COLL:${collided ? 1 : 0} ATK:${attackHandled ? 1 : 0} DX:${dx} DY:${dy} ENEMY_RECT:${enemyRectText} CD:${Math.max(0, Math.round(cooldownMs))}`;
   },
   ensureDebugTestHitButton() {
     const debugEnabled = this.isDebugEnabled();
@@ -522,6 +528,78 @@ const dashGameScreen = {
       w: runnerRect.width,
       h: runnerRect.height,
     };
+  },
+  getPlayerDomRect() {
+    const runnerWrap = domRefs.game.runnerWrap;
+    if (!runnerWrap) {
+      return null;
+    }
+    const rect = runnerWrap.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      width: rect.width,
+      height: rect.height,
+    };
+  },
+  getInsetRect(rect, insetPx = DOM_COLLISION_HITBOX_INSET_PX) {
+    if (!rect) {
+      return null;
+    }
+    const widthInset = Math.max(0, Math.min(insetPx, rect.width / 2 - 1));
+    const heightInset = Math.max(0, Math.min(insetPx, rect.height / 2 - 1));
+    return {
+      left: rect.left + widthInset,
+      top: rect.top + heightInset,
+      right: rect.right - widthInset,
+      bottom: rect.bottom - heightInset,
+    };
+  },
+  intersectsDomRect(a, b) {
+    if (!a || !b) {
+      return false;
+    }
+    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+  },
+  getNearestEnemyDomRect(playerRect) {
+    if (!playerRect) {
+      return null;
+    }
+    const runWorld = domRefs.game.runWorld;
+    if (!runWorld) {
+      return null;
+    }
+    const enemyElements = [...runWorld.querySelectorAll('.run-enemies .enemy-wrap')];
+    if (enemyElements.length === 0) {
+      return null;
+    }
+    const playerCenterY = (playerRect.top + playerRect.bottom) / 2;
+    const scoredEnemies = enemyElements
+      .map((enemyEl) => {
+        const rect = enemyEl.getBoundingClientRect();
+        const dx = rect.left - playerRect.left;
+        const dy = ((rect.top + rect.bottom) / 2) - playerCenterY;
+        return {
+          enemyEl,
+          rect,
+          dx,
+          dy,
+          rightSide: dx >= 0,
+          dxAbs: Math.abs(dx),
+        };
+      })
+      .sort((a, b) => {
+        if (a.rightSide !== b.rightSide) {
+          return a.rightSide ? -1 : 1;
+        }
+        if (a.dxAbs !== b.dxAbs) {
+          return a.dxAbs - b.dxAbs;
+        }
+        return Math.abs(a.dy) - Math.abs(b.dy);
+      });
+    return scoredEnemies[0] ?? null;
   },
   getAnswerInput() {
     const input = domRefs.dashGame.answerInput;
@@ -1086,8 +1164,12 @@ const dashGameScreen = {
       ? Math.round(runGroundY - worldRect.top)
       : null;
     const playerRect = this.getPlayerRect();
+    const playerDomRect = this.getPlayerDomRect();
     let debugCollision = false;
     let debugAttackHandled = false;
+    this.debugEnemyRect = null;
+    this.debugNearestDxPx = null;
+    this.debugNearestDyPx = null;
     const enemyUpdate = this.enemySystem?.update({
       dtMs,
       nowMs,
@@ -1097,9 +1179,22 @@ const dashGameScreen = {
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
     });
     if (enemyUpdate) {
-      debugCollision = Boolean(enemyUpdate.collision);
+      const nearestEnemyDom = this.getNearestEnemyDomRect(playerDomRect);
+      const enemyDomRect = nearestEnemyDom?.rect ?? null;
+      this.debugEnemyRect = enemyDomRect;
+      this.debugNearestDxPx = nearestEnemyDom?.dx ?? null;
+      this.debugNearestDyPx = nearestEnemyDom?.dy ?? null;
+      const collisionByDomRect = this.intersectsDomRect(
+        this.getInsetRect(playerDomRect),
+        this.getInsetRect(enemyDomRect),
+      );
+      debugCollision = collisionByDomRect;
       debugAttackHandled = Boolean(enemyUpdate.attackHandled);
-      const handledCollision = enemyUpdate.collision && !enemyUpdate.attackHandled;
+      enemyUpdate.collision = collisionByDomRect;
+      if (Number.isFinite(nearestEnemyDom?.dx)) {
+        enemyUpdate.nearestDistancePx = Math.max(0, nearestEnemyDom.dx);
+      }
+      const handledCollision = collisionByDomRect && !enemyUpdate.attackHandled;
       if (handledCollision) {
         if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
           // NOTE: playSfx is ignored until audio is unlocked; keep this here so
