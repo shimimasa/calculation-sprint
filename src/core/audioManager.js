@@ -337,6 +337,9 @@ class AudioManager {
     if (!id) {
       return;
     }
+    if (!this.unlocked) {
+      return;
+    }
     const url = SFX_URLS[id];
     if (!url) {
       warnUnknownSfxId(id);
