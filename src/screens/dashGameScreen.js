@@ -25,6 +25,9 @@ import {
 import { createEventRegistry } from '../core/eventRegistry.js';
 import { toDashStageId } from '../features/dashStages.js';
 import { toDashRunBgThemeId } from '../features/backgroundThemes.js';
+import { waitForImageDecode } from '../core/imageDecode.js';
+import { getStageCorePreloadPromise } from '../core/stageAssetPreloader.js';
+import { isStageFrameWaitEnabled, perfLog } from '../core/perf.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
@@ -76,18 +79,6 @@ const extractCssUrl = (value) => {
   }
   const match = value.match(/url\((['"]?)(.*?)\1\)/);
   return match ? match[2] : '';
-};
-const waitForImageDecode = (img) => {
-  if (img.decode) {
-    return img.decode().catch(() => new Promise((resolve) => {
-      img.onload = resolve;
-      img.onerror = resolve;
-    }));
-  }
-  return new Promise((resolve) => {
-    img.onload = resolve;
-    img.onerror = resolve;
-  });
 };
 const loadCloudBaseWidth = async (src) => {
   const img = new Image();
@@ -1032,7 +1023,20 @@ const dashGameScreen = {
       containerEl: domRefs.game.runEnemies,
     });
     this.enemySystem.reset();
-    this.initRunBackgrounds();
+    const stagePreloadPromise = getStageCorePreloadPromise(this.dashStageId, { mode: 'dash' });
+    const scheduleInitRunBackgrounds = async () => {
+      if (isStageFrameWaitEnabled() && stagePreloadPromise) {
+        await Promise.race([
+          stagePreloadPromise,
+          new Promise((resolve) => window.setTimeout(resolve, 50)),
+        ]);
+      }
+      this.initRunBackgrounds();
+      perfLog('screen.first-frame', { screen: 'dash-game', stageId: this.dashStageId });
+    };
+    window.requestAnimationFrame(() => {
+      scheduleInitRunBackgrounds();
+    });
     this.updateArea(gameState.dash.distanceM);
     this.updateHud();
     this.handleBack = () => {

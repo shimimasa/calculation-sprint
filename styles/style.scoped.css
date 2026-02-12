@@ -2504,6 +2504,51 @@
   inset: 0;
   pointer-events: none;
   z-index: 2;
+  overflow: visible;
+}.calc-sprint .enemy-wrap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 72px;
+  height: 72px;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 1;
+  --enemy-hit-pull: 0px;
+  --enemy-hit-scale: 1;
+}.calc-sprint .enemy-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  min-width: 68px;
+  max-width: 96px;
+  padding: 4px 6px 5px;
+  border-radius: 7px;
+  background: rgba(9, 14, 34, 0.72);
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}.calc-sprint .enemy-name {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 3px;
+  white-space: nowrap;
+}.calc-sprint .enemy-hp {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+}.calc-sprint .enemy-hp__fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff9f68 0%, #ff4d4f 100%);
+  transform-origin: left center;
+  transform: scaleX(1);
 }.calc-sprint .enemy-sprite {
   position: absolute;
   left: 0;
@@ -2511,10 +2556,7 @@
   width: 72px;
   height: 72px;
   object-fit: contain;
-  will-change: transform;
-  z-index: 1;
-  --enemy-hit-pull: 0px;
-  --enemy-hit-scale: 1;
+  pointer-events: none;
 }.calc-sprint .run-world.stumble-freeze .run-sky {
   background-position-x: var(--stumble-freeze-x, 0px);
   transition: none;
@@ -2990,7 +3032,7 @@
   --run-seam-fix-safe: clamp(0px, var(--run-seam-fix, 0px), 2px);
   --ground-surface-inset: var(--dash-ground-y);
   --run-sky-fallback: #7dbdff;
-  grid-template-rows: auto 1fr minmax(92px, 132px);
+  grid-template-rows: auto 1fr minmax(116px, 156px);
   position: relative;
   isolation: isolate;
   background: transparent !important;
@@ -3153,32 +3195,49 @@
   --dash-hud-surface-strong: rgba(164, 200, 255, 0.26);
   --dash-hud-text-main: rgba(16, 28, 48, 0.98);
   --dash-hud-text-sub: rgba(20, 35, 56, 0.88);
+  --dash-problem-bg: linear-gradient(180deg, rgba(10, 36, 94, 0.96) 0%, rgba(7, 28, 78, 0.96) 100%);
+  --dash-problem-fg: #ffffff;
+  --dash-problem-border: rgba(154, 194, 255, 0.5);
+  --dash-confirm-bg: linear-gradient(180deg, #2a7dff 0%, #1463f5 100%);
+  --dash-confirm-bg-hover: linear-gradient(180deg, #2473ef 0%, #0f57de 100%);
+  --dash-confirm-bg-active: linear-gradient(180deg, #1f66d7 0%, #0d4ec4 100%);
+  --dash-elev-shadow: 0 8px 18px rgba(7, 24, 66, 0.34);
+  --dash-focus-ring: 0 0 0 3px rgba(176, 212, 255, 0.95), 0 0 0 6px rgba(14, 88, 219, 0.42);
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-hud {
   max-height: none;
+  min-height: clamp(126px, 17vh, 176px);
   gap: clamp(4px, 0.7vh, 8px);
   padding-top: clamp(2px, 0.4vh, 5px);
-  padding-bottom: max(1px, env(safe-area-inset-bottom));
+  padding-bottom: calc(clamp(10px, 2vh, 18px) + env(safe-area-inset-bottom));
   margin-top: 0;
   transform: translateY(clamp(-40px, -5.8vh, -20px));
   overflow: visible;
+  background: linear-gradient(180deg, rgba(10, 24, 60, 0.62) 0%, rgba(10, 24, 60, 0.46) 100%) !important;
+  border: none !important;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .calc-sprint #dash-game-screen #dash-game-time-wrap {
-  background: linear-gradient(180deg, rgba(189, 219, 255, 0.2) 0%, rgba(152, 193, 255, 0.16) 100%) !important;
-  border: 2px solid var(--dash-hud-border) !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
   border-radius: 14px;
   padding: clamp(6px, 0.9vh, 10px) clamp(8px, 1.5vw, 13px);
-  box-shadow: 0 0 0 2px var(--dash-hud-outline), inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .calc-sprint #dash-game-screen .dash-timebar {
   min-height: clamp(13px, 1.9vh, 18px);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(251, 254, 255, 0.72) 0%, rgba(213, 229, 255, 0.62) 100%) !important;
-  border: 2px solid rgba(34, 52, 82, 0.48) !important;
-  box-shadow: 0 0 0 2px rgba(150, 186, 241, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 1px 3px rgba(20, 33, 54, 0.26) !important;
+  background: linear-gradient(180deg, rgba(13, 34, 79, 0.92) 0%, rgba(8, 23, 58, 0.84) 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.34) !important;
+  box-shadow: 0 0 0 1px rgba(129, 178, 255, 0.24), 0 0 14px rgba(67, 224, 140, 0.26), inset 0 1px 2px rgba(255, 255, 255, 0.14), inset 0 1px 4px rgba(0, 0, 0, 0.3) !important;
 }
 
 .calc-sprint #dash-game-screen .dash-timebar__fill {
@@ -3187,6 +3246,7 @@
 
 .calc-sprint #dash-game-screen .dash-bottom-stats {
   gap: clamp(5px, 0.7vw, 8px);
+  padding-bottom: clamp(10px, 2vh, 18px);
   overflow: visible;
 }
 
@@ -3194,30 +3254,172 @@
   min-width: 0;
   padding: clamp(5px, 0.8vh, 8px) clamp(7px, 1.1vw, 10px);
   border-radius: 14px;
-  border: 2px solid var(--dash-hud-border) !important;
-  background: linear-gradient(180deg, var(--dash-hud-surface-strong) 0%, var(--dash-hud-surface) 100%) !important;
-  box-shadow: 0 0 0 2px var(--dash-hud-outline), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+  position: relative;
+  padding-left: clamp(10px, 1.3vw, 14px);
+  border: none !important;
+  background: linear-gradient(180deg, rgba(7, 18, 46, 0.64) 0%, rgba(8, 20, 50, 0.5) 100%) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card::before,
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  border-radius: 14px 0 0 14px;
+  background: var(--dash-accent, rgba(120, 200, 255, 0.9));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dash-accent) 40%, transparent);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(1) {
+  --dash-accent: rgba(120, 200, 255, 0.95);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(2) {
+  --dash-accent: rgba(90, 220, 140, 0.95);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(3) {
+  --dash-accent: rgba(255, 170, 80, 0.95);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(4) {
+  --dash-accent: rgba(190, 140, 255, 0.95);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card {
+  position: relative;
+  min-width: 0;
+  min-height: var(--dash-stat-card-min-h);
+  border-radius: 14px;
+  padding: 0;
+  overflow: hidden;
+  border: none !important;
+  background: linear-gradient(180deg, rgba(7, 18, 46, 0.64) 0%, rgba(8, 20, 50, 0.5) 100%) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2) !important;
+  --dash-accent: rgba(255, 120, 120, 0.95);
 }
 
 .calc-sprint #dash-game-screen .dash-stat-value {
-  font-size: clamp(19px, 2.6vw, 24px);
-  font-weight: 900;
+  font-size: clamp(20px, 2.8vw, 26px);
+  font-weight: 800;
   line-height: 1.1;
-  color: var(--dash-hud-text-main);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.38);
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
-.calc-sprint #dash-game-screen .dash-stat-label,
-.calc-sprint #dash-game-screen .dash-stat-unit {
+.calc-sprint #dash-game-screen .dash-stat-value,
+.calc-sprint #dash-game-screen .dash-stat-value * {
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.calc-sprint #dash-game-screen .dash-stat-value .dash-stat-unit,
+.calc-sprint #dash-game-screen .dash-stat-value .dash-unit,
+.calc-sprint #dash-game-screen .dash-stat-value [class*="unit"] {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-timevalue {
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.calc-sprint #dash-game-screen .dash-time-seconds {
+  font-size: clamp(24px, 3.3vw, 32px);
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 6px 12px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.calc-sprint #dash-game-screen .dash-stat-label {
   font-size: clamp(11px, 1.6vw, 12px);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.78);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.calc-sprint #dash-game-screen .dash-stat-unit {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.calc-sprint #dash-game-screen .dash-problem-main .question-area,
+.calc-sprint #dash-game-screen .dash-problem-panel {
+  background: var(--dash-problem-bg) !important;
+  border-color: var(--dash-problem-border) !important;
+  box-shadow: var(--dash-elev-shadow) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-problem-panel #dash-game-question,
+.calc-sprint #dash-game-screen .question-text {
+  color: var(--dash-problem-fg) !important;
   font-weight: 800;
-  color: var(--dash-hud-text-sub);
-  letter-spacing: 0.01em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button {
+  background: var(--dash-confirm-bg) !important;
+  color: #fff;
+  border: 1px solid rgba(224, 239, 255, 0.78);
+  box-shadow: 0 10px 18px rgba(15, 80, 198, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transform: translateY(0);
+  transition: background 0.16s ease, transform 0.08s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button:hover:not(:disabled) {
+  background: var(--dash-confirm-bg-hover) !important;
+  box-shadow: 0 12px 20px rgba(13, 69, 175, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button:active:not(:disabled) {
+  background: var(--dash-confirm-bg-active) !important;
+  transform: translateY(1px);
+  box-shadow: 0 6px 12px rgba(10, 54, 144, 0.38), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button:focus-visible {
+  outline: none;
+  box-shadow: var(--dash-focus-ring), 0 10px 18px rgba(13, 69, 175, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.calc-sprint #dash-game-screen #dash-game-submit-button.dash-submit-button:disabled {
+  background: linear-gradient(180deg, rgba(96, 148, 230, 0.84) 0%, rgba(79, 130, 212, 0.84) 100%) !important;
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(205, 228, 255, 0.72);
+  box-shadow: 0 6px 12px rgba(21, 53, 106, 0.22);
+  filter: saturate(0.74);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card #dash-game-back-button {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(7, 18, 46, 0.64) 0%, rgba(8, 20, 50, 0.5) 100%) !important;
+  border: none !important;
+  color: rgba(255, 255, 255, 0.96);
+  box-shadow: none !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card #dash-game-back-button:hover {
+  transform: translateY(-2px);
+  box-shadow: none !important;
+  filter: brightness(1.05);
 }
 
 @media (max-width: 900px) {
   .calc-sprint #dash-game-screen {
-    grid-template-rows: auto 1fr minmax(104px, 156px);
+    grid-template-rows: auto 1fr minmax(128px, 180px);
   }
 
   .calc-sprint #dash-game-screen .dash-bottom-hud {
@@ -3237,6 +3439,8 @@
   .calc-sprint #dash-game-screen .dash-bottom-hud {
     width: min(100%, 100vw - 12px);
     max-height: none;
+    min-height: clamp(138px, 24vh, 198px);
+    padding-bottom: calc(clamp(10px, 2vh, 18px) + env(safe-area-inset-bottom));
     transform: translateY(clamp(-22px, -4.4vh, -10px));
     gap: 4px;
   }
@@ -3258,4 +3462,200 @@
     overflow-wrap: anywhere;
     word-break: break-word;
   }
+}
+
+/* =========================================
+   Enemy Ground Contact Adjustment
+   ミックス以外の接地ズレ補正
+========================================= */
+
+/* たし算（草） */
+.calc-sprint .stage-add .enemy {
+  bottom: -6px;
+}
+
+/* ひき算（氷） */
+.calc-sprint .stage-sub .enemy {
+  bottom: -4px;
+}
+
+/* かけ算（森） */
+.calc-sprint .stage-mul .enemy {
+  bottom: -5px;
+}
+
+/* わり算（海） */
+.calc-sprint .stage-div .enemy {
+  bottom: -5px;
+}
+
+/* Dash bottom HUD final overrides (high-specificity / end-of-file) */
+.calc-sprint #dash-game-screen .dash-bottom-hud,
+.calc-sprint #dash-game-screen > .dash-bottom-hud,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap {
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18) !important;
+  background-color: rgba(8, 18, 44, 0.74) !important;
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent 22%), linear-gradient(180deg, rgba(8, 18, 44, 0.74), rgba(8, 18, 44, 0.62)) !important;
+  filter: saturate(1.08) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud::before,
+.calc-sprint #dash-game-screen .dash-bottom-hud::after,
+.calc-sprint #dash-game-screen > .dash-bottom-hud::before,
+.calc-sprint #dash-game-screen > .dash-bottom-hud::after,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap::before,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap::after {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-card {
+  position: relative !important;
+  overflow: hidden !important;
+  border: none !important;
+  background: linear-gradient(180deg, rgba(8, 18, 44, 0.78), rgba(8, 18, 44, 0.66)) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card::before,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  border-radius: 14px 0 0 14px;
+  background: var(--dash-accent, rgba(120, 200, 255, 0.95)) !important;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dash-accent) 35%, transparent) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(1),
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-card:nth-child(1) { --dash-accent: rgba(120, 200, 255, 0.95); }
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(2),
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-card:nth-child(2) { --dash-accent: rgba(90, 220, 140, 0.95); }
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(3),
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-card:nth-child(3) { --dash-accent: rgba(255, 170, 80, 0.95); }
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(4),
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-card:nth-child(4) { --dash-accent: rgba(190, 140, 255, 0.95); }
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-value,
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-value *,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-value,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-value * {
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-label,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-label {
+  color: rgba(255, 255, 255, 0.78) !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.28) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-unit,
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-value .dash-stat-unit,
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-value [class*="unit"],
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-unit,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-stat-value [class*="unit"] {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-exit-card {
+  position: relative !important;
+  overflow: hidden !important;
+  min-height: var(--dash-stat-card-min-h) !important;
+  border-radius: 14px !important;
+  border: none !important;
+  background: linear-gradient(180deg, rgba(8, 18, 44, 0.78), rgba(8, 18, 44, 0.66)) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2) !important;
+  --dash-accent: rgba(255, 120, 120, 0.95);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card::before,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-exit-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  border-radius: 14px 0 0 14px;
+  background: var(--dash-accent) !important;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dash-accent) 35%, transparent) !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card #dash-game-back-button,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap .dash-bottom-stats .dash-exit-card #dash-game-back-button {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 14px !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: none !important;
+}
+
+/* Dash bottom HUD wrapper/frame removal overrides (latest) */
+.calc-sprint #dash-game-screen .dash-bottom-hud,
+.calc-sprint #dash-game-screen > .dash-bottom-hud,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap,
+.calc-sprint #dash-game-screen .dash-bottom-wrap,
+.calc-sprint #dash-game-screen .dash-bottom-panel,
+.calc-sprint #dash-game-screen .dash-hud {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-hud::before,
+.calc-sprint #dash-game-screen .dash-bottom-hud::after,
+.calc-sprint #dash-game-screen > .dash-bottom-hud::before,
+.calc-sprint #dash-game-screen > .dash-bottom-hud::after,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap::before,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap::after,
+.calc-sprint #dash-game-screen .dash-bottom-wrap::before,
+.calc-sprint #dash-game-screen .dash-bottom-wrap::after,
+.calc-sprint #dash-game-screen .dash-bottom-panel::before,
+.calc-sprint #dash-game-screen .dash-bottom-panel::after {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.calc-sprint #dash-game-screen #dash-game-time-wrap,
+.calc-sprint #dash-game-screen .dash-bottom-hud #dash-game-time-wrap,
+.calc-sprint #dash-game-screen #dash-game-bottom-wrap #dash-game-time-wrap,
+.calc-sprint #dash-game-screen .dash-timebar__wrap,
+.calc-sprint #dash-game-screen .dash-timebar__track {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.calc-sprint #dash-game-screen .dash-timebar {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(0, 0, 0, 0.18) !important;
 }
