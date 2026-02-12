@@ -38,7 +38,7 @@ const LOW_TIME_THRESHOLD_MS = 8000;
 const COLLISION_COOLDOWN_MS = 500;
 const COLLISION_SLOW_MS = 1000;
 const COLLISION_SLOW_MULT = 0.7;
-const STUMBLE_DURATION_MS = 520;
+const RUNNER_HIT_REACTION_MS = 420;
 const KICK_MS = 300;
 const MAX_LUNGE_PX = 140;
 const LOOP_WATCHDOG_INTERVAL_MS = 1000;
@@ -817,6 +817,7 @@ const dashGameScreen = {
     runnerWrap?.classList.toggle('is-fast', speedRatio > 0.7);
     runnerWrap?.classList.toggle('is-rapid', speedRatio > 0.85);
     if (runnerWrap) {
+      this.updateRunnerDamageState(nowMs);
       if (nowMs < (this.kickUntilMs ?? 0)) {
         runnerWrap.classList.add('is-kicking');
         const lungePx = Number(this.kickLungePx) || 0;
@@ -849,16 +850,22 @@ const dashGameScreen = {
     if (!runnerWrap) {
       return;
     }
-    if (this.stumbleTimeout) {
-      window.clearTimeout(this.stumbleTimeout);
-    }
     const debugEnabled = this.isDebugEnabled();
     runnerWrap.classList.toggle('is-debug-stumble', debugEnabled);
-    runnerWrap.classList.add('is-stumble');
-    this.stumbleTimeout = window.setTimeout(() => {
-      runnerWrap.classList.remove('is-stumble', 'is-debug-stumble');
-      this.stumbleTimeout = null;
-    }, STUMBLE_DURATION_MS);
+    runnerWrap.classList.add('is-runner-hit');
+  },
+  updateRunnerDamageState(nowMs) {
+    const runnerWrap = domRefs.game.runnerWrap;
+    if (!runnerWrap) {
+      return;
+    }
+    const isRunnerHit = nowMs < (this.runnerHitUntilMs ?? 0);
+    const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
+    runnerWrap.classList.toggle('is-runner-hit', isRunnerHit);
+    runnerWrap.classList.toggle('is-runner-invincible', isRunnerInvincible);
+    if (!isRunnerHit) {
+      runnerWrap.classList.remove('is-debug-stumble');
+    }
   },
   resetDashRunnerVisibilityState() {
     const runner = domRefs.game.runner;
@@ -867,7 +874,7 @@ const dashGameScreen = {
     document.documentElement.classList.remove('runner-missing');
     runLayer?.classList.remove('runner-missing');
     domRefs.dashGame.screen?.classList.remove('runner-missing');
-    runnerWrap?.classList.remove('is-stumble', 'is-debug-stumble');
+    runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble');
     if (runner) {
       runner.style.removeProperty('display');
       runner.style.removeProperty('visibility');
@@ -1267,16 +1274,20 @@ const dashGameScreen = {
         && !defeatSequenceActive
       );
       if (handledCollision) {
-        if (nowMs - (this.lastCollisionPenaltyAtMs ?? 0) >= COLLISION_COOLDOWN_MS) {
+        const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
+        if (!isRunnerInvincible) {
           // NOTE: playSfx is ignored until audio is unlocked; keep this here so
           // damage SFX only attempts on confirmed penalty (not cooldown skips).
           audioManager.playSfx('sfx_damage');
           this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
           this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
+          this.runnerHitUntilMs = nowMs + RUNNER_HIT_REACTION_MS;
+          this.runnerInvincibleUntilMs = nowMs + COLLISION_COOLDOWN_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
           this.showDebugToast('HIT -3秒');
           this.verifyRunnerDom();
           this.triggerRunnerStumble();
+          this.updateRunnerDamageState(nowMs);
           this.updateHud();
           if (this.timeLeftMs <= 0) {
             this.endSession('timeup');
@@ -1403,6 +1414,8 @@ const dashGameScreen = {
     this.kickUntilMs = 0;
     this.lastCollisionPenaltyAtMs = -Infinity;
     this.slowUntilMs = 0;
+    this.runnerHitUntilMs = 0;
+    this.runnerInvincibleUntilMs = 0;
     this.timeLeftMs = this.getInitialTimeLimitMs();
     this.initialTimeLimitMs = this.timeLeftMs;
     this.lastTickTs = window.performance.now();
@@ -1429,7 +1442,6 @@ const dashGameScreen = {
     this.answerBuffer = '';
     this.isSyncingAnswer = false;
     this.isBgmActive = false;
-    this.stumbleTimeout = null;
     this.debugToastTimeout = null;
     this.debugToastEl = null;
     this.overlayRootEl = null;
@@ -1749,11 +1761,7 @@ const dashGameScreen = {
     if (domRefs.dashGame.screen) {
       delete domRefs.dashGame.screen.dataset.debugRunnerwrap;
     }
-    if (this.stumbleTimeout) {
-      window.clearTimeout(this.stumbleTimeout);
-      this.stumbleTimeout = null;
-    }
-    domRefs.game.runnerWrap?.classList.remove('is-stumble', 'is-debug-stumble');
+    domRefs.game.runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble');
     if (this.feedbackFxTimeout) {
       window.clearTimeout(this.feedbackFxTimeout);
       this.feedbackFxTimeout = null;
