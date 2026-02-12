@@ -3032,7 +3032,7 @@
   --run-seam-fix-safe: clamp(0px, var(--run-seam-fix, 0px), 2px);
   --ground-surface-inset: var(--dash-ground-y);
   --run-sky-fallback: #7dbdff;
-  grid-template-rows: auto 1fr minmax(92px, 132px);
+  grid-template-rows: auto 1fr minmax(116px, 156px);
   position: relative;
   isolation: isolate;
   background: transparent !important;
@@ -3207,9 +3207,10 @@
 
 .calc-sprint #dash-game-screen .dash-bottom-hud {
   max-height: none;
+  min-height: clamp(126px, 17vh, 176px);
   gap: clamp(4px, 0.7vh, 8px);
   padding-top: clamp(2px, 0.4vh, 5px);
-  padding-bottom: max(1px, env(safe-area-inset-bottom));
+  padding-bottom: calc(clamp(10px, 2vh, 18px) + env(safe-area-inset-bottom));
   margin-top: 0;
   transform: translateY(clamp(-40px, -5.8vh, -20px));
   overflow: visible;
@@ -3231,11 +3232,13 @@
 }
 
 .calc-sprint #dash-game-screen #dash-game-time-wrap {
-  background: linear-gradient(180deg, rgba(12, 30, 72, 0.86) 0%, rgba(10, 24, 60, 0.72) 100%) !important;
+  background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
   border-radius: 14px;
   padding: clamp(6px, 0.9vh, 10px) clamp(8px, 1.5vw, 13px);
-  box-shadow: 0 0 0 1px rgba(132, 180, 255, 0.24), 0 10px 20px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .calc-sprint #dash-game-screen .dash-timebar {
@@ -3258,6 +3261,7 @@
 
 .calc-sprint #dash-game-screen .dash-bottom-stats {
   gap: clamp(5px, 0.7vw, 8px);
+  padding-bottom: clamp(10px, 2vh, 18px);
   overflow: visible;
 }
 
@@ -3432,7 +3436,7 @@
 
 @media (max-width: 900px) {
   .calc-sprint #dash-game-screen {
-    grid-template-rows: auto 1fr minmax(104px, 156px);
+    grid-template-rows: auto 1fr minmax(128px, 180px);
   }
 
   .calc-sprint #dash-game-screen .dash-bottom-hud {
@@ -3452,6 +3456,8 @@
   .calc-sprint #dash-game-screen .dash-bottom-hud {
     width: min(100%, 100vw - 12px);
     max-height: none;
+    min-height: clamp(138px, 24vh, 198px);
+    padding-bottom: calc(clamp(10px, 2vh, 18px) + env(safe-area-inset-bottom));
     transform: translateY(clamp(-22px, -4.4vh, -10px));
     gap: 4px;
   }
