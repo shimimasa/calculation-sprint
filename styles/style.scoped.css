@@ -3213,28 +3213,43 @@
   margin-top: 0;
   transform: translateY(clamp(-40px, -5.8vh, -20px));
   overflow: visible;
+<<<<<<< codex/enhance-hud-visibility-for-dash-game-cdcrdn
+  background: linear-gradient(180deg, rgba(10, 24, 60, 0.62) 0%, rgba(10, 24, 60, 0.46) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 18px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(130, 177, 255, 0.28), 0 14px 38px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+=======
   background: linear-gradient(180deg, rgba(240, 247, 255, 0.18) 0%, rgba(198, 220, 255, 0.1) 100%) !important;
   border: 2px solid rgba(228, 240, 255, 0.35);
   border-radius: 18px;
   box-shadow: 0 8px 24px rgba(9, 26, 64, 0.15), inset 0 0 18px rgba(216, 234, 255, 0.2);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
+>>>>>>> 他モード削除
 }
 
 .calc-sprint #dash-game-screen #dash-game-time-wrap {
-  background: linear-gradient(180deg, rgba(189, 219, 255, 0.2) 0%, rgba(152, 193, 255, 0.16) 100%) !important;
-  border: 2px solid var(--dash-hud-border) !important;
+  background: linear-gradient(180deg, rgba(12, 30, 72, 0.86) 0%, rgba(10, 24, 60, 0.72) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
   border-radius: 14px;
   padding: clamp(6px, 0.9vh, 10px) clamp(8px, 1.5vw, 13px);
-  box-shadow: 0 0 0 2px var(--dash-hud-outline), inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+  box-shadow: 0 0 0 1px rgba(132, 180, 255, 0.24), 0 10px 20px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
 }
 
 .calc-sprint #dash-game-screen .dash-timebar {
   min-height: clamp(13px, 1.9vh, 18px);
   border-radius: 999px;
+<<<<<<< codex/enhance-hud-visibility-for-dash-game-cdcrdn
+  background: linear-gradient(180deg, rgba(13, 34, 79, 0.92) 0%, rgba(8, 23, 58, 0.84) 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.34) !important;
+  box-shadow: 0 0 0 1px rgba(129, 178, 255, 0.24), 0 0 14px rgba(67, 224, 140, 0.26), inset 0 1px 2px rgba(255, 255, 255, 0.14), inset 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+=======
   background: linear-gradient(180deg, rgba(251, 254, 255, 0.72) 0%, rgba(213, 229, 255, 0.62) 100%) !important;
   border: 2px solid rgba(225, 239, 255, 0.5) !important;
   box-shadow: 0 0 12px rgba(70, 214, 132, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 1px 3px rgba(20, 33, 54, 0.26) !important;
+>>>>>>> 他モード削除
 }
 
 .calc-sprint #dash-game-screen .dash-timebar__fill {
@@ -3250,6 +3265,50 @@
   min-width: 0;
   padding: clamp(5px, 0.8vh, 8px) clamp(7px, 1.1vw, 10px);
   border-radius: 14px;
+<<<<<<< codex/enhance-hud-visibility-for-dash-game-cdcrdn
+  position: relative;
+  padding-left: clamp(10px, 1.3vw, 14px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: linear-gradient(180deg, rgba(7, 18, 46, 0.64) 0%, rgba(8, 20, 50, 0.5) 100%) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  border-radius: 14px 0 0 14px;
+  background: var(--dash-accent, rgba(120, 200, 255, 0.9));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dash-accent) 40%, transparent);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(1) {
+  --dash-accent: rgba(120, 200, 255, 0.95);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(2) {
+  --dash-accent: rgba(90, 220, 140, 0.95);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(3) {
+  --dash-accent: rgba(255, 170, 80, 0.95);
+}
+
+.calc-sprint #dash-game-screen .dash-bottom-stats .dash-stat-card:nth-child(4) {
+  --dash-accent: rgba(190, 140, 255, 0.95);
+}
+
+.calc-sprint #dash-game-screen .dash-stat-value {
+  font-size: clamp(20px, 2.8vw, 26px);
+  font-weight: 800;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+=======
   border: 1.5px solid rgba(228, 240, 255, 0.4) !important;
   background: linear-gradient(180deg, rgba(238, 247, 255, 0.25) 0%, rgba(199, 220, 255, 0.12) 100%) !important;
   box-shadow: 0 4px 12px rgba(8, 26, 58, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
@@ -3270,14 +3329,36 @@
 
 .calc-sprint #dash-game-screen .dash-time-seconds {
   font-size: clamp(24px, 3.3vw, 32px);
+>>>>>>> 他モード削除
 }
 
-.calc-sprint #dash-game-screen .dash-stat-label,
-.calc-sprint #dash-game-screen .dash-stat-unit {
+.calc-sprint #dash-game-screen .dash-timevalue {
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.calc-sprint #dash-game-screen .dash-time-seconds {
+  font-size: clamp(24px, 3.3vw, 32px);
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 6px 12px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.calc-sprint #dash-game-screen .dash-stat-label {
   font-size: clamp(11px, 1.6vw, 12px);
-  font-weight: 800;
-  color: var(--dash-hud-text-sub);
-  letter-spacing: 0.01em;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.78);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.calc-sprint #dash-game-screen .dash-stat-unit {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
 }
 
 .calc-sprint #dash-game-screen .dash-problem-main .question-area,
@@ -3328,12 +3409,25 @@
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card #dash-game-back-button {
+<<<<<<< codex/enhance-hud-visibility-for-dash-game-cdcrdn
+  background: linear-gradient(180deg, rgba(20, 42, 92, 0.92) 0%, rgba(14, 30, 68, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28), 0 0 12px rgba(126, 172, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+=======
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+>>>>>>> 他モード削除
 }
 
 .calc-sprint #dash-game-screen .dash-bottom-stats .dash-exit-card #dash-game-back-button:hover {
   transform: translateY(-2px);
+<<<<<<< codex/enhance-hud-visibility-for-dash-game-cdcrdn
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 0 14px rgba(146, 188, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  filter: brightness(1.05);
+=======
+>>>>>>> 他モード削除
 }
 
 @media (max-width: 900px) {
