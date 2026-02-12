@@ -238,6 +238,44 @@ const dashGameScreen = {
     this.debugHudEl.hidden = false;
     this.debugHudEl.textContent = `PR:${hasPlayerRect ? 1 : 0} COLL:${collided ? 1 : 0} ATK:${attackHandled ? 1 : 0} CD:${Math.max(0, Math.round(cooldownMs))}`;
   },
+  ensureDebugTestHitButton() {
+    const debugEnabled = this.isDebugEnabled();
+    if (!debugEnabled) {
+      if (this.debugHitButtonEl) {
+        this.debugHitButtonEl.remove();
+        this.debugHitButtonEl = null;
+      }
+      return;
+    }
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return;
+    }
+    if (!this.debugHitButtonEl || !overlayRoot.contains(this.debugHitButtonEl)) {
+      const button = document.createElement('button');
+      button.className = 'dash-debug-hit-button';
+      button.type = 'button';
+      button.textContent = 'TEST HIT';
+      overlayRoot.appendChild(button);
+      this.debugHitButtonEl = button;
+      this.events?.on(button, 'click', () => {
+        this.applyCollisionPenaltyForDebug(window.performance.now());
+      });
+    }
+    this.debugHitButtonEl.hidden = false;
+  },
+  applyCollisionPenaltyForDebug(nowMs = window.performance.now()) {
+    audioManager.playSfx('sfx_damage');
+    this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
+    this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
+    this.lastCollisionPenaltyAtMs = nowMs;
+    this.showDebugToast('HIT -3秒 (debug)');
+    this.triggerRunnerStumble();
+    this.updateHud();
+    if (this.timeLeftMs <= 0) {
+      this.endSession('timeup');
+    }
+  },
   verifyRunnerDom() {
     const screen = domRefs.dashGame.screen;
     const inDashDebug = this.isDebugEnabled();
@@ -1206,6 +1244,7 @@ const dashGameScreen = {
     this.buildBadgeEl = null;
     this.buildBadgeTimeout = null;
     this.debugHudEl = null;
+    this.debugHitButtonEl = null;
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
     this.applyDashTheme();
@@ -1419,6 +1458,7 @@ const dashGameScreen = {
     this.startBgm();
     this.startLoop();
     this.showBuildBadge();
+    this.ensureDebugTestHitButton();
   },
   render() {},
   exit() {
@@ -1478,6 +1518,10 @@ const dashGameScreen = {
     if (this.buildBadgeEl) {
       this.buildBadgeEl.remove();
       this.buildBadgeEl = null;
+    }
+    if (this.debugHitButtonEl) {
+      this.debugHitButtonEl.remove();
+      this.debugHitButtonEl = null;
     }
     if (this.overlayRootEl) {
       this.overlayRootEl.remove();
