@@ -2309,7 +2309,7 @@
   position: relative;
   height: 100%;
   overflow: hidden;
-  --run-seam-fix: 1px;
+  --run-seam-fix: 0px;
   border-radius: 16px;
   background: #e9eef8;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 16px 30px rgba(29, 36, 51, 0.15);
@@ -2515,7 +2515,7 @@
   right: 0;
   height: calc(var(--ground-art-height, 240px) + var(--run-seam-fix, 0px));
   overflow: hidden;
-  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.18), 0 -1px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 -12px 14px rgba(0, 0, 0, 0.2);
   z-index: 2;
   pointer-events: none;
   filter: brightness(var(--world-brightness)) contrast(var(--world-contrast));
