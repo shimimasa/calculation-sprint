@@ -3259,3 +3259,28 @@
     word-break: break-word;
   }
 }
+
+/* =========================================
+   Enemy Ground Contact Adjustment
+   ミックス以外の接地ズレ補正
+========================================= */
+
+/* たし算（草） */
+.calc-sprint .stage-add .enemy {
+  bottom: -6px;
+}
+
+/* ひき算（氷） */
+.calc-sprint .stage-sub .enemy {
+  bottom: -4px;
+}
+
+/* かけ算（森） */
+.calc-sprint .stage-mul .enemy {
+  bottom: -5px;
+}
+
+/* わり算（海） */
+.calc-sprint .stage-div .enemy {
+  bottom: -5px;
+}
