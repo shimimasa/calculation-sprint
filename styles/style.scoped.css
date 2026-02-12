@@ -2077,6 +2077,8 @@
   content: "";
   position: absolute;
   inset: 0;
+  /* ① 背景色を追加して run-world の背景色を再現 */
+  background-color: var(--dash-bg-color, transparent);
   pointer-events: none;
   z-index: 0;
   background: transparent;
