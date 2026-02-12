@@ -2428,7 +2428,7 @@
   --dash-bg-image: var(--dash-sky-image);
   --dash-ground-image: url("../assets/divide/bg-ground.png");
   --run-sky-fallback: #66b2db;
-  --dash-bg-color: #fff2d9; /* run-world の background を復元 */
+  --dash-bg-color: transparent;
   --dash-air-image: linear-gradient(180deg, rgba(255, 200, 120, 0.25), transparent);
   --dash-air-opacity: 1;
 }
