@@ -90,6 +90,69 @@ const DASH_STAGE_TO_BGM_ID = Object.freeze({
 });
 const randomBetween = (min, max) => min + Math.random() * (max - min);
 const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
+const toFiniteOrNull = (value) => (Number.isFinite(value) ? value : null);
+const normalizeRect = (rect) => {
+  if (!rect || typeof rect !== 'object') {
+    return null;
+  }
+  const x = toFiniteOrNull(rect.x);
+  const y = toFiniteOrNull(rect.y);
+  const widthCandidate = toFiniteOrNull(rect.w ?? rect.width);
+  const heightCandidate = toFiniteOrNull(rect.h ?? rect.height);
+  const leftCandidate = toFiniteOrNull(rect.left);
+  const topCandidate = toFiniteOrNull(rect.top);
+  const rightCandidate = toFiniteOrNull(rect.right);
+  const bottomCandidate = toFiniteOrNull(rect.bottom);
+
+  let left = leftCandidate;
+  let top = topCandidate;
+  let right = rightCandidate;
+  let bottom = bottomCandidate;
+
+  if (left === null && x !== null) {
+    left = x;
+  }
+  if (top === null && y !== null) {
+    top = y;
+  }
+  if (right === null && left !== null && widthCandidate !== null) {
+    right = left + widthCandidate;
+  }
+  if (bottom === null && top !== null && heightCandidate !== null) {
+    bottom = top + heightCandidate;
+  }
+  if (left === null && right !== null && widthCandidate !== null) {
+    left = right - widthCandidate;
+  }
+  if (top === null && bottom !== null && heightCandidate !== null) {
+    top = bottom - heightCandidate;
+  }
+
+  if ([left, top, right, bottom].some((value) => value === null)) {
+    return null;
+  }
+  if (right < left) {
+    [left, right] = [right, left];
+  }
+  if (bottom < top) {
+    [top, bottom] = [bottom, top];
+  }
+
+  const width = Math.abs(right - left);
+  const height = Math.abs(bottom - top);
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width,
+    height,
+    x: left,
+    y: top,
+    w: width,
+    h: height,
+  };
+};
 const extractCssUrl = (value) => {
   if (!value) {
     return '';
@@ -770,12 +833,16 @@ const dashGameScreen = {
   updateDiagnostics({
     playerRect,
     enemyRect,
+    playerRectNorm = null,
+    enemyRectNorm = null,
     worldRect,
     groundY,
     collision,
     attackHandled,
     pipelineStatus = 'unknown',
     intersects = false,
+    intersectsRaw = false,
+    intersectsNorm = false,
     enemiesCount = 0,
     flags = {},
   }) {
@@ -798,13 +865,23 @@ const dashGameScreen = {
     }
     const dx = playerRect && enemyRect ? Math.round(enemyRect.x - playerRect.x) : null;
     const dy = playerRect && enemyRect ? Math.round(enemyRect.y - playerRect.y) : null;
+    const fmtNormRect = (label, rect) => {
+      if (!rect) {
+        return `${label}:0 l:null t:null r:null b:null`;
+      }
+      return `${label}:1 l:${Math.round(rect.left)} t:${Math.round(rect.top)} r:${Math.round(rect.right)} b:${Math.round(rect.bottom)}`;
+    };
+    const normalizedPlayerRect = playerRectNorm ?? normalizeRect(playerRect);
+    const normalizedEnemyRect = enemyRectNorm ?? normalizeRect(enemyRect);
     hud.textContent = [
       `ENEMY_SYS:${this.enemySystem ? 1 : 0} UPD:${this.enemyUpdateCount}`,
       `GROUND_Y:${groundY === null ? 'null' : Math.round(groundY)}`,
-      this.formatDiagnosticRect('PLAYER', playerRect),
-      this.formatDiagnosticRect('ENEMY', enemyRect),
+      this.formatDiagnosticRect('PLAYER(raw)', playerRect),
+      this.formatDiagnosticRect('ENEMY(raw)', enemyRect),
+      fmtNormRect('PLAYER(norm)', normalizedPlayerRect),
+      fmtNormRect('ENEMY(norm)', normalizedEnemyRect),
       `DX:${dx ?? 'null'} DY:${dy ?? 'null'}`,
-      `COLL:${collision ? 1 : 0} ATK:${attackHandled ? 1 : 0} INT:${intersects ? 1 : 0}`,
+      `COLL:${collision ? 1 : 0} ATK:${attackHandled ? 1 : 0} INT:${intersects ? 1 : 0} RAW:${intersectsRaw ? 1 : 0} NORM:${intersectsNorm ? 1 : 0}`,
       `ENEMIES:${enemiesCount} PIPE:${pipelineStatus}`,
       `FLAGS g:${flags.startGrace ? 1 : 0} inv:${flags.invincible ? 1 : 0} kick:${flags.kicking ? 1 : 0} en:${flags.collisionEnabled ? 1 : 0} h:${flags.handledCollision ? 1 : 0} cd:${Math.round(flags.cooldownMs ?? 0)}`,
     ].join('\n');
@@ -1796,6 +1873,9 @@ const dashGameScreen = {
     let debugAttackHandled = false;
     let debugEnemyRect = null;
     let intersects = false;
+    let intersectsRaw = false;
+    let playerRectNorm = null;
+    let enemyRectNorm = null;
     let enemiesCount = 0;
     let enemyRect = null;
     let enemyCollisionEnabled = false;
@@ -1823,6 +1903,9 @@ const dashGameScreen = {
       enemyCollisionEnabled = enemyUpdate.debug?.collisionEnabled ?? false;
       enemyStartGrace = enemyUpdate.debug?.startGraceActive ?? false;
       intersects = Boolean(enemyUpdate.debug?.intersects);
+      intersectsRaw = Boolean(enemyUpdate.debug?.intersectsRaw);
+      playerRectNorm = enemyUpdate.debug?.playerRectNorm ?? null;
+      enemyRectNorm = enemyUpdate.debug?.enemyRectNorm ?? null;
       if (enemyUpdate.nearestEnemyRect) {
         const nextEnemyRect = enemyUpdate.nearestEnemyRect;
         debugEnemyRect = {
@@ -1904,6 +1987,8 @@ const dashGameScreen = {
       worldRectValid: Boolean(worldRect),
       enemiesCount,
       intersects,
+      intersectsRaw,
+      intersectsNorm: intersects,
       collisionFired: Boolean(debugCollision && !debugAttackHandled && !isRunnerInvincible),
       startGrace: enemyStartGrace,
       invincible: isRunnerInvincible,
@@ -1926,17 +2011,23 @@ const dashGameScreen = {
           height: Math.round(worldRect.height),
         } : null,
         enemyRect,
+        playerRectNorm,
+        enemyRectNorm,
       });
     }
     this.updateDiagnostics({
       playerRect,
       enemyRect,
+      playerRectNorm,
+      enemyRectNorm,
       worldRect,
       groundY,
       collision: debugCollision,
       attackHandled: debugAttackHandled,
       pipelineStatus,
       intersects,
+      intersectsRaw,
+      intersectsNorm: intersects,
       enemiesCount,
       flags: sample,
     });
