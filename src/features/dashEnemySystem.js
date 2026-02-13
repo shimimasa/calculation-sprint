@@ -220,6 +220,7 @@ export const createDashEnemySystem = ({
   getEnemyType = null,
   getEnemyPool = null,
   getCurrentMode = null,
+  onCollisionDebug = null,
 } = {}) => {
   const system = {
     worldEl,
@@ -232,6 +233,7 @@ export const createDashEnemySystem = ({
     getEnemyType,
     getEnemyPool,
     getCurrentMode,
+    onCollisionDebug,
   };
 
   system.setWorld = (nextWorld, nextContainer) => {
@@ -253,6 +255,10 @@ export const createDashEnemySystem = ({
 
   system.setCurrentModeResolver = (resolver) => {
     system.getCurrentMode = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setCollisionDebugLogger = (logger) => {
+    system.onCollisionDebug = typeof logger === 'function' ? logger : null;
   };
 
   system.reset = () => {
@@ -595,6 +601,12 @@ export const createDashEnemySystem = ({
           && !collision
           && intersects(playerRect, enemy)
         ) {
+          system.onCollisionDebug?.({
+            stage: 'overlap',
+            enemyId: enemy.id,
+            nowMs,
+            attackActive: Boolean(attackActive),
+          });
           if (attackActive) {
             attackHandled = true;
             system.setEnemyState(enemy, 'defeated', nowMs);
