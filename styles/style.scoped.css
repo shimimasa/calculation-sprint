@@ -2516,6 +2516,12 @@
   z-index: 1;
   --enemy-hit-pull: 0px;
   --enemy-hit-scale: 1;
+  opacity: 1;
+  transition: opacity 160ms linear;
+}.calc-sprint .enemy-wrap.is-collision-resolved {
+  filter: saturate(0.75) brightness(1.08);
+}.calc-sprint .enemy-wrap.is-defeated {
+  filter: none;
 }.calc-sprint .enemy-label {
   position: absolute;
   left: 50%;
@@ -2694,7 +2700,27 @@
   100% {
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
   }
-}.calc-sprint .runner-wrap {
+}
+
+@keyframes runnerBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.calc-sprint .runner-wrap.is-runner-invincible {
+  animation: runnerBlink 0.12s steps(2, end) infinite;
+}
+
+.calc-sprint .runner-wrap.is-runner-hit.is-runner-invincible {
+  animation: none;
+}
+
+.calc-sprint .runner-wrap {
   position: fixed;
   left: 64px;
   bottom: calc(
@@ -2751,13 +2777,13 @@
   --runner-bob-duration: 0.34s;
 }.calc-sprint #runner-sprite.runner-speed-high {
   --runner-bob-duration: 0.26s;
-}.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-stumble #runner-sprite {
+}.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-runner-hit #runner-sprite {
   animation:
     calc-sprint-runner-bob var(--runner-bob-duration, 0.32s) ease-in-out infinite,
     calc-sprint-runner-stumble 0.52s cubic-bezier(0.18, 0.9, 0.2, 1) 1;
   opacity: 1 !important;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.42));
-}.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-stumble .runner-shadow {
+}.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-runner-hit .runner-shadow {
   transform: scale(1.28, 0.76);
   opacity: 0.9;
 }.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-debug-stumble #runner-sprite {
@@ -2789,9 +2815,9 @@
 
 @media (prefers-reduced-motion: reduce) {.calc-sprint .run-layer #runner-sprite.runner-bob {
     animation: none;
-  }.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-stumble #runner-sprite {
+  }.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-runner-hit #runner-sprite {
     animation: calc-sprint-runner-stumble 0.16s linear 1;
-  }.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-stumble .runner-shadow {
+  }.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-runner-hit .runner-shadow {
     transform: scale(1.12, 0.9);
   }
 }.calc-sprint #game-speed.glow {
