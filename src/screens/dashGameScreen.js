@@ -36,7 +36,10 @@ const STREAK_CUE_DURATION_MS = 800;
 const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 const LOW_TIME_THRESHOLD_MS = 8000;
-const COLLISION_COOLDOWN_MS = 500;
+const DAMAGE_INVINCIBLE_MS = 800;
+const HIT_SHAKE_MS = 160;
+const HIT_FLASH_MS = 160;
+const HIT_SHAKE_PX = 3;
 const COLLISION_SLOW_MS = 1000;
 const COLLISION_SLOW_MULT = 0.7;
 const RUNNER_HIT_REACTION_MS = 420;
@@ -80,6 +83,8 @@ const DASH_DEBUG_ALWAYS_ON = false;
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
 const RUNNER_DEFAULT_SPRITE_PATH = 'assets/runner/runner.png';
+const HIT_SHAKE_CLASS = 'is-shake';
+const HIT_FLASH_CLASS = 'is-hitflash';
 const DASH_STAGE_TO_BGM_ID = Object.freeze({
   plus: 'bgm_add',
   minus: 'bgm_sub',
@@ -1540,6 +1545,36 @@ const dashGameScreen = {
     runnerWrap.classList.toggle('is-debug-stumble', debugEnabled);
     runnerWrap.classList.add('is-runner-hit');
   },
+  addClassWithRestart(element, className, durationMs) {
+    if (!element || !className) {
+      return;
+    }
+    if (!this.hitEffectTimeouts) {
+      this.hitEffectTimeouts = new WeakMap();
+    }
+    element.classList.remove(className);
+    // Reflow to ensure the same animation class can be retriggered on consecutive hits.
+    void element.offsetWidth;
+    element.classList.add(className);
+    const effectTimeouts = this.hitEffectTimeouts.get(element) ?? new Map();
+    const prevTimeoutId = effectTimeouts.get(className);
+    if (prevTimeoutId) {
+      window.clearTimeout(prevTimeoutId);
+    }
+    const timeoutId = window.setTimeout(() => {
+      element.classList.remove(className);
+      if (effectTimeouts.get(className) === timeoutId) {
+        effectTimeouts.delete(className);
+      }
+    }, Math.max(0, durationMs));
+    effectTimeouts.set(className, timeoutId);
+    this.hitEffectTimeouts.set(element, effectTimeouts);
+  },
+  triggerHitEffects() {
+    domRefs.game.runWorld?.style.setProperty('--dash-hit-shake-px', `${HIT_SHAKE_PX}px`);
+    this.addClassWithRestart(domRefs.game.runWorld, HIT_SHAKE_CLASS, HIT_SHAKE_MS);
+    this.addClassWithRestart(domRefs.game.runnerWrap, HIT_FLASH_CLASS, HIT_FLASH_MS);
+  },
   updateRunnerDamageState(nowMs) {
     const runnerWrap = domRefs.game.runnerWrap;
     if (!runnerWrap) {
@@ -1560,7 +1595,7 @@ const dashGameScreen = {
     document.documentElement.classList.remove('runner-missing');
     runLayer?.classList.remove('runner-missing');
     domRefs.dashGame.screen?.classList.remove('runner-missing');
-    runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble');
+    runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble', HIT_FLASH_CLASS);
     if (runner) {
       runner.style.removeProperty('display');
       runner.style.removeProperty('visibility');
@@ -2032,7 +2067,7 @@ const dashGameScreen = {
           });
           this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
           this.runnerHitUntilMs = nowMs + RUNNER_HIT_REACTION_MS;
-          this.runnerInvincibleUntilMs = nowMs + COLLISION_COOLDOWN_MS;
+          this.runnerInvincibleUntilMs = nowMs + DAMAGE_INVINCIBLE_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
           if (this.shouldLogCollisionStage('penalty', collisionEnemyId, nowMs)) {
             console.log(
@@ -2049,6 +2084,7 @@ const dashGameScreen = {
           }
           this.showDebugToast('HIT -3秒');
           this.verifyRunnerDom();
+          this.triggerHitEffects();
           this.triggerRunnerStumble();
           this.updateRunnerDamageState(nowMs);
           this.updateHud();
@@ -2124,7 +2160,7 @@ const dashGameScreen = {
       hasPlayerRect: Boolean(playerRect),
       collided: debugCollision,
       attackHandled: debugAttackHandled,
-      cooldownMs: COLLISION_COOLDOWN_MS - (nowMs - (this.lastCollisionPenaltyAtMs ?? -Infinity)),
+      cooldownMs: DAMAGE_INVINCIBLE_MS - (nowMs - (this.lastCollisionPenaltyAtMs ?? -Infinity)),
       enemyRect: safeDebugEnemyRect,
       nearestDxPx: enemyUpdate?.nearestDistancePx ?? null,
       nearestDyPx: null,
@@ -2273,6 +2309,7 @@ const dashGameScreen = {
     this.isSyncingAnswer = false;
     this.isBgmActive = false;
     this.debugToastTimeout = null;
+    this.hitEffectTimeouts = new WeakMap();
     this.debugToastEl = null;
     this.overlayRootEl = null;
     this.buildBadgeEl = null;
@@ -2659,11 +2696,28 @@ const dashGameScreen = {
     if (domRefs.dashGame.screen) {
       delete domRefs.dashGame.screen.dataset.debugRunnerwrap;
     }
-    domRefs.game.runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble');
+    domRefs.game.runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble', HIT_FLASH_CLASS);
     if (this.feedbackFxTimeout) {
       window.clearTimeout(this.feedbackFxTimeout);
       this.feedbackFxTimeout = null;
     }
+    const clearHitEffectTimeouts = (element) => {
+      const timeouts = this.hitEffectTimeouts?.get(element);
+      if (!timeouts) {
+        return;
+      }
+      timeouts.forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      timeouts.clear();
+    };
+    clearHitEffectTimeouts(domRefs.game.runWorld);
+    clearHitEffectTimeouts(domRefs.game.runnerWrap);
+    if (this.hitEffectTimeouts) {
+      this.hitEffectTimeouts = new WeakMap();
+    }
+    domRefs.game.runWorld?.classList.remove(HIT_SHAKE_CLASS);
+    domRefs.game.runnerWrap?.classList.remove(HIT_FLASH_CLASS);
   },
 };
 
