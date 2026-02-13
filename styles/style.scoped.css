@@ -2318,7 +2318,21 @@
   --world-contrast: 1;
   --world-brightness: 1;
   --world-clarity: 1;
-}.calc-sprint .run-world::before {
+}
+
+@keyframes dash-shake {
+  0% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(calc(var(--dash-hit-shake-px, 3px) * -1), 0, 0); }
+  50% { transform: translate3d(var(--dash-hit-shake-px, 3px), 0, 0); }
+  75% { transform: translate3d(calc(var(--dash-hit-shake-px, 3px) * -0.66), 0, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.calc-sprint #dash-game-screen .run-world.is-shake {
+  animation: dash-shake 160ms ease-out 1;
+}
+
+.calc-sprint .run-world::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -2819,6 +2833,37 @@
     var(--calc-sprint-runner-bob-x, 0px),
     var(--calc-sprint-runner-bob-offset, 0px)
   );
+}
+
+
+
+@keyframes dash-runner-hitflash-overlay {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 0.25;
+  }
+}
+
+.calc-sprint #dash-game-screen .runner-wrap.is-hitflash::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+  background: rgba(255, 44, 44, 0.6);
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+  animation: dash-runner-hitflash-overlay 160ms steps(2, end) 1;
+}
+
+.calc-sprint #dash-game-screen .runner-wrap.is-hitflash #runner-sprite {
+  filter: saturate(1.4) brightness(0.95) drop-shadow(0 0 10px rgba(255, 0, 0, 0.7));
 }
 
 @media (prefers-reduced-motion: reduce) {.calc-sprint .run-layer #runner-sprite.runner-bob {
