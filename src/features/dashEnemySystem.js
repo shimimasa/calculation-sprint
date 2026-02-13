@@ -220,6 +220,7 @@ export const createDashEnemySystem = ({
   getEnemyType = null,
   getEnemyPool = null,
   getCurrentMode = null,
+  isDebugEnabled = null,
   onCollisionDebug = null,
 } = {}) => {
   const system = {
@@ -233,7 +234,9 @@ export const createDashEnemySystem = ({
     getEnemyType,
     getEnemyPool,
     getCurrentMode,
+    isDebugEnabled,
     onCollisionDebug,
+    lastCollisionTestLogKey: '',
   };
 
   system.setWorld = (nextWorld, nextContainer) => {
@@ -259,6 +262,10 @@ export const createDashEnemySystem = ({
 
   system.setCollisionDebugLogger = (logger) => {
     system.onCollisionDebug = typeof logger === 'function' ? logger : null;
+  };
+
+  system.setDebugEnabledResolver = (resolver) => {
+    system.isDebugEnabled = typeof resolver === 'function' ? resolver : null;
   };
 
   system.reset = () => {
@@ -597,6 +604,25 @@ export const createDashEnemySystem = ({
         const distancePx = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
         nearestDistancePx = Math.min(nearestDistancePx, distancePx);
         const isOverlap = intersects(playerRect, enemy);
+        if (system.isDebugEnabled?.()) {
+          const logKey = `${enemy.id}:${Math.round(nowMs)}`;
+          if (system.lastCollisionTestLogKey !== logKey) {
+            system.lastCollisionTestLogKey = logKey;
+            console.log('[dash-debug][COLLIDE:test]', {
+              enemyId: enemy.id,
+              playerRect,
+              enemyRect: {
+                x: enemy.x,
+                y: enemy.y,
+                w: enemy.w,
+                h: enemy.h,
+              },
+              isOverlap,
+              state: enemy.state,
+              collisionEnabled: enemy.collisionEnabled,
+            });
+          }
+        }
         if (!collision && isOverlap) {
           system.onCollisionDebug?.({
             stage: 'overlap',
