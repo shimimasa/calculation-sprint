@@ -3815,3 +3815,12 @@ body > .dash-overlay-root .dash-debug-hud {
   border: 2px solid rgba(255, 80, 80, 0.92);
   background: rgba(255, 80, 80, 0.16);
 }
+
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) .dash-runner-debug-outline,
+body > .dash-overlay-root .dash-runner-debug-outline {
+  position: fixed;
+  border: 2px solid rgba(255, 42, 42, 0.95);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55) inset;
+  pointer-events: none;
+}
+

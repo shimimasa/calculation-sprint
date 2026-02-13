@@ -64,6 +64,8 @@ const DEFAULT_CLOUD_WIDTH = 220;
 const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
 const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
+const DASH_DEBUG_QUERY_KEY = 'dashDebugRunner';
+const DASH_DEBUG_WINDOW_FLAG = '__DASH_DEBUG_RUNNER';
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
 const DASH_DEBUG_ALWAYS_ON = false;
@@ -152,6 +154,198 @@ const dashGameScreen = {
   isSyncingAnswer: false,
   isDebugEnabled() {
     return DASH_DEBUG_ALWAYS_ON === true;
+  },
+  // Enable runner debug via window.__DASH_DEBUG_RUNNER=true or ?dashDebugRunner=1
+  isDashRunnerDebugEnabled() {
+    const flagFromWindow = window?.[DASH_DEBUG_WINDOW_FLAG] === true;
+    const queryValue = new URLSearchParams(window.location.search).get(DASH_DEBUG_QUERY_KEY);
+    return flagFromWindow || queryValue === '1';
+  },
+  classifyRunnerDebugSnapshot(snapshot, parentSnapshot) {
+    if (!snapshot.exists) {
+      return 'DOM_REMOVED';
+    }
+    if (
+      snapshot.computed.display === 'none'
+      || snapshot.computed.visibility === 'hidden'
+      || snapshot.computed.opacity <= 0.01
+    ) {
+      return 'HIDDEN_STYLE';
+    }
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    const isOutsideViewport = (
+      snapshot.rect.right < -200
+      || snapshot.rect.left > viewportW + 200
+      || snapshot.rect.bottom < -200
+      || snapshot.rect.top > viewportH + 200
+    );
+    if (snapshot.rect.width <= 1 || snapshot.rect.height <= 1 || isOutsideViewport) {
+      return 'OFFSCREEN_OR_ZERO_RECT';
+    }
+    if (
+      parentSnapshot?.exists
+      && (
+        parentSnapshot.computed.opacity < 1
+        || parentSnapshot.computed.transform !== 'none'
+        || parentSnapshot.computed.isolation === 'isolate'
+      )
+      && (snapshot.computed.zIndex === 'auto' || parentSnapshot.computed.zIndex === 'auto')
+    ) {
+      return 'STACKING_RISK';
+    }
+    return 'VISIBLE_OK';
+  },
+  captureRunnerDebugSnapshot(el, label) {
+    if (!el) {
+      return {
+        label,
+        exists: false,
+        className: null,
+        computed: null,
+        rect: null,
+      };
+    }
+    const computed = window.getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    return {
+      label,
+      exists: true,
+      className: el.className,
+      computed: {
+        display: computed.display,
+        visibility: computed.visibility,
+        opacity: Number.parseFloat(computed.opacity) || 0,
+        transform: computed.transform,
+        zIndex: computed.zIndex,
+        isolation: computed.isolation,
+      },
+      rect: {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+      },
+    };
+  },
+  logRunnerDebugProbeFrame() {
+    const runnerWrap = domRefs.game.runnerWrap ?? document.querySelector('.runner-wrap');
+    const runnerSprite = domRefs.game.runner ?? document.querySelector('#runner-sprite');
+    const wrapParent = runnerWrap?.parentElement ?? null;
+    const spriteParent = runnerSprite?.parentElement ?? null;
+    const wrapSnapshot = this.captureRunnerDebugSnapshot(runnerWrap, '.runner-wrap');
+    const spriteSnapshot = this.captureRunnerDebugSnapshot(runnerSprite, '#runner-sprite');
+    const wrapParentSnapshot = this.captureRunnerDebugSnapshot(wrapParent, '.runner-wrap parent');
+    const spriteParentSnapshot = this.captureRunnerDebugSnapshot(spriteParent, '#runner-sprite parent');
+    const wrapLabel = this.classifyRunnerDebugSnapshot(wrapSnapshot, wrapParentSnapshot);
+    const spriteLabel = this.classifyRunnerDebugSnapshot(spriteSnapshot, spriteParentSnapshot);
+
+    console.log('[dash-debug-runner-hit]', {
+      frame: this.runnerDebugProbeFrameCount,
+      wrap: {
+        label: wrapLabel,
+        exists: wrapSnapshot.exists,
+        className: wrapSnapshot.className,
+        computed: wrapSnapshot.computed,
+        rect: wrapSnapshot.rect,
+      },
+      sprite: {
+        label: spriteLabel,
+        exists: spriteSnapshot.exists,
+        className: spriteSnapshot.className,
+        computed: spriteSnapshot.computed,
+        rect: spriteSnapshot.rect,
+      },
+      wrapParent: {
+        exists: wrapParentSnapshot.exists,
+        className: wrapParentSnapshot.className,
+        computed: wrapParentSnapshot.computed,
+        rect: wrapParentSnapshot.rect,
+      },
+      spriteParent: {
+        exists: spriteParentSnapshot.exists,
+        className: spriteParentSnapshot.className,
+        computed: spriteParentSnapshot.computed,
+        rect: spriteParentSnapshot.rect,
+      },
+      hint: wrapLabel === 'VISIBLE_OK' && spriteLabel !== 'VISIBLE_OK'
+        ? 'runner-wrap visible but sprite risky'
+        : null,
+    });
+  },
+  stopRunnerHitDebugProbe() {
+    if (this.runnerDebugProbeRafId) {
+      window.cancelAnimationFrame(this.runnerDebugProbeRafId);
+      this.runnerDebugProbeRafId = null;
+    }
+    this.runnerDebugProbeActive = false;
+  },
+  startRunnerHitDebugProbe(nowMs = window.performance.now()) {
+    if (!this.isDashRunnerDebugEnabled() || this.runnerDebugProbeActive) {
+      return;
+    }
+    this.runnerDebugProbeActive = true;
+    this.runnerDebugProbeUntilMs = nowMs + 1000;
+    this.runnerDebugProbeFrameCount = 0;
+    const tick = (timestamp) => {
+      if (!this.runnerDebugProbeActive) {
+        return;
+      }
+      this.runnerDebugProbeFrameCount += 1;
+      if (this.runnerDebugProbeFrameCount % 10 === 0) {
+        this.logRunnerDebugProbeFrame();
+      }
+      if (timestamp >= this.runnerDebugProbeUntilMs) {
+        this.stopRunnerHitDebugProbe();
+        return;
+      }
+      this.runnerDebugProbeRafId = window.requestAnimationFrame(tick);
+    };
+    this.runnerDebugProbeRafId = window.requestAnimationFrame(tick);
+  },
+  destroyRunnerDebugOutline() {
+    if (this.runnerDebugOutlineEl) {
+      this.runnerDebugOutlineEl.remove();
+      this.runnerDebugOutlineEl = null;
+    }
+  },
+  ensureRunnerDebugOutline() {
+    if (!this.isDashRunnerDebugEnabled()) {
+      this.destroyRunnerDebugOutline();
+      return null;
+    }
+    const overlayRoot = this.ensureDashOverlayRoot();
+    if (!overlayRoot) {
+      return null;
+    }
+    if (!this.runnerDebugOutlineEl || !overlayRoot.contains(this.runnerDebugOutlineEl)) {
+      const outline = document.createElement('div');
+      outline.className = 'dash-runner-debug-outline';
+      overlayRoot.appendChild(outline);
+      this.runnerDebugOutlineEl = outline;
+    }
+    return this.runnerDebugOutlineEl;
+  },
+  updateRunnerDebugOutline() {
+    const outline = this.ensureRunnerDebugOutline();
+    if (!outline) {
+      return;
+    }
+    const runnerWrap = domRefs.game.runnerWrap ?? document.querySelector('.runner-wrap');
+    if (!runnerWrap) {
+      outline.hidden = true;
+      return;
+    }
+    const rect = runnerWrap.getBoundingClientRect();
+    outline.hidden = false;
+    outline.style.left = `${Math.round(rect.x)}px`;
+    outline.style.top = `${Math.round(rect.y)}px`;
+    outline.style.width = `${Math.max(0, Math.round(rect.width))}px`;
+    outline.style.height = `${Math.max(0, Math.round(rect.height))}px`;
   },
   showDebugToast(message) {
     if (!this.isDebugEnabled()) {
@@ -1276,6 +1470,8 @@ const dashGameScreen = {
       if (handledCollision) {
         const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
         if (!isRunnerInvincible) {
+          // Hit-confirm point: collision && !attackHandled && !invincible.
+          this.startRunnerHitDebugProbe(nowMs);
           // NOTE: playSfx is ignored until audio is unlocked; keep this here so
           // damage SFX only attempts on confirmed penalty (not cooldown skips).
           audioManager.playSfx('sfx_damage');
@@ -1315,6 +1511,7 @@ const dashGameScreen = {
       this.endSession('timeup');
     }
     this.updateRunLayerVisuals(dtMs, effectivePlayerSpeed, isSlowed);
+    this.updateRunnerDebugOutline();
     this.updateHud();
   },
   startLoop() {
@@ -1457,6 +1654,11 @@ const dashGameScreen = {
     this.loopFrameCount = 0;
     this.loopRecoveryCount = 0;
     this.lastLoopErrorMessage = '';
+    this.runnerDebugProbeActive = false;
+    this.runnerDebugProbeRafId = null;
+    this.runnerDebugProbeUntilMs = 0;
+    this.runnerDebugProbeFrameCount = 0;
+    this.runnerDebugOutlineEl = null;
     this.enemyUpdateCount = 0;
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
@@ -1674,6 +1876,7 @@ const dashGameScreen = {
     this.showBuildBadge();
     this.ensureLoopMonitorBadge();
     this.updateLoopMonitorBadge();
+    this.updateRunnerDebugOutline();
   },
   render() {},
   exit() {
@@ -1715,6 +1918,8 @@ const dashGameScreen = {
     this.clouds = [];
     this.enemySystem?.destroy();
     this.enemySystem = null;
+    this.stopRunnerHitDebugProbe();
+    this.destroyRunnerDebugOutline();
     if (this.debugToastTimeout) {
       window.clearTimeout(this.debugToastTimeout);
       this.debugToastTimeout = null;
