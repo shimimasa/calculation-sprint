@@ -5,6 +5,7 @@ import {
   resolveProfileId,
 } from './storageKeys.js';
 import { DASH_STAGE_IDS, toDashStageId } from '../features/dashStages.js';
+import { DEFAULT_DASH_MODE, normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
 
 const DASH_STATS_SCHEMA_VERSION = 'v2';
 const MAX_HISTORY = 20;
@@ -37,6 +38,7 @@ const normalizeEndReason = (endReason) => (
 
 const normalizeSession = (session) => ({
   runId: typeof session?.runId === 'string' ? session.runId : null,
+  mode: normalizeDashModeId(session?.mode ?? DEFAULT_DASH_MODE),
   distanceM: Number.isFinite(session?.distanceM) ? session.distanceM : 0,
   score: Number.isFinite(session?.score) ? session.score : (Number.isFinite(session?.distanceM) ? session.distanceM : 0),
   correctCount: Number.isFinite(session?.correctCount) ? session.correctCount : 0,
