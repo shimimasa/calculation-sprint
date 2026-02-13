@@ -35,12 +35,14 @@ const updatePresetDescription = (presetKey) => {
   const isCustom = !PRESETS[presetKey];
   domRefs.settings.presetDescription.classList.toggle('is-custom', isCustom);
   domRefs.settings.presetTag.hidden = !isCustom;
+  domRefs.screens.settings?.classList.toggle('is-customizing', isCustom);
 };
 
 const settingsScreen = {
   enter() {
     uiRenderer.showScreen('settings');
     this.events = createEventRegistry('settings');
+    domRefs.screens.settings?.classList.add('screen-settings-unified');
     gameState.playMode = 'free';
     gameState.selectedStageId = null;
     this.isSyncing = true;
