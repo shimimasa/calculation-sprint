@@ -7,6 +7,7 @@ import { LAST_PROFILE_ID_KEY, LEGACY_LAST_PROFILE_ID_KEYS } from '../core/storag
 import { createEventRegistry } from '../core/eventRegistry.js';
 
 const PROFILE_IDS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+const PROFILE_THEME_MAP = ['plus', 'minus', 'multi', 'divide', 'mix', 'plus', 'minus', 'multi'];
 
 const loadLastProfileId = () => {
   const stored = window.localStorage.getItem(LAST_PROFILE_ID_KEY);
@@ -45,7 +46,10 @@ const profileSelectScreen = {
       window.localStorage.setItem(LAST_PROFILE_ID_KEY, nextProfileId);
       screenManager.changeScreen('title');
     };
-    domRefs.profileSelect.buttons.forEach((button) => {
+    domRefs.profileSelect.buttons.forEach((button, index) => {
+      const theme = PROFILE_THEME_MAP[index] ?? 'mix';
+      button.dataset.profileTheme = theme;
+      button.classList.add('profile-select-button--character');
       this.events.on(button, 'click', this.handleProfileClick);
     });
     this.events.on(domRefs.profileSelect.continueButton, 'click', this.handleContinue);

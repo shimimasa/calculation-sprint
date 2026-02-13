@@ -13,6 +13,53 @@ import {
   toDashStageId,
 } from '../features/dashStages.js';
 
+const STAGE_VISUAL_MAP = {
+  plus: { cssClass: 'stage-plus', symbol: '＋' },
+  minus: { cssClass: 'stage-minus', symbol: '−' },
+  multi: { cssClass: 'stage-multi', symbol: '×' },
+  divide: { cssClass: 'stage-divide', symbol: '÷' },
+  mix: { cssClass: 'stage-mix', symbol: '🎲' },
+};
+
+const enhanceStageButton = (button) => {
+  const stageId = toDashStageId(button.dataset.dashStageId);
+  const visual = STAGE_VISUAL_MAP[stageId] ?? STAGE_VISUAL_MAP.mix;
+  button.dataset.stage = stageId;
+  button.dataset.stageSymbol = visual.symbol;
+  button.classList.add('dash-stage-card', visual.cssClass);
+
+  const title = button.querySelector('span');
+  const description = button.querySelector('small');
+  title?.classList.add('dash-stage-card__title');
+  description?.classList.add('dash-stage-card__description');
+
+  if (!button.querySelector('.dash-stage-card__badge')) {
+    const badge = document.createElement('span');
+    badge.className = 'dash-stage-card__badge';
+    badge.setAttribute('aria-hidden', 'true');
+    badge.textContent = visual.symbol;
+    button.prepend(badge);
+  }
+
+  if (!button.querySelector('.dash-stage-card__selected')) {
+    const selected = document.createElement('span');
+    selected.className = 'dash-stage-card__selected';
+    selected.textContent = 'えらんだ！';
+    selected.setAttribute('aria-hidden', 'true');
+    button.append(selected);
+  }
+};
+
+const updateSelectionState = (button, isSelected) => {
+  button.classList.toggle('is-current', isSelected);
+  button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+  if (isSelected) {
+    button.setAttribute('aria-current', 'true');
+  } else {
+    button.removeAttribute('aria-current');
+  }
+};
+
 const dashStageSelectScreen = {
   enter() {
     uiRenderer.showScreen('dash-stage-select');
@@ -20,10 +67,10 @@ const dashStageSelectScreen = {
 
     const selectedStage = toDashStageId(gameState.dash?.stageId);
     domRefs.dashStageSelect.buttons.forEach((button) => {
-      const stageId = button.dataset.dashStageId;
+      enhanceStageButton(button);
+      const stageId = toDashStageId(button.dataset.dashStageId);
       const isSelected = stageId === selectedStage;
-      button.classList.toggle('is-current', isSelected);
-      button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      updateSelectionState(button, isSelected);
     });
 
     this.handleSelectStage = (event) => {
