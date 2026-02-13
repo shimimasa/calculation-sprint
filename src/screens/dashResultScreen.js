@@ -76,6 +76,29 @@ const ensureRewardArea = () => {
   return reward;
 };
 
+
+const formatGoalRunClearTime = (clearTimeMs) => {
+  const totalSeconds = Math.max(0, Math.round((Number(clearTimeMs) || 0) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+};
+
+const ensureModeSummaryArea = () => {
+  const record = domRefs.dashResult.record;
+  if (!record) {
+    return null;
+  }
+  let summary = record.querySelector('.dash-result-mode-summary');
+  if (!summary) {
+    summary = document.createElement('div');
+    summary.className = 'dash-result-mode-summary';
+    summary.hidden = true;
+    record.prepend(summary);
+  }
+  return summary;
+};
+
 const dashResultScreen = {
   enter() {
     uiRenderer.showScreen('dash-result');
@@ -84,6 +107,7 @@ const dashResultScreen = {
       const endReasonTextMap = {
         collision: 'モンスターにぶつかりました',
         timeup: '時間が0になりました',
+        goal: 'ゴールに到達しました',
         manual: 'ここでいったん終了',
         unknown: '終了理由：不明',
       };
@@ -117,6 +141,25 @@ const dashResultScreen = {
         const normalizedReason = typeof result.endReason === 'string' ? result.endReason : 'unknown';
         domRefs.dashResult.reason.textContent = `終了メモ：${endReasonTextMap[normalizedReason] ?? endReasonTextMap.unknown}`;
         domRefs.dashResult.reason.hidden = false;
+      }
+
+      const modeSummary = ensureModeSummaryArea();
+      const isGoalRun = result.mode === 'goalRun';
+      if (modeSummary) {
+        if (isGoalRun) {
+          const cleared = result.cleared === true;
+          const clearOrFail = cleared ? 'CLEAR' : 'FAILED';
+          const rank = String(result.rank || 'C');
+          const reachedDistance = Number.isFinite(result.distanceM) ? result.distanceM.toFixed(1) : '0.0';
+          const clearTimeLabel = cleared
+            ? `クリアタイム: ${formatGoalRunClearTime(result.clearTimeMs)}`
+            : `到達距離: ${reachedDistance}m`;
+          modeSummary.hidden = false;
+          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Goal Run</p><p class="dash-result-mode-summary__status" data-cleared="${cleared ? '1' : '0'}">${clearOrFail}</p><p class="dash-result-mode-summary__detail">${clearTimeLabel}</p><p class="dash-result-mode-summary__detail">被弾: ${Number(result.hits) || 0} / 最大コンボ: ${Number(result.maxStreak) || 0} / ランク: ${rank}</p>`;
+        } else {
+          modeSummary.hidden = true;
+          modeSummary.textContent = '';
+        }
       }
 
       const rewardArea = ensureRewardArea();
