@@ -49,12 +49,15 @@ const dashStatsScreen = {
         const tr = document.createElement('tr');
         const stageId = String(entry.stageId || 'mix');
         tr.className = `dash-stats-row ${getStageClassName(stageId)}`;
-        const statusLabel = entry.retired ? 'リタイア' : '完走';
+        const statusLabel = entry.mode === 'goalRun'
+          ? (entry.cleared ? 'CLEAR' : 'FAILED')
+          : (entry.retired ? 'リタイア' : '完走');
         const score = Number.isFinite(entry.score) ? entry.score : entry.distanceM;
         const stageBest = Number(stats.aggregate.stageBest?.[stageId] ?? 0);
         const isNewBest = score > 0 && Math.abs(score - stageBest) < 0.0001;
         const newBadge = isNewBest ? '<span class="badge dash-badge-new">NEW</span>' : '';
-        tr.innerHTML = `<td>${formatDateTime(entry.endedAt)}</td><td>${getDashStageLabelJa(stageId)}</td><td>${score.toFixed(1)} m</td><td>${statusLabel} ${newBadge}</td>`;
+        const modeLabel = entry.mode === 'goalRun' ? 'GoalRun' : 'Infinite';
+        tr.innerHTML = `<td>${formatDateTime(entry.endedAt)}</td><td>${getDashStageLabelJa(stageId)}<br><small>${modeLabel}</small></td><td>${score.toFixed(1)} m</td><td>${statusLabel} ${newBadge}</td>`;
         domRefs.dashStats.historyBody.append(tr);
       });
     }
