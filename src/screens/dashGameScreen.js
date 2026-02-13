@@ -71,6 +71,9 @@ const DASH_DEBUG_QUERY_KEY = 'dashDebug';
 const DASH_DEBUG_LEGACY_QUERY_KEY = 'dashDebugRunner';
 const DASH_DEBUG_STORAGE_KEY = 'dashDebugRunner';
 const DASH_DEBUG_WINDOW_FLAG = '__DASH_DEBUG_RUNNER';
+const COLLISION_DEBUG_QUERY_KEY = 'debugCollision';
+const COLLISION_DEBUG_STORAGE_KEY = 'dash.debugCollision';
+const COLLISION_DEBUG_LOG_INTERVAL_MS = 200;
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
 const DASH_DEBUG_ALWAYS_ON = false;
@@ -168,6 +171,33 @@ const dashGameScreen = {
     const queryValue = searchParams.get(DASH_DEBUG_QUERY_KEY) ?? searchParams.get(DASH_DEBUG_LEGACY_QUERY_KEY);
     const storageValue = window.localStorage?.getItem(DASH_DEBUG_STORAGE_KEY);
     return flagFromWindow || queryValue === '1' || storageValue === '1';
+  },
+  isCollisionDebugEnabled() {
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryValue = searchParams.get(COLLISION_DEBUG_QUERY_KEY);
+    const storageValue = window.localStorage?.getItem(COLLISION_DEBUG_STORAGE_KEY);
+    return queryValue === '1' || storageValue === '1';
+  },
+  classifyCollisionPipeline(sample) {
+    if (!sample) {
+      return 'unknown';
+    }
+    if (!sample.enemyUpdateCalled) {
+      return 'not-running';
+    }
+    if (!sample.playerRectValid || !sample.enemyRectValid) {
+      return 'not-hitting';
+    }
+    if (!sample.intersects && sample.enemiesCount > 0) {
+      return 'not-hitting';
+    }
+    if (sample.intersects && !sample.collisionFired) {
+      return 'ignored';
+    }
+    if (sample.intersects && sample.collisionFired) {
+      return 'fired';
+    }
+    return 'unknown';
   },
   shouldLogCollisionStage(stage, enemyId, nowMs) {
     if (!this.isDashRunnerDebugEnabled() || !enemyId) {
@@ -744,8 +774,12 @@ const dashGameScreen = {
     groundY,
     collision,
     attackHandled,
+    pipelineStatus = 'unknown',
+    intersects = false,
+    enemiesCount = 0,
+    flags = {},
   }) {
-    const debugEnabled = this.isDebugEnabled();
+    const debugEnabled = this.isDebugEnabled() || this.isCollisionDebugEnabled();
     if (!debugEnabled) {
       if (this.diagnosticsHudEl) {
         this.diagnosticsHudEl.hidden = true;
@@ -770,7 +804,9 @@ const dashGameScreen = {
       this.formatDiagnosticRect('PLAYER', playerRect),
       this.formatDiagnosticRect('ENEMY', enemyRect),
       `DX:${dx ?? 'null'} DY:${dy ?? 'null'}`,
-      `COLL:${collision ? 1 : 0} ATK:${attackHandled ? 1 : 0}`,
+      `COLL:${collision ? 1 : 0} ATK:${attackHandled ? 1 : 0} INT:${intersects ? 1 : 0}`,
+      `ENEMIES:${enemiesCount} PIPE:${pipelineStatus}`,
+      `FLAGS g:${flags.startGrace ? 1 : 0} inv:${flags.invincible ? 1 : 0} kick:${flags.kicking ? 1 : 0} en:${flags.collisionEnabled ? 1 : 0} h:${flags.handledCollision ? 1 : 0} cd:${Math.round(flags.cooldownMs ?? 0)}`,
     ].join('\n');
 
     this.ensureDiagnosticsHitboxes();
@@ -1727,6 +1763,9 @@ const dashGameScreen = {
     const effectivePlayerSpeed = this.playerSpeed * speedMultiplier;
     gameState.dash.distanceM += effectivePlayerSpeed * dtSeconds;
     this.updateArea(gameState.dash.distanceM);
+    if (!domRefs.game.runWorld?.isConnected || !domRefs.game.runEnemies?.isConnected) {
+      this.refreshRunDomRefs();
+    }
     const runWorld = domRefs.game.runWorld;
     const worldRect = runWorld?.getBoundingClientRect?.();
     const runGroundY = gameState.run.groundY ?? gameState.run.groundSurfaceY;
@@ -1749,9 +1788,18 @@ const dashGameScreen = {
         }
       }
     }
+    const collisionDebugEnabled = this.isCollisionDebugEnabled();
+    if (this.enemySystem && (this.enemySystem.worldEl !== runWorld || this.enemySystem.containerEl !== domRefs.game.runEnemies)) {
+      this.enemySystem.setWorld(runWorld, domRefs.game.runEnemies);
+    }
     let debugCollision = false;
     let debugAttackHandled = false;
     let debugEnemyRect = null;
+    let intersects = false;
+    let enemiesCount = 0;
+    let enemyRect = null;
+    let enemyCollisionEnabled = false;
+    let enemyStartGrace = false;
     const enemyUpdate = this.enemySystem?.update({
       dtMs,
       nowMs,
@@ -1761,6 +1809,7 @@ const dashGameScreen = {
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
       defeatSequenceActive,
     });
+    const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
     this.enemyUpdateCount += 1;
     if (enemyUpdate) {
       if (this.isDashRunnerDebugEnabled() && !this.hasLoggedCollisionResultDebug) {
@@ -1769,15 +1818,20 @@ const dashGameScreen = {
       }
       debugCollision = Boolean(enemyUpdate.collision);
       debugAttackHandled = Boolean(enemyUpdate.attackHandled);
+      enemiesCount = enemyUpdate.debug?.enemiesCount ?? this.enemySystem?.enemies?.length ?? 0;
+      enemyRect = enemyUpdate.debug?.enemyRect ?? enemyUpdate.nearestEnemyRect ?? null;
+      enemyCollisionEnabled = enemyUpdate.debug?.collisionEnabled ?? false;
+      enemyStartGrace = enemyUpdate.debug?.startGraceActive ?? false;
+      intersects = Boolean(enemyUpdate.debug?.intersects);
       if (enemyUpdate.nearestEnemyRect) {
-        const enemyRect = enemyUpdate.nearestEnemyRect;
+        const nextEnemyRect = enemyUpdate.nearestEnemyRect;
         debugEnemyRect = {
-          left: enemyRect.x + (worldRect?.left ?? 0),
-          top: enemyRect.y + (worldRect?.top ?? 0),
-          right: enemyRect.x + enemyRect.w + (worldRect?.left ?? 0),
-          bottom: enemyRect.y + enemyRect.h + (worldRect?.top ?? 0),
-          width: enemyRect.w,
-          height: enemyRect.h,
+          left: nextEnemyRect.x + (worldRect?.left ?? 0),
+          top: nextEnemyRect.y + (worldRect?.top ?? 0),
+          right: nextEnemyRect.x + nextEnemyRect.w + (worldRect?.left ?? 0),
+          bottom: nextEnemyRect.y + nextEnemyRect.h + (worldRect?.top ?? 0),
+          width: nextEnemyRect.w,
+          height: nextEnemyRect.h,
         };
       }
       const handledCollision = (
@@ -1785,7 +1839,6 @@ const dashGameScreen = {
         && !enemyUpdate.attackHandled
       );
       if (handledCollision) {
-        const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
         const collisionEvent = enemyUpdate.events?.find((event) => event?.type === 'collision') ?? null;
         const collisionEnemyId = collisionEvent?.enemyId ?? 'unknown';
         if (this.shouldLogCollisionStage('handle-enter', collisionEnemyId, nowMs)) {
@@ -1818,6 +1871,14 @@ const dashGameScreen = {
               `[dash-debug][COLLIDE:penalty] enemyId=${collisionEnemyId}, timeLeft:${Math.round(timeLeftBeforeMs)}->${Math.round(this.timeLeftMs)}, speed:${speedBefore.toFixed(2)}->${this.playerSpeed.toFixed(2)}`,
             );
           }
+          if (collisionDebugEnabled) {
+            console.debug('[dash-collision] collision event fired', {
+              enemyId: collisionEnemyId,
+              nowMs: Math.round(nowMs),
+              timeLeftBeforeMs: Math.round(timeLeftBeforeMs),
+              timeLeftAfterMs: Math.round(this.timeLeftMs),
+            });
+          }
           this.showDebugToast('HIT -3秒');
           this.verifyRunnerDom();
           this.triggerRunnerStumble();
@@ -1835,6 +1896,50 @@ const dashGameScreen = {
         this.enemyGapM = collisionThreshold * 2;
       }
     }
+    const sample = {
+      dtMs,
+      enemyUpdateCalled: Boolean(enemyUpdate),
+      playerRectValid: Boolean(playerRect),
+      enemyRectValid: Boolean(enemyRect),
+      worldRectValid: Boolean(worldRect),
+      enemiesCount,
+      intersects,
+      collisionFired: Boolean(debugCollision && !debugAttackHandled && !isRunnerInvincible),
+      startGrace: enemyStartGrace,
+      invincible: isRunnerInvincible,
+      kicking: defeatSequenceActive,
+      collisionEnabled: enemyCollisionEnabled,
+      handledCollision: Boolean(debugCollision && !debugAttackHandled),
+      cooldownMs: Math.max(0, Math.round((this.runnerInvincibleUntilMs ?? 0) - nowMs)),
+    };
+    const pipelineStatus = this.classifyCollisionPipeline(sample);
+    if (collisionDebugEnabled && nowMs - (this.lastCollisionDebugMs ?? -Infinity) >= COLLISION_DEBUG_LOG_INTERVAL_MS) {
+      this.lastCollisionDebugMs = nowMs;
+      console.debug('[dash-collision]', {
+        ...sample,
+        pipelineStatus,
+        playerRect,
+        worldRect: worldRect ? {
+          left: Math.round(worldRect.left),
+          top: Math.round(worldRect.top),
+          width: Math.round(worldRect.width),
+          height: Math.round(worldRect.height),
+        } : null,
+        enemyRect,
+      });
+    }
+    this.updateDiagnostics({
+      playerRect,
+      enemyRect,
+      worldRect,
+      groundY,
+      collision: debugCollision,
+      attackHandled: debugAttackHandled,
+      pipelineStatus,
+      intersects,
+      enemiesCount,
+      flags: sample,
+    });
     const safeDebugEnemyRect = typeof debugEnemyRect === 'undefined' ? null : debugEnemyRect;
     this.updateDebugHud({
       hasPlayerRect: Boolean(playerRect),
@@ -1949,6 +2054,7 @@ const dashGameScreen = {
     uiRenderer.showScreen('dash-game');
     this.events = createEventRegistry('dash-game');
     this.ensureRunLayerMounted();
+    this.refreshRunDomRefs();
     this.verifyRunnerDom();
     this.ensureRunnerSpriteGuard();
     this.resetDashRunnerVisibilityState();
@@ -2024,6 +2130,7 @@ const dashGameScreen = {
       stageId: this.dashStageId,
       getCurrentMode: () => gameState.dash.currentMode,
       isDebugEnabled: () => this.isDashRunnerDebugEnabled(),
+      isCollisionDebugEnabled: () => this.isCollisionDebugEnabled(),
       worldEl: domRefs.game.runWorld,
       containerEl: domRefs.game.runEnemies,
       onCollisionDebug: ({ stage, enemyId, nowMs }) => {

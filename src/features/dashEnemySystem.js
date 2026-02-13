@@ -221,6 +221,7 @@ export const createDashEnemySystem = ({
   getEnemyPool = null,
   getCurrentMode = null,
   isDebugEnabled = null,
+  isCollisionDebugEnabled = null,
   onCollisionDebug = null,
 } = {}) => {
   const system = {
@@ -235,6 +236,7 @@ export const createDashEnemySystem = ({
     getEnemyPool,
     getCurrentMode,
     isDebugEnabled,
+    isCollisionDebugEnabled,
     onCollisionDebug,
     lastCollisionTestLogKey: '',
   };
@@ -266,6 +268,10 @@ export const createDashEnemySystem = ({
 
   system.setDebugEnabledResolver = (resolver) => {
     system.isDebugEnabled = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setCollisionDebugEnabledResolver = (resolver) => {
+    system.isCollisionDebugEnabled = typeof resolver === 'function' ? resolver : null;
   };
 
   system.reset = () => {
@@ -526,6 +532,9 @@ export const createDashEnemySystem = ({
     let collision = false;
     let attackHandled = false;
     const events = [];
+    let firstEnemyRect = null;
+    let firstIntersects = false;
+    let firstCollisionEnabled = false;
 
     system.enemies = system.enemies.filter((enemy) => {
       if (!enemy?.el) {
@@ -600,10 +609,23 @@ export const createDashEnemySystem = ({
         }
       }
 
+      if (!firstEnemyRect && enemy.state === 'approaching') {
+        firstEnemyRect = {
+          x: enemy.x,
+          y: enemy.y,
+          w: enemy.w,
+          h: enemy.h,
+        };
+      }
+
       if (playerRect && enemy.state === 'approaching' && enemy.collisionEnabled) {
         const distancePx = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
         nearestDistancePx = Math.min(nearestDistancePx, distancePx);
         const isOverlap = intersects(playerRect, enemy);
+        if (!firstCollisionEnabled) {
+          firstCollisionEnabled = true;
+          firstIntersects = isOverlap;
+        }
         if (system.isDebugEnabled?.()) {
           const logKey = `${enemy.id}:${Math.round(nowMs)}`;
           if (system.lastCollisionTestLogKey !== logKey) {
@@ -650,6 +672,7 @@ export const createDashEnemySystem = ({
       nearestDistancePx = null;
     }
 
+    const collisionDebugEnabled = system.isCollisionDebugEnabled?.() === true;
     return {
       nearestDistancePx,
       collision,
@@ -657,6 +680,13 @@ export const createDashEnemySystem = ({
       events,
       nearestEnemyRect,
       resolvedGroundY,
+      debug: collisionDebugEnabled ? {
+        enemiesCount: system.enemies.length,
+        enemyRect: firstEnemyRect,
+        intersects: firstIntersects,
+        collisionEnabled: firstCollisionEnabled,
+        startGraceActive: system.elapsedMs < START_GRACE_MS,
+      } : undefined,
     };
   };
 
