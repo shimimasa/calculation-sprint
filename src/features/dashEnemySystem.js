@@ -555,6 +555,7 @@ export const createDashEnemySystem = ({
     dtMs,
     nowMs,
     groundY,
+    worldGroundTopY = null,
     playerRect,
     correctCount,
     attackActive,
@@ -617,6 +618,7 @@ export const createDashEnemySystem = ({
     let attackHandled = false;
     const events = [];
     let firstEnemyRect = null;
+    let firstEnemyRectRaw = null;
     let firstIntersectsRaw = false;
     let firstIntersectsNorm = false;
     let firstCollisionEnabled = false;
@@ -688,9 +690,12 @@ export const createDashEnemySystem = ({
         }
         if (metric < nearestEnemyMetric) {
           nearestEnemyMetric = metric;
+          const collisionY = Number.isFinite(worldGroundTopY)
+            ? worldGroundTopY - enemy.h
+            : enemy.y;
           nearestEnemyRect = {
             x: enemy.x,
-            y: enemy.y,
+            y: collisionY,
             w: enemy.w,
             h: enemy.h,
           };
@@ -698,7 +703,16 @@ export const createDashEnemySystem = ({
       }
 
       if (!firstEnemyRect && enemy.state === 'approaching') {
+        const collisionY = Number.isFinite(worldGroundTopY)
+          ? worldGroundTopY - enemy.h
+          : enemy.y;
         firstEnemyRect = {
+          x: enemy.x,
+          y: collisionY,
+          w: enemy.w,
+          h: enemy.h,
+        };
+        firstEnemyRectRaw = {
           x: enemy.x,
           y: enemy.y,
           w: enemy.w,
@@ -715,10 +729,18 @@ export const createDashEnemySystem = ({
           w: enemy.w,
           h: enemy.h,
         };
+        const enemyRectForHit = {
+          x: enemy.x,
+          y: Number.isFinite(worldGroundTopY)
+            ? worldGroundTopY - enemy.h
+            : enemy.y,
+          w: enemy.w,
+          h: enemy.h,
+        };
         const playerRectNorm = normalizeRect(playerRect);
-        const enemyRectNorm = normalizeRect(enemyRectRaw);
-        const isOverlapRaw = intersectsRawXYWH(playerRect, enemyRectRaw);
-        const isOverlap = intersectsNormalized(playerRect, enemyRectRaw);
+        const enemyRectNorm = normalizeRect(enemyRectForHit);
+        const isOverlapRaw = intersectsRawXYWH(playerRect, enemyRectForHit);
+        const isOverlap = intersectsNormalized(playerRect, enemyRectForHit);
         if (!firstCollisionEnabled) {
           firstCollisionEnabled = true;
           firstIntersectsRaw = isOverlapRaw;
@@ -736,6 +758,7 @@ export const createDashEnemySystem = ({
               playerRect,
               playerRectNorm,
               enemyRect: enemyRectRaw,
+              enemyRectForHit,
               enemyRectNorm,
               isOverlapRaw,
               isOverlap,
@@ -782,6 +805,7 @@ export const createDashEnemySystem = ({
       debug: collisionDebugEnabled ? {
         enemiesCount: system.enemies.length,
         enemyRect: firstEnemyRect,
+        enemyRectRaw: firstEnemyRectRaw,
         playerRectRaw: firstPlayerRectRaw,
         playerRectNorm: firstPlayerRectNorm,
         enemyRectNorm: firstEnemyRectNorm,

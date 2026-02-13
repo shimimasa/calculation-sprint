@@ -833,6 +833,7 @@ const dashGameScreen = {
   updateDiagnostics({
     playerRect,
     enemyRect,
+    enemyRectRaw = null,
     playerRectNorm = null,
     enemyRectNorm = null,
     worldRect,
@@ -877,7 +878,8 @@ const dashGameScreen = {
       `ENEMY_SYS:${this.enemySystem ? 1 : 0} UPD:${this.enemyUpdateCount}`,
       `GROUND_Y:${groundY === null ? 'null' : Math.round(groundY)}`,
       this.formatDiagnosticRect('PLAYER(raw)', playerRect),
-      this.formatDiagnosticRect('ENEMY(raw)', enemyRect),
+      this.formatDiagnosticRect('ENEMY(raw)', enemyRectRaw ?? enemyRect),
+      this.formatDiagnosticRect('ENEMY(world)', enemyRect),
       fmtNormRect('PLAYER(norm)', normalizedPlayerRect),
       fmtNormRect('ENEMY(norm)', normalizedEnemyRect),
       `DX:${dx ?? 'null'} DY:${dy ?? 'null'}`,
@@ -1275,6 +1277,22 @@ const dashGameScreen = {
       w: runnerRect.width,
       h: runnerRect.height,
     };
+  },
+  getWorldGroundTopY() {
+    const runWorld = domRefs.game.runWorld;
+    if (!runWorld || !runWorld.isConnected) {
+      return null;
+    }
+    const worldRect = runWorld.getBoundingClientRect();
+    const groundEl = domRefs.game.runGround
+      ?? runWorld.querySelector('.run-ground')
+      ?? runWorld.querySelector('.run-ground__tile')?.parentElement
+      ?? null;
+    if (!groundEl || !groundEl.isConnected) {
+      return null;
+    }
+    const groundRect = groundEl.getBoundingClientRect();
+    return Math.round(groundRect.top - worldRect.top);
   },
   getAnswerInput() {
     const input = domRefs.dashGame.answerInput;
@@ -1878,12 +1896,15 @@ const dashGameScreen = {
     let enemyRectNorm = null;
     let enemiesCount = 0;
     let enemyRect = null;
+    let enemyRectRaw = null;
     let enemyCollisionEnabled = false;
     let enemyStartGrace = false;
+    const worldGroundTopY = this.getWorldGroundTopY();
     const enemyUpdate = this.enemySystem?.update({
       dtMs,
       nowMs,
       groundY,
+      worldGroundTopY,
       playerRect,
       correctCount: gameState.dash.correctCount,
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
@@ -1900,6 +1921,7 @@ const dashGameScreen = {
       debugAttackHandled = Boolean(enemyUpdate.attackHandled);
       enemiesCount = enemyUpdate.debug?.enemiesCount ?? this.enemySystem?.enemies?.length ?? 0;
       enemyRect = enemyUpdate.debug?.enemyRect ?? enemyUpdate.nearestEnemyRect ?? null;
+      enemyRectRaw = enemyUpdate.debug?.enemyRectRaw ?? null;
       enemyCollisionEnabled = enemyUpdate.debug?.collisionEnabled ?? false;
       enemyStartGrace = enemyUpdate.debug?.startGraceActive ?? false;
       intersects = Boolean(enemyUpdate.debug?.intersects);
@@ -2011,6 +2033,7 @@ const dashGameScreen = {
           height: Math.round(worldRect.height),
         } : null,
         enemyRect,
+        enemyRectRaw,
         playerRectNorm,
         enemyRectNorm,
       });
@@ -2018,6 +2041,7 @@ const dashGameScreen = {
     this.updateDiagnostics({
       playerRect,
       enemyRect,
+      enemyRectRaw,
       playerRectNorm,
       enemyRectNorm,
       worldRect,
