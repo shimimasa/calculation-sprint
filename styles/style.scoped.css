@@ -2418,6 +2418,35 @@
 .calc-sprint .screen-dash-result .dash-result-record {
   width: min(920px, 92vw);
 }
+.calc-sprint .screen-dash-result .dash-result-reward {
+  text-align: center;
+  margin-bottom: var(--space-3);
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--color-secondary) 30%, transparent);
+  background:
+    radial-gradient(circle at 16% 22%, color-mix(in srgb, var(--color-secondary) 26%, transparent) 0 8px, transparent 9px),
+    radial-gradient(circle at 84% 78%, color-mix(in srgb, var(--color-accent) 24%, transparent) 0 7px, transparent 8px),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 95%, transparent), color-mix(in srgb, var(--color-surface-soft) 90%, transparent));
+  box-shadow: var(--shadow-1);
+}
+.calc-sprint .screen-dash-result .dash-result-reward__kicker {
+  font-size: var(--font-caption);
+  letter-spacing: .08em;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--color-primary) 85%, var(--color-text));
+}
+.calc-sprint .screen-dash-result .dash-result-reward__title {
+  margin-top: 4px;
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 800;
+  color: color-mix(in srgb, var(--color-primary-strong) 80%, var(--color-text));
+}
+.calc-sprint .screen-dash-result .dash-result-reward__sub {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--color-text-sub);
+}
 .calc-sprint .screen-dash-result .dash-result-stage {
   font-size: 15px;
   font-weight: 600;
@@ -2426,11 +2455,12 @@
   margin-bottom: 6px;
 }
 .calc-sprint .screen-dash-result .dash-result-reason {
-  font-size: 16px;
-  font-weight: 600;
-  color: #3d4658;
+  margin-top: var(--space-3);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-sub);
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 .calc-sprint .screen-dash-result .dash-result-grid {
   display: grid;
@@ -2440,6 +2470,14 @@
 }
 .calc-sprint .screen-dash-result .dash-result-footer {
   margin-top: 8px;
+}
+.calc-sprint .screen-dash-result .dash-result-replay-main {
+  min-height: 56px;
+  font-size: clamp(20px, 3vw, 24px);
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--color-primary) 34%, transparent);
+}
+.calc-sprint .screen-dash-result .dash-result-replay-main:hover {
+  transform: translateY(-2px);
 }
 .calc-sprint .screen-dash-result .dash-stat-card {
   transition: box-shadow 0.2s ease, transform 0.2s ease;
