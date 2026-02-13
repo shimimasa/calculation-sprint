@@ -57,6 +57,9 @@ const normalizeSession = (session) => ({
   clearTimeMs: Number.isFinite(session?.clearTimeMs) ? session.clearTimeMs : null,
   rank: typeof session?.rank === 'string' ? session.rank : null,
   hits: Number.isFinite(session?.hits) ? session.hits : 0,
+  totalScore: Number.isFinite(session?.totalScore) ? session.totalScore : (Number.isFinite(session?.score) ? session.score : 0),
+  combo: Number.isFinite(session?.combo) ? session.combo : 0,
+  maxCombo: Number.isFinite(session?.maxCombo) ? session.maxCombo : 0,
   schemaVersion: DASH_STATS_SCHEMA_VERSION,
 });
 
@@ -84,11 +87,18 @@ const createEmptyModeAggregate = () => {
     clearCountByStage[stageId] = 0;
     playCountByStage[stageId] = 0;
   });
+  const bestScoreByStage = {};
+  DASH_STAGE_IDS.forEach((stageId) => {
+    bestScoreByStage[stageId] = 0;
+  });
   return {
     goalRun: {
       bestTimeByStage,
       clearCountByStage,
       playCountByStage,
+    },
+    scoreAttack60: {
+      bestScoreByStage,
     },
   };
 };
@@ -114,6 +124,14 @@ const computeAggregate = (history) => {
           modeAgg.bestTimeByStage[stageId] = clearTimeMs;
         }
       }
+    }
+
+    if (session.mode === 'scoreAttack60') {
+      const score = Number.isFinite(session.score) ? session.score : 0;
+      modes.scoreAttack60.bestScoreByStage[stageId] = Math.max(
+        modes.scoreAttack60.bestScoreByStage[stageId] ?? 0,
+        score,
+      );
     }
   });
   return {

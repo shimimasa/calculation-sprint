@@ -56,7 +56,9 @@ const dashStatsScreen = {
         const stageBest = Number(stats.aggregate.stageBest?.[stageId] ?? 0);
         const isNewBest = score > 0 && Math.abs(score - stageBest) < 0.0001;
         const newBadge = isNewBest ? '<span class="badge dash-badge-new">NEW</span>' : '';
-        const modeLabel = entry.mode === 'goalRun' ? 'GoalRun' : 'Infinite';
+        const modeLabel = entry.mode === 'goalRun'
+          ? 'GoalRun'
+          : (entry.mode === 'scoreAttack60' ? 'ScoreAttack60' : 'Infinite');
         tr.innerHTML = `<td>${formatDateTime(entry.endedAt)}</td><td>${getDashStageLabelJa(stageId)}<br><small>${modeLabel}</small></td><td>${score.toFixed(1)} m</td><td>${statusLabel} ${newBadge}</td>`;
         domRefs.dashStats.historyBody.append(tr);
       });
