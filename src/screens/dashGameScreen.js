@@ -264,13 +264,17 @@ const dashGameScreen = {
       distanceM: gameState.dash.distanceM,
       timeLeftMs: this.timeLeftMs,
       modeRuntime: this.modeRuntime,
+<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
       score: Number(this.modeRuntime?.totalScore) || 0,
       combo: Number(this.modeRuntime?.combo) || 0,
       maxCombo: Number(this.modeRuntime?.maxCombo) || 0,
+=======
+>>>>>>> 他モード削除
     };
   },
   applyModeHud(modeHud) {
     const distanceCard = domRefs.dashGame.distance?.closest('.dash-stat-card');
+<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
     const speedCard = domRefs.dashGame.speed?.closest('.dash-stat-card');
     const enemyCard = domRefs.dashGame.enemyCount?.closest('.dash-stat-card');
     const streakCard = domRefs.dashGame.streak?.closest('.dash-stat-card');
@@ -315,6 +319,16 @@ const dashGameScreen = {
       label: 'せいかいコンボ',
       unit: '回',
     }, modeHud?.statOverrides?.streak);
+=======
+    const distanceLabelEl = distanceCard?.querySelector('.dash-stat-label');
+    const distanceUnitEl = distanceCard?.querySelector('.dash-stat-unit');
+    if (distanceLabelEl) {
+      distanceLabelEl.textContent = modeHud?.distanceLabel ?? '走ったきょり';
+    }
+    if (distanceUnitEl) {
+      distanceUnitEl.textContent = modeHud?.distanceUnit ?? 'm';
+    }
+>>>>>>> 他モード削除
 
     if (!this.goalProgressWrapEl && distanceCard) {
       const wrap = document.createElement('div');
@@ -2184,7 +2198,10 @@ const dashGameScreen = {
           audioManager.playSfx('sfx_damage');
           this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
           this.collisionHits += 1;
+<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
           this.modeStrategy?.onCollision?.({ modeRuntime: this.modeRuntime });
+=======
+>>>>>>> 他モード削除
           this.logCollisionRunnerDebugDump({
             nowMs,
             timeLeftBeforeMs,
@@ -2445,6 +2462,9 @@ const dashGameScreen = {
     this.lastTickTs = window.performance.now();
     this.currentQuestion = null;
     this.hasEnded = false;
+    this.resolveModeStrategy();
+    const settings = dashSettingsStore.get();
+    this.modeRuntime = this.modeStrategy?.initRun?.({ difficulty: settings?.difficulty ?? "normal" }) ?? null;
     this.maxStreak = 0;
     this.clearStreakCue();
     gameState.dash.distanceM = 0;

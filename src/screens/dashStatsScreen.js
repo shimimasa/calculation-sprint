@@ -113,11 +113,19 @@ const dashStatsScreen = {
           ? (entry.cleared ? 'CLEAR' : 'FAILED')
           : (entry.retired ? 'リタイア' : '完走');
         const score = Number.isFinite(entry.score) ? entry.score : entry.distanceM;
+<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
         const valueText = entry.mode === 'scoreAttack60' ? `${score.toFixed(0)} pt` : `${score.toFixed(1)} m`;
         const modeLabel = entry.mode === 'goalRun'
           ? 'GoalRun'
           : (entry.mode === 'scoreAttack60' ? 'ScoreAttack60' : 'Infinite');
         tr.innerHTML = `<td>${formatDateTime(entry.endedAt)}</td><td>${getDashStageLabelJa(stageId)}<br><small>${modeLabel}</small></td><td>${valueText}</td><td>${statusLabel}</td>`;
+=======
+        const stageBest = Number(stats.aggregate.stageBest?.[stageId] ?? 0);
+        const isNewBest = score > 0 && Math.abs(score - stageBest) < 0.0001;
+        const newBadge = isNewBest ? '<span class="badge dash-badge-new">NEW</span>' : '';
+        const modeLabel = entry.mode === 'goalRun' ? 'GoalRun' : 'Infinite';
+        tr.innerHTML = `<td>${formatDateTime(entry.endedAt)}</td><td>${getDashStageLabelJa(stageId)}<br><small>${modeLabel}</small></td><td>${score.toFixed(1)} m</td><td>${statusLabel} ${newBadge}</td>`;
+>>>>>>> 他モード削除
         domRefs.dashStats.historyBody.append(tr);
       });
     }
