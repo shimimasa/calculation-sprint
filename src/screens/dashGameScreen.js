@@ -1723,6 +1723,10 @@ const dashGameScreen = {
     });
     this.enemyUpdateCount += 1;
     if (enemyUpdate) {
+      if (this.isDashRunnerDebugEnabled() && !this.hasLoggedCollisionResultDebug) {
+        this.hasLoggedCollisionResultDebug = true;
+        console.log('[dash-debug][COLLIDE:result]', enemyUpdate);
+      }
       debugCollision = Boolean(enemyUpdate.collision);
       debugAttackHandled = Boolean(enemyUpdate.attackHandled);
       if (enemyUpdate.nearestEnemyRect) {
@@ -1963,6 +1967,7 @@ const dashGameScreen = {
     this.runnerSpriteLoadWarned = false;
     this.runnerSpriteLastFailedSrc = null;
     this.enemyUpdateCount = 0;
+    this.hasLoggedCollisionResultDebug = false;
     this.lastCollisionDebugMs = -Infinity;
     this.lastCollisionStageLogKey = '';
     this.runnerMutationObservers = [];
@@ -1973,6 +1978,7 @@ const dashGameScreen = {
     this.enemySystem = createDashEnemySystem({
       stageId: this.dashStageId,
       getCurrentMode: () => gameState.dash.currentMode,
+      isDebugEnabled: () => this.isDashRunnerDebugEnabled(),
       worldEl: domRefs.game.runWorld,
       containerEl: domRefs.game.runEnemies,
       onCollisionDebug: ({ stage, enemyId, nowMs }) => {
