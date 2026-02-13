@@ -31,6 +31,8 @@ import { waitForImageDecode } from '../core/imageDecode.js';
 import { getStageCorePreloadPromise } from '../core/stageAssetPreloader.js';
 import { isStageFrameWaitEnabled, perfLog } from '../core/perf.js';
 import { resolveAssetUrl } from '../core/assetUrl.js';
+import { getDashModeStrategy } from '../game/dash/modes/dashModes.js';
+import { normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
@@ -237,6 +239,24 @@ const dashGameScreen = {
   isSyncingAnswer: false,
   isDebugEnabled() {
     return DASH_DEBUG_ALWAYS_ON === true;
+  },
+  resolveRunModeId() {
+    return normalizeDashModeId(gameState.dash?.modeId);
+  },
+  resolveModeStrategy() {
+    const modeId = this.resolveRunModeId();
+    this.currentDashModeId = modeId;
+    this.modeStrategy = getDashModeStrategy(modeId);
+  },
+  tryEndByMode() {
+    const decision = this.modeStrategy?.checkEnd?.({
+      timeLeftMs: this.timeLeftMs,
+    });
+    if (decision?.ended) {
+      this.endSession(decision.endReason ?? 'unknown');
+      return true;
+    }
+    return false;
   },
   // Enable runner debug via window.__DASH_DEBUG_RUNNER=true or ?dashDebug=1 or localStorage[dashDebugRunner]=1
   isDashRunnerDebugEnabled() {
@@ -1945,8 +1965,7 @@ const dashGameScreen = {
       this.timeLeftMs -= timePenaltyOnWrong;
       this.setFeedback('×', 'wrong');
     }
-    if (this.timeLeftMs <= 0) {
-      this.endSession('timeup');
+    if (this.tryEndByMode()) {
       return;
     }
     this.loadNextQuestion();
@@ -2096,8 +2115,7 @@ const dashGameScreen = {
           this.triggerRunnerStumble();
           this.updateRunnerDamageState(nowMs);
           this.updateHud();
-          if (this.timeLeftMs <= 0) {
-            this.endSession('timeup');
+          if (this.tryEndByMode()) {
             return;
           }
         }
@@ -2174,9 +2192,7 @@ const dashGameScreen = {
       nearestDyPx: null,
     });
     this.timeLeftMs -= dtMs;
-    if (this.timeLeftMs <= 0) {
-      this.endSession('timeup');
-    }
+    this.tryEndByMode();
     this.updateRunLayerVisuals(dtMs, effectivePlayerSpeed, isSlowed);
     this.updateRunnerDebugOutline();
     this.updateHud();
@@ -2261,16 +2277,22 @@ const dashGameScreen = {
     this.hasEnded = true;
     this.stopBgm();
     this.stopLoop();
-    gameState.dash.result = {
+    const buildContext = {
       runId: gameState.dash.currentRunId,
       distanceM: gameState.dash.distanceM,
       correctCount: gameState.dash.correctCount,
       wrongCount: gameState.dash.wrongCount,
       defeatedCount: gameState.dash.defeatedCount,
       maxStreak: this.maxStreak,
+      timeLeftMs: this.timeLeftMs,
+      stageId: gameState.dash?.stageId,
+      endReason,
+    };
+    gameState.dash.result = this.modeStrategy?.buildResult?.(buildContext) ?? {
+      ...buildContext,
+      mode: this.currentDashModeId,
       timeLeftMs: Math.max(0, this.timeLeftMs),
       stageId: toDashStageId(gameState.dash?.stageId),
-      endReason,
       retired: endReason !== 'timeup',
     };
     screenManager.changeScreen('dash-result');
@@ -2297,6 +2319,7 @@ const dashGameScreen = {
     this.lastTickTs = window.performance.now();
     this.currentQuestion = null;
     this.hasEnded = false;
+    this.resolveModeStrategy();
     this.maxStreak = 0;
     this.clearStreakCue();
     gameState.dash.distanceM = 0;
@@ -2305,6 +2328,7 @@ const dashGameScreen = {
     gameState.dash.defeatedCount = 0;
     gameState.dash.streak = 0;
     gameState.dash.result = null;
+    gameState.dash.modeId = this.currentDashModeId;
     gameState.dash.currentRunId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     this.currentArea = null;
     this.lastNextAreaText = null;
