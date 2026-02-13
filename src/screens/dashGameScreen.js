@@ -167,6 +167,36 @@ const dashGameScreen = {
     const storageValue = window.localStorage?.getItem(DASH_DEBUG_STORAGE_KEY);
     return flagFromWindow || queryValue === '1' || storageValue === '1';
   },
+  shouldLogCollisionStage(stage, enemyId, nowMs) {
+    if (!this.isDashRunnerDebugEnabled() || !enemyId) {
+      return false;
+    }
+    const key = `${stage}:${enemyId}:${Math.round(nowMs)}`;
+    if (this.lastCollisionStageLogKey === key) {
+      return false;
+    }
+    this.lastCollisionStageLogKey = key;
+    return true;
+  },
+  logRunnerOverlapDebug({ enemyId, nowMs }) {
+    if (!this.shouldLogCollisionStage('overlap', enemyId, nowMs)) {
+      return;
+    }
+    const cooldownRemaining = Math.max(0, Math.round((this.runnerInvincibleUntilMs ?? 0) - nowMs));
+    const invincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
+    const kicking = nowMs < (this.kickUntilMs ?? 0);
+    console.log(
+      `[dash-debug][COLLIDE:overlap] enemyId=${enemyId}, now=${Math.round(nowMs)}, invincible=${invincible}, kicking=${kicking}, cooldownRemaining=${cooldownRemaining}`,
+    );
+    this.logCollisionRunnerDebugDump({
+      nowMs,
+      timeLeftBeforeMs: this.timeLeftMs,
+      enemyUpdate: { events: [{ type: 'collision', enemyId }] },
+      isRunnerInvincible: invincible,
+      defeatSequenceActive: kicking,
+      lightweight: true,
+    });
+  },
   getCollisionEnemyDebugInfo(enemyUpdate) {
     const collisionEvent = enemyUpdate?.events?.find((event) => event?.type === 'collision') ?? null;
     const enemyId = collisionEvent?.enemyId ?? null;
@@ -218,17 +248,61 @@ const dashGameScreen = {
     }
     return findings.length > 0 ? findings : ['none'];
   },
-  logCollisionRunnerDebugDump({ nowMs, timeLeftBeforeMs, enemyUpdate, isRunnerInvincible, defeatSequenceActive }) {
-    if (!this.isDashRunnerDebugEnabled() || this.lastCollisionDebugMs === nowMs) {
+  logCollisionRunnerDebugDump({
+    nowMs,
+    timeLeftBeforeMs,
+    enemyUpdate,
+    isRunnerInvincible,
+    defeatSequenceActive,
+    lightweight = false,
+  }) {
+    if (!this.isDashRunnerDebugEnabled()) {
       return;
     }
-    this.lastCollisionDebugMs = nowMs;
+    if (!lightweight && this.lastCollisionDebugMs === nowMs) {
+      return;
+    }
+    if (!lightweight) {
+      this.lastCollisionDebugMs = nowMs;
+    }
     const runnerWrap = domRefs.game.runnerWrap ?? document.querySelector('.runner-wrap');
     const runnerSprite = domRefs.game.runner ?? document.querySelector('#runner-sprite');
     const wrapSnapshot = this.captureRunnerDebugSnapshot(runnerWrap, '.runner-wrap');
     const spriteSnapshot = this.captureRunnerDebugSnapshot(runnerSprite, '#runner-sprite');
     const wrapParentSnapshot = this.captureRunnerDebugSnapshot(runnerWrap?.parentElement ?? null, '.runner-wrap parent');
     const { enemyId, enemyType } = this.getCollisionEnemyDebugInfo(enemyUpdate);
+    if (lightweight) {
+      console.log('[dash-debug] collision-runner-dump', {
+        nowMs,
+        enemyId,
+        enemyType,
+        runnerWrap: {
+          exists: wrapSnapshot.exists,
+          className: wrapSnapshot.className,
+          computed: wrapSnapshot.computed
+            ? {
+              display: wrapSnapshot.computed.display,
+              visibility: wrapSnapshot.computed.visibility,
+              opacity: wrapSnapshot.computed.opacity,
+            }
+            : null,
+          rect: wrapSnapshot.rect,
+        },
+        runnerSprite: {
+          exists: spriteSnapshot.exists,
+          className: spriteSnapshot.className,
+          computed: spriteSnapshot.computed
+            ? {
+              display: spriteSnapshot.computed.display,
+              visibility: spriteSnapshot.computed.visibility,
+              opacity: spriteSnapshot.computed.opacity,
+            }
+            : null,
+          rect: spriteSnapshot.rect,
+        },
+      });
+      return;
+    }
     const findings = this.computeRunnerDebugFindings(wrapSnapshot, spriteSnapshot, wrapParentSnapshot);
     console.log('[dash-debug] collision-runner-dump', {
       nowMs,
@@ -815,6 +889,52 @@ const dashGameScreen = {
     if (!currentSrc || currentSrc.includes('/undefined')) {
       runner.src = this.runnerSpriteLastSuccessfulSrc || defaultRunnerSrc;
     }
+  },
+  setupRunnerMutationDebugObserver() {
+    if (!this.isDashRunnerDebugEnabled()) {
+      return;
+    }
+    this.teardownRunnerMutationDebugObserver();
+    const observeTarget = (target, targetLabel) => {
+      if (!target) {
+        return;
+      }
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          const oldValue = mutation.oldValue ?? '';
+          const newValue = target.getAttribute(mutation.attributeName) ?? '';
+          if (oldValue === newValue) {
+            return;
+          }
+          const mutationLabel = mutation.attributeName === 'class'
+            ? 'class-change'
+            : 'style-change';
+          console.log(`[dash-debug][RUNNER:${mutationLabel}]`, {
+            target: targetLabel,
+            oldValue,
+            newValue,
+          });
+          console.trace(`[dash-debug][RUNNER:${mutationLabel}]`);
+        });
+      });
+      observer.observe(target, {
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ['class', 'style'],
+      });
+      this.runnerMutationObservers.push(observer);
+    };
+    this.runnerMutationObservers = [];
+    observeTarget(domRefs.game.runnerWrap, 'class-change');
+    observeTarget(domRefs.game.runner, 'sprite-class-change');
+  },
+  teardownRunnerMutationDebugObserver() {
+    if (!Array.isArray(this.runnerMutationObservers)) {
+      this.runnerMutationObservers = [];
+      return;
+    }
+    this.runnerMutationObservers.forEach((observer) => observer.disconnect());
+    this.runnerMutationObservers = [];
   },
   applyDashTheme() {
     const bgThemeId = toDashRunBgThemeId(this.dashStageId);
@@ -1623,8 +1743,16 @@ const dashGameScreen = {
       );
       if (handledCollision) {
         const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
+        const collisionEvent = enemyUpdate.events?.find((event) => event?.type === 'collision') ?? null;
+        const collisionEnemyId = collisionEvent?.enemyId ?? 'unknown';
+        if (this.shouldLogCollisionStage('handle-enter', collisionEnemyId, nowMs)) {
+          console.log(
+            `[dash-debug][COLLIDE:handle-enter] enemyId=${collisionEnemyId}, now=${Math.round(nowMs)}, invincible=${isRunnerInvincible}, kicking=${defeatSequenceActive}`,
+          );
+        }
         if (!isRunnerInvincible) {
           const timeLeftBeforeMs = this.timeLeftMs;
+          const speedBefore = this.playerSpeed;
           // Hit-confirm point: collision && !attackHandled && !invincible.
           this.startRunnerHitDebugProbe(nowMs);
           // NOTE: playSfx is ignored until audio is unlocked; keep this here so
@@ -1642,6 +1770,11 @@ const dashGameScreen = {
           this.runnerHitUntilMs = nowMs + RUNNER_HIT_REACTION_MS;
           this.runnerInvincibleUntilMs = nowMs + COLLISION_COOLDOWN_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
+          if (this.shouldLogCollisionStage('penalty', collisionEnemyId, nowMs)) {
+            console.log(
+              `[dash-debug][COLLIDE:penalty] enemyId=${collisionEnemyId}, timeLeft:${Math.round(timeLeftBeforeMs)}->${Math.round(this.timeLeftMs)}, speed:${speedBefore.toFixed(2)}->${this.playerSpeed.toFixed(2)}`,
+            );
+          }
           this.showDebugToast('HIT -3秒');
           this.verifyRunnerDom();
           this.triggerRunnerStumble();
@@ -1745,6 +1878,12 @@ const dashGameScreen = {
     if (this.hasEnded) {
       return;
     }
+    if (this.isDashRunnerDebugEnabled()) {
+      console.log(
+        `[dash-debug][SESSION:end] reason=${endReason}, timeLeft=${Math.max(0, Math.round(this.timeLeftMs))}, collided=${Boolean(this.lastCollisionPenaltyAtMs > 0)}, stack=trace`,
+      );
+      console.trace('[dash-debug][SESSION:end]');
+    }
     this.hasEnded = true;
     this.stopBgm();
     this.stopLoop();
@@ -1826,6 +1965,8 @@ const dashGameScreen = {
     this.runnerSpriteLastFailedSrc = null;
     this.enemyUpdateCount = 0;
     this.lastCollisionDebugMs = -Infinity;
+    this.lastCollisionStageLogKey = '';
+    this.runnerMutationObservers = [];
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
     this.applyDashTheme();
@@ -1835,6 +1976,11 @@ const dashGameScreen = {
       getCurrentMode: () => gameState.dash.currentMode,
       worldEl: domRefs.game.runWorld,
       containerEl: domRefs.game.runEnemies,
+      onCollisionDebug: ({ stage, enemyId, nowMs }) => {
+        if (stage === 'overlap') {
+          this.logRunnerOverlapDebug({ enemyId, nowMs });
+        }
+      },
     });
     this.enemySystem.reset();
     const stagePreloadPromise = getStageCorePreloadPromise(this.dashStageId, { mode: 'dash' });
@@ -2056,6 +2202,7 @@ const dashGameScreen = {
       window.addEventListener('error', errorHandler);
       window.addEventListener('unhandledrejection', rejectionHandler);
       this.startRunnerHitDebugProbe();
+      this.setupRunnerMutationDebugObserver();
       console.log('[dash-debug] enabled', {
         hint: 'Use ?dashDebug=1 or localStorage.setItem("dashDebugRunner","1")',
       });
@@ -2120,6 +2267,7 @@ const dashGameScreen = {
     this.enemySystem?.destroy();
     this.enemySystem = null;
     this.stopRunnerHitDebugProbe();
+    this.teardownRunnerMutationDebugObserver();
     if (this.dashDebugErrorHandler) {
       window.removeEventListener('error', this.dashDebugErrorHandler);
       this.dashDebugErrorHandler = null;
