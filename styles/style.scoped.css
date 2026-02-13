@@ -351,29 +351,87 @@
   color: var(--color-text-sub);
   font-size: var(--font-body);
   line-height: 1.6;
-}.calc-sprint .primary-button, .calc-sprint .secondary-button {
+}.calc-sprint .btn, .calc-sprint .primary-button, .calc-sprint .secondary-button {
   border: none;
   border-radius: var(--radius-pill);
   padding: 12px 24px;
   font-size: var(--font-body);
+  font-weight: 700;
+  line-height: 1.2;
   cursor: pointer;
   min-height: 44px;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}.calc-sprint .primary-button {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.calc-sprint .btn-primary, .calc-sprint .primary-button {
   background: var(--color-primary);
   color: var(--color-surface);
   box-shadow: 0 8px 16px color-mix(in srgb, var(--color-primary) 25%, transparent);
-}.calc-sprint .secondary-button {
+}
+
+.calc-sprint .btn-secondary, .calc-sprint .secondary-button {
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
   color: color-mix(in srgb, var(--color-primary-strong) 85%, var(--color-text));
-}.calc-sprint .primary-button--xl {
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.calc-sprint .btn-ghost {
+  background: transparent;
+  color: var(--color-primary-strong);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
+  box-shadow: none;
+}
+
+.calc-sprint .primary-button--xl {
   font-size: var(--font-h2);
   padding: 14px 28px;
-}.calc-sprint .primary-button:hover, .calc-sprint .secondary-button:hover {
+}
+
+.calc-sprint .btn:hover, .calc-sprint .primary-button:hover, .calc-sprint .secondary-button:hover {
   transform: translateY(-1px);
-}.calc-sprint .primary-button:active, .calc-sprint .secondary-button:active {
+}
+
+.calc-sprint .btn:active, .calc-sprint .primary-button:active, .calc-sprint .secondary-button:active {
   transform: translateY(1px);
   box-shadow: none;
+}
+
+.calc-sprint .btn:focus-visible, .calc-sprint .primary-button:focus-visible, .calc-sprint .secondary-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 38%, transparent);
+  outline-offset: 2px;
+}
+
+.calc-sprint .btn-ghost:hover {
+  opacity: 0.88;
+}
+
+.calc-sprint .card, .calc-sprint .stage-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+
+.calc-sprint .card--soft {
+  background: var(--color-surface-soft);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.calc-sprint .card--stat, .calc-sprint .screen-dash .dash-stat-card {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+}
+
+.calc-sprint .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  color: var(--color-primary-strong);
 }.calc-sprint .title-actions {
   display: flex;
   flex-direction: column;
@@ -2197,6 +2255,26 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .calc-sprint .btn,
+  .calc-sprint .btn-primary,
+  .calc-sprint .btn-secondary,
+  .calc-sprint .btn-ghost,
+  .calc-sprint .primary-button,
+  .calc-sprint .secondary-button,
+  .calc-sprint .card,
+  .calc-sprint .card--stat,
+  .calc-sprint .badge {
+    transition: none;
+    animation: none;
+  }
+
+  .calc-sprint .btn:hover,
+  .calc-sprint .primary-button:hover,
+  .calc-sprint .secondary-button:hover,
+  .calc-sprint .screen-dash-result .dash-stat-card:hover {
+    transform: none;
+  }
+
   .calc-sprint .screen-dash .dash-proximity-fill {
     transition: none;
   }
