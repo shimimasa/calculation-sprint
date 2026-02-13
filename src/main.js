@@ -6,6 +6,8 @@ import settingsScreen from './screens/settingsScreen.js';
 import dashGameScreen from './screens/dashGameScreen.js';
 import dashResultScreen from './screens/dashResultScreen.js';
 import dashStageSelectScreen from './screens/dashStageSelectScreen.js';
+import dashSettingsScreen from './screens/dashSettingsScreen.js';
+import dashStatsScreen from './screens/dashStatsScreen.js';
 import gameScreen from './screens/gameScreen.js';
 import resultScreen from './screens/resultScreen.js';
 import gameState from './core/gameState.js';
@@ -17,6 +19,8 @@ const screens = {
   'stage-select': stageSelectScreen,
   settings: settingsScreen,
   'dash-stage-select': dashStageSelectScreen,
+  'dash-settings': dashSettingsScreen,
+  'dash-stats': dashStatsScreen,
   'dash-game': dashGameScreen,
   'dash-result': dashResultScreen,
   game: gameScreen,

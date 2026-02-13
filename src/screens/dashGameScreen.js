@@ -2,6 +2,7 @@ import domRefs from '../ui/domRefs.js';
 import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import audioManager from '../core/audioManager.js';
+import dashSettingsStore from '../core/dashSettingsStore.js';
 import gameState from '../core/gameState.js';
 import inputActions from '../core/inputActions.js';
 import questionGenerator from '../features/questionGenerator.js';
@@ -85,6 +86,11 @@ const DEBUG_KEYPAD = false;
 const RUNNER_DEFAULT_SPRITE_PATH = 'assets/runner/runner.png';
 const HIT_SHAKE_CLASS = 'is-shake';
 const HIT_FLASH_CLASS = 'is-hitflash';
+const DASH_DIFFICULTY_TIME_LIMIT_MULTIPLIER = Object.freeze({
+  easy: 1.2,
+  normal: 1,
+  hard: 0.85,
+});
 const DASH_STAGE_TO_BGM_ID = Object.freeze({
   plus: 'bgm_add',
   minus: 'bgm_sub',
@@ -1609,10 +1615,12 @@ const dashGameScreen = {
   // Global results persist ONLY to gameState.dash: distanceM, correctCount, wrongCount, defeatedCount, streak.
   getInitialTimeLimitMs() {
     const limitSeconds = Number(gameState?.timeLimit);
+    const difficulty = dashSettingsStore.get()?.difficulty ?? 'normal';
+    const multiplier = DASH_DIFFICULTY_TIME_LIMIT_MULTIPLIER[difficulty] ?? 1;
     if (Number.isFinite(limitSeconds) && limitSeconds > 0) {
-      return limitSeconds * 1000;
+      return limitSeconds * 1000 * multiplier;
     }
-    return DEFAULT_TIME_LIMIT_MS;
+    return DEFAULT_TIME_LIMIT_MS * multiplier;
   },
   isScreenActive() {
     return Boolean(domRefs.screens['dash-game']?.classList.contains('is-active'));
@@ -2254,6 +2262,7 @@ const dashGameScreen = {
     this.stopBgm();
     this.stopLoop();
     gameState.dash.result = {
+      runId: gameState.dash.currentRunId,
       distanceM: gameState.dash.distanceM,
       correctCount: gameState.dash.correctCount,
       wrongCount: gameState.dash.wrongCount,
@@ -2262,6 +2271,7 @@ const dashGameScreen = {
       timeLeftMs: Math.max(0, this.timeLeftMs),
       stageId: toDashStageId(gameState.dash?.stageId),
       endReason,
+      retired: endReason !== 'timeup',
     };
     screenManager.changeScreen('dash-result');
   },
@@ -2295,6 +2305,7 @@ const dashGameScreen = {
     gameState.dash.defeatedCount = 0;
     gameState.dash.streak = 0;
     gameState.dash.result = null;
+    gameState.dash.currentRunId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     this.currentArea = null;
     this.lastNextAreaText = null;
     this.lastNextAreaHidden = null;

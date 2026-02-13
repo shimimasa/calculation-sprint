@@ -10,6 +10,8 @@ const domRefs = {
     title: byId('title-screen'),
     'stage-select': byId('stage-select-screen'),
     'dash-stage-select': byId('dash-stage-select-screen'),
+    'dash-settings': byId('dash-settings-screen'),
+    'dash-stats': byId('dash-stats-screen'),
     settings: byId('settings-screen'),
     'dash-game': byId('dash-game-screen'),
     'dash-result': byId('dash-result-screen'),
@@ -25,6 +27,8 @@ const domRefs = {
     startButton: byId('title-start-button'),
     freeButton: byId('title-free-button'),
     dashButton: byId('title-dash-button'),
+    dashSettingsButton: byId('title-dash-settings-button'),
+    dashStatsButton: byId('title-dash-stats-button'),
   },
   dashStageSelect: {
     list: byId('dash-stage-select-list'),
@@ -59,6 +63,8 @@ const domRefs = {
   dashResult: {
     backButton: byId('dash-result-back-button'),
     replayButton: byId('dash-result-replay-button'),
+    settingsButton: byId('dash-result-settings-button'),
+    statsButton: byId('dash-result-stats-button'),
     message: byId('dash-result-message'),
     record: byId('dash-result-record'),
     stage: byId('dash-result-stage'),
@@ -71,6 +77,18 @@ const domRefs = {
     missRate: byId('dash-result-miss-rate'),
     maxStreak: byId('dash-result-max-streak'),
     timeRemaining: byId('dash-result-time'),
+  },
+  dashSettings: {
+    bgmToggle: byId('dash-settings-bgm-toggle'),
+    sfxToggle: byId('dash-settings-sfx-toggle'),
+    difficultySelect: byId('dash-settings-difficulty'),
+    backButton: byId('dash-settings-back-button'),
+  },
+  dashStats: {
+    totalBest: byId('dash-stats-total-best'),
+    stageBestBody: byId('dash-stats-stage-best-body'),
+    historyBody: byId('dash-stats-history-body'),
+    backButton: byId('dash-stats-back-button'),
   },
   stageSelect: {
     list: byId('stage-select-list'),
