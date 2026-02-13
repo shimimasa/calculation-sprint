@@ -36,7 +36,10 @@ const STREAK_CUE_DURATION_MS = 800;
 const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 const LOW_TIME_THRESHOLD_MS = 8000;
-const COLLISION_COOLDOWN_MS = 500;
+const DAMAGE_INVINCIBLE_MS = 800;
+const HIT_SHAKE_MS = 160;
+const HIT_FLASH_MS = 160;
+const HIT_SHAKE_PX = 3;
 const COLLISION_SLOW_MS = 1000;
 const COLLISION_SLOW_MULT = 0.7;
 const RUNNER_HIT_REACTION_MS = 420;
@@ -45,6 +48,8 @@ const MAX_LUNGE_PX = 140;
 const LOOP_WATCHDOG_INTERVAL_MS = 1000;
 const LOOP_STOPPED_THRESHOLD_MS = 1500;
 const LOOP_RECOVERY_MAX_ATTEMPTS = 3;
+const LOOP_ERROR_RECOVERY_COOLDOWN_MS = 120;
+const PLAYER_RECT_NULL_RECOVERY_STREAK = 10;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
@@ -69,12 +74,17 @@ const DASH_DEBUG_QUERY_KEY = 'dashDebug';
 const DASH_DEBUG_LEGACY_QUERY_KEY = 'dashDebugRunner';
 const DASH_DEBUG_STORAGE_KEY = 'dashDebugRunner';
 const DASH_DEBUG_WINDOW_FLAG = '__DASH_DEBUG_RUNNER';
+const COLLISION_DEBUG_QUERY_KEY = 'debugCollision';
+const COLLISION_DEBUG_STORAGE_KEY = 'dash.debugCollision';
+const COLLISION_DEBUG_LOG_INTERVAL_MS = 200;
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
 const DASH_DEBUG_ALWAYS_ON = false;
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
 const RUNNER_DEFAULT_SPRITE_PATH = 'assets/runner/runner.png';
+const HIT_SHAKE_CLASS = 'is-shake';
+const HIT_FLASH_CLASS = 'is-hitflash';
 const DASH_STAGE_TO_BGM_ID = Object.freeze({
   plus: 'bgm_add',
   minus: 'bgm_sub',
@@ -85,6 +95,69 @@ const DASH_STAGE_TO_BGM_ID = Object.freeze({
 });
 const randomBetween = (min, max) => min + Math.random() * (max - min);
 const randomIntBetween = (min, max) => Math.floor(randomBetween(min, max + 1));
+const toFiniteOrNull = (value) => (Number.isFinite(value) ? value : null);
+const normalizeRect = (rect) => {
+  if (!rect || typeof rect !== 'object') {
+    return null;
+  }
+  const x = toFiniteOrNull(rect.x);
+  const y = toFiniteOrNull(rect.y);
+  const widthCandidate = toFiniteOrNull(rect.w ?? rect.width);
+  const heightCandidate = toFiniteOrNull(rect.h ?? rect.height);
+  const leftCandidate = toFiniteOrNull(rect.left);
+  const topCandidate = toFiniteOrNull(rect.top);
+  const rightCandidate = toFiniteOrNull(rect.right);
+  const bottomCandidate = toFiniteOrNull(rect.bottom);
+
+  let left = leftCandidate;
+  let top = topCandidate;
+  let right = rightCandidate;
+  let bottom = bottomCandidate;
+
+  if (left === null && x !== null) {
+    left = x;
+  }
+  if (top === null && y !== null) {
+    top = y;
+  }
+  if (right === null && left !== null && widthCandidate !== null) {
+    right = left + widthCandidate;
+  }
+  if (bottom === null && top !== null && heightCandidate !== null) {
+    bottom = top + heightCandidate;
+  }
+  if (left === null && right !== null && widthCandidate !== null) {
+    left = right - widthCandidate;
+  }
+  if (top === null && bottom !== null && heightCandidate !== null) {
+    top = bottom - heightCandidate;
+  }
+
+  if ([left, top, right, bottom].some((value) => value === null)) {
+    return null;
+  }
+  if (right < left) {
+    [left, right] = [right, left];
+  }
+  if (bottom < top) {
+    [top, bottom] = [bottom, top];
+  }
+
+  const width = Math.abs(right - left);
+  const height = Math.abs(bottom - top);
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width,
+    height,
+    x: left,
+    y: top,
+    w: width,
+    h: height,
+  };
+};
 const extractCssUrl = (value) => {
   if (!value) {
     return '';
@@ -166,6 +239,33 @@ const dashGameScreen = {
     const queryValue = searchParams.get(DASH_DEBUG_QUERY_KEY) ?? searchParams.get(DASH_DEBUG_LEGACY_QUERY_KEY);
     const storageValue = window.localStorage?.getItem(DASH_DEBUG_STORAGE_KEY);
     return flagFromWindow || queryValue === '1' || storageValue === '1';
+  },
+  isCollisionDebugEnabled() {
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryValue = searchParams.get(COLLISION_DEBUG_QUERY_KEY);
+    const storageValue = window.localStorage?.getItem(COLLISION_DEBUG_STORAGE_KEY);
+    return queryValue === '1' || storageValue === '1';
+  },
+  classifyCollisionPipeline(sample) {
+    if (!sample) {
+      return 'unknown';
+    }
+    if (!sample.enemyUpdateCalled) {
+      return 'not-running';
+    }
+    if (!sample.playerRectValid || !sample.enemyRectValid) {
+      return 'not-hitting';
+    }
+    if (!sample.intersects && sample.enemiesCount > 0) {
+      return 'not-hitting';
+    }
+    if (sample.intersects && !sample.collisionFired) {
+      return 'ignored';
+    }
+    if (sample.intersects && sample.collisionFired) {
+      return 'fired';
+    }
+    return 'unknown';
   },
   shouldLogCollisionStage(stage, enemyId, nowMs) {
     if (!this.isDashRunnerDebugEnabled() || !enemyId) {
@@ -627,8 +727,31 @@ const dashGameScreen = {
   noteLoopError(error) {
     const message = error instanceof Error ? error.message : String(error ?? 'Unknown error');
     this.lastLoopErrorMessage = message;
+    this.lastLoopErrorAtMs = window.performance.now();
     console.error('[dash-game] loop error', error);
     this.updateLoopMonitorBadge();
+  },
+  refreshRunDomRefs() {
+    const screen = domRefs.dashGame.screen;
+    const runLayer = domRefs.game.runLayer;
+    if (!screen) {
+      return;
+    }
+    const resolveInScope = (selectors) => {
+      for (const selector of selectors) {
+        const found = screen.querySelector(selector);
+        if (found) {
+          return found;
+        }
+      }
+      return null;
+    };
+    domRefs.game.runWorld = runLayer?.querySelector('.run-world')
+      ?? resolveInScope(['.run-layer .run-world', '.run-world']);
+    domRefs.game.runnerWrap = domRefs.game.runWorld?.querySelector('.runner-wrap')
+      ?? resolveInScope(['.run-layer .runner-wrap', '.runner-wrap']);
+    domRefs.game.runner = domRefs.game.runnerWrap?.querySelector('#runner-sprite, img#runner-sprite')
+      ?? resolveInScope(['.run-layer #runner-sprite', '#runner-sprite']);
   },
   startLoopWatchdog() {
     this.stopLoopWatchdog();
@@ -715,12 +838,22 @@ const dashGameScreen = {
   updateDiagnostics({
     playerRect,
     enemyRect,
+    enemyRectRaw = null,
+    playerRectNorm = null,
+    enemyRectNorm = null,
     worldRect,
     groundY,
     collision,
     attackHandled,
+    pipelineStatus = 'unknown',
+    intersects = false,
+    intersectsRaw = false,
+    intersectsNorm = false,
+    enemiesCount = 0,
+    flags = {},
+    groundDebug = null,
   }) {
-    const debugEnabled = this.isDebugEnabled();
+    const debugEnabled = this.isDebugEnabled() || this.isCollisionDebugEnabled();
     if (!debugEnabled) {
       if (this.diagnosticsHudEl) {
         this.diagnosticsHudEl.hidden = true;
@@ -739,13 +872,34 @@ const dashGameScreen = {
     }
     const dx = playerRect && enemyRect ? Math.round(enemyRect.x - playerRect.x) : null;
     const dy = playerRect && enemyRect ? Math.round(enemyRect.y - playerRect.y) : null;
+    const fmtNormRect = (label, rect) => {
+      if (!rect) {
+        return `${label}:0 l:null t:null r:null b:null`;
+      }
+      return `${label}:1 l:${Math.round(rect.left)} t:${Math.round(rect.top)} r:${Math.round(rect.right)} b:${Math.round(rect.bottom)}`;
+    };
+    const normalizedPlayerRect = playerRectNorm ?? normalizeRect(playerRect);
+    const normalizedEnemyRect = enemyRectNorm ?? normalizeRect(enemyRect);
+    const worldRectDebug = groundDebug?.worldRect ?? null;
+    const groundRectDebug = groundDebug?.groundRect ?? null;
+    const localTopDebug = groundDebug?.localTop ?? null;
+    const groundTopYFinalDebug = groundDebug?.worldGroundTopY ?? null;
     hud.textContent = [
       `ENEMY_SYS:${this.enemySystem ? 1 : 0} UPD:${this.enemyUpdateCount}`,
       `GROUND_Y:${groundY === null ? 'null' : Math.round(groundY)}`,
-      this.formatDiagnosticRect('PLAYER', playerRect),
-      this.formatDiagnosticRect('ENEMY', enemyRect),
+      `WORLD: t:${worldRectDebug ? Math.round(worldRectDebug.top) : 'null'} h:${worldRectDebug ? Math.round(worldRectDebug.height) : 'null'}`,
+      `GROUND: t:${groundRectDebug ? Math.round(groundRectDebug.top) : 'null'} h:${groundRectDebug ? Math.round(groundRectDebug.height) : 'null'}`,
+      `GROUND_LOCAL_TOP:${Number.isFinite(localTopDebug) ? Math.round(localTopDebug) : 'null'}`,
+      `GROUND_TOP_Y(final):${groundTopYFinalDebug === null ? 'null' : Math.round(groundTopYFinalDebug)}`,
+      this.formatDiagnosticRect('PLAYER(raw)', playerRect),
+      this.formatDiagnosticRect('ENEMY(raw)', enemyRectRaw ?? enemyRect),
+      this.formatDiagnosticRect('ENEMY(world)', enemyRect),
+      fmtNormRect('PLAYER(norm)', normalizedPlayerRect),
+      fmtNormRect('ENEMY(norm)', normalizedEnemyRect),
       `DX:${dx ?? 'null'} DY:${dy ?? 'null'}`,
-      `COLL:${collision ? 1 : 0} ATK:${attackHandled ? 1 : 0}`,
+      `COLL:${collision ? 1 : 0} ATK:${attackHandled ? 1 : 0} INT:${intersects ? 1 : 0} RAW:${intersectsRaw ? 1 : 0} NORM:${intersectsNorm ? 1 : 0}`,
+      `ENEMIES:${enemiesCount} PIPE:${pipelineStatus}`,
+      `FLAGS g:${flags.startGrace ? 1 : 0} inv:${flags.invincible ? 1 : 0} kick:${flags.kicking ? 1 : 0} en:${flags.collisionEnabled ? 1 : 0} h:${flags.handledCollision ? 1 : 0} cd:${Math.round(flags.cooldownMs ?? 0)}`,
     ].join('\n');
 
     this.ensureDiagnosticsHitboxes();
@@ -1124,12 +1278,11 @@ const dashGameScreen = {
     this.logGroundDebug();
   },
   getPlayerRect() {
-    const runWorld = domRefs.game.runWorld;
+    const worldRect = this.getWorldRectForCollision();
     const runnerWrap = domRefs.game.runnerWrap;
-    if (!runWorld || !runnerWrap) {
+    if (!worldRect || !runnerWrap || !runnerWrap.isConnected) {
       return null;
     }
-    const worldRect = runWorld.getBoundingClientRect();
     const runnerRect = runnerWrap.getBoundingClientRect();
     return {
       x: runnerRect.left - worldRect.left,
@@ -1137,6 +1290,76 @@ const dashGameScreen = {
       w: runnerRect.width,
       h: runnerRect.height,
     };
+  },
+  getWorldRectForCollision() {
+    const runWorld = this.runWorld ?? domRefs.game.runWorld;
+    if (runWorld?.isConnected) {
+      return runWorld.getBoundingClientRect();
+    }
+    const runLayer = this.runLayer ?? domRefs.game.runLayer;
+    const runWorldFromLayer = runLayer?.isConnected ? runLayer.querySelector('.run-world') : null;
+    if (runWorldFromLayer?.isConnected) {
+      domRefs.game.runWorld = runWorldFromLayer;
+      return runWorldFromLayer.getBoundingClientRect();
+    }
+    const runZone = domRefs.dashGame.screen?.querySelector('.dash-run-zone');
+    if (runZone?.isConnected) {
+      return runZone.getBoundingClientRect();
+    }
+    return null;
+  },
+  getWorldGroundTopY() {
+    const runWorld = this.runWorld ?? domRefs.game.runWorld;
+    const worldRect = this.getWorldRectForCollision();
+    if (!runWorld?.isConnected || !worldRect) {
+      this.lastGroundTopDiagnostics = {
+        worldRect,
+        groundRect: null,
+        localTop: null,
+        worldGroundTopY: null,
+      };
+      return null;
+    }
+    const runWorldGround = runWorld.querySelector('.run-ground');
+    const groundTile = runWorldGround ? null : runWorld.querySelector('.run-ground__tile');
+    const groundEl = runWorldGround
+      ?? (groundTile?.parentElement && runWorld.contains(groundTile.parentElement)
+        ? groundTile.parentElement
+        : null);
+    if (!groundEl || !groundEl.isConnected) {
+      this.lastGroundTopDiagnostics = {
+        worldRect,
+        groundRect: null,
+        localTop: null,
+        worldGroundTopY: null,
+      };
+      return null;
+    }
+    const groundRect = groundEl.getBoundingClientRect();
+    const localTop = groundRect.top - worldRect.top;
+    let worldGroundTopY = Math.round(localTop);
+    const invalidLocalTop = (
+      !Number.isFinite(localTop)
+      || localTop < 0
+      || localTop > worldRect.height
+    );
+    if (invalidLocalTop) {
+      const playerRect = this.getPlayerRect();
+      if (playerRect) {
+        worldGroundTopY = Math.round(playerRect.y + playerRect.h);
+      } else if (Number.isFinite(groundRect.height)) {
+        worldGroundTopY = Math.round(worldRect.height - groundRect.height);
+      } else {
+        worldGroundTopY = Math.round(worldRect.height * 0.85);
+      }
+    }
+    this.lastGroundTopDiagnostics = {
+      worldRect,
+      groundRect,
+      localTop,
+      worldGroundTopY,
+    };
+    return worldGroundTopY;
   },
   getAnswerInput() {
     const input = domRefs.dashGame.answerInput;
@@ -1322,6 +1545,36 @@ const dashGameScreen = {
     runnerWrap.classList.toggle('is-debug-stumble', debugEnabled);
     runnerWrap.classList.add('is-runner-hit');
   },
+  addClassWithRestart(element, className, durationMs) {
+    if (!element || !className) {
+      return;
+    }
+    if (!this.hitEffectTimeouts) {
+      this.hitEffectTimeouts = new WeakMap();
+    }
+    element.classList.remove(className);
+    // Reflow to ensure the same animation class can be retriggered on consecutive hits.
+    void element.offsetWidth;
+    element.classList.add(className);
+    const effectTimeouts = this.hitEffectTimeouts.get(element) ?? new Map();
+    const prevTimeoutId = effectTimeouts.get(className);
+    if (prevTimeoutId) {
+      window.clearTimeout(prevTimeoutId);
+    }
+    const timeoutId = window.setTimeout(() => {
+      element.classList.remove(className);
+      if (effectTimeouts.get(className) === timeoutId) {
+        effectTimeouts.delete(className);
+      }
+    }, Math.max(0, durationMs));
+    effectTimeouts.set(className, timeoutId);
+    this.hitEffectTimeouts.set(element, effectTimeouts);
+  },
+  triggerHitEffects() {
+    domRefs.game.runWorld?.style.setProperty('--dash-hit-shake-px', `${HIT_SHAKE_PX}px`);
+    this.addClassWithRestart(domRefs.game.runWorld, HIT_SHAKE_CLASS, HIT_SHAKE_MS);
+    this.addClassWithRestart(domRefs.game.runnerWrap, HIT_FLASH_CLASS, HIT_FLASH_MS);
+  },
   updateRunnerDamageState(nowMs) {
     const runnerWrap = domRefs.game.runnerWrap;
     if (!runnerWrap) {
@@ -1342,7 +1595,7 @@ const dashGameScreen = {
     document.documentElement.classList.remove('runner-missing');
     runLayer?.classList.remove('runner-missing');
     domRefs.dashGame.screen?.classList.remove('runner-missing');
-    runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble');
+    runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble', HIT_FLASH_CLASS);
     if (runner) {
       runner.style.removeProperty('display');
       runner.style.removeProperty('visibility');
@@ -1702,25 +1955,60 @@ const dashGameScreen = {
     const effectivePlayerSpeed = this.playerSpeed * speedMultiplier;
     gameState.dash.distanceM += effectivePlayerSpeed * dtSeconds;
     this.updateArea(gameState.dash.distanceM);
+    if (!domRefs.game.runWorld?.isConnected || !domRefs.game.runEnemies?.isConnected) {
+      this.refreshRunDomRefs();
+    }
     const runWorld = domRefs.game.runWorld;
     const worldRect = runWorld?.getBoundingClientRect?.();
     const runGroundY = gameState.run.groundY ?? gameState.run.groundSurfaceY;
     const groundY = worldRect && Number.isFinite(runGroundY)
       ? Math.round(runGroundY - worldRect.top)
       : null;
-    const playerRect = this.getPlayerRect();
+    let playerRect = this.getPlayerRect();
+    if (playerRect) {
+      this.playerRectNullStreak = 0;
+    } else {
+      this.playerRectNullStreak = (this.playerRectNullStreak ?? 0) + 1;
+      if (this.playerRectNullStreak >= PLAYER_RECT_NULL_RECOVERY_STREAK) {
+        this.ensureRunLayerMounted();
+        this.refreshRunDomRefs();
+        this.verifyRunnerDom();
+        this.updateRunnerGroundAlignment(true);
+        playerRect = this.getPlayerRect();
+        if (playerRect) {
+          this.playerRectNullStreak = 0;
+        }
+      }
+    }
+    const collisionDebugEnabled = this.isCollisionDebugEnabled();
+    if (this.enemySystem && (this.enemySystem.worldEl !== runWorld || this.enemySystem.containerEl !== domRefs.game.runEnemies)) {
+      this.enemySystem.setWorld(runWorld, domRefs.game.runEnemies);
+    }
     let debugCollision = false;
     let debugAttackHandled = false;
     let debugEnemyRect = null;
+    let intersects = false;
+    let intersectsRaw = false;
+    let playerRectNorm = null;
+    let enemyRectNorm = null;
+    let enemiesCount = 0;
+    let enemyRect = null;
+    let enemyRectRaw = null;
+    let enemyCollisionEnabled = false;
+    let enemyStartGrace = false;
+    const worldGroundTopY = this.getWorldGroundTopY();
+    const groundDebug = this.lastGroundTopDiagnostics ?? null;
     const enemyUpdate = this.enemySystem?.update({
       dtMs,
       nowMs,
       groundY,
+      worldGroundTopY,
       playerRect,
       correctCount: gameState.dash.correctCount,
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
       defeatSequenceActive,
     });
+    const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
     this.enemyUpdateCount += 1;
     if (enemyUpdate) {
       if (this.isDashRunnerDebugEnabled() && !this.hasLoggedCollisionResultDebug) {
@@ -1729,15 +2017,24 @@ const dashGameScreen = {
       }
       debugCollision = Boolean(enemyUpdate.collision);
       debugAttackHandled = Boolean(enemyUpdate.attackHandled);
+      enemiesCount = enemyUpdate.debug?.enemiesCount ?? this.enemySystem?.enemies?.length ?? 0;
+      enemyRect = enemyUpdate.debug?.enemyRect ?? enemyUpdate.nearestEnemyRect ?? null;
+      enemyRectRaw = enemyUpdate.debug?.enemyRectRaw ?? null;
+      enemyCollisionEnabled = enemyUpdate.debug?.collisionEnabled ?? false;
+      enemyStartGrace = enemyUpdate.debug?.startGraceActive ?? false;
+      intersects = Boolean(enemyUpdate.debug?.intersects);
+      intersectsRaw = Boolean(enemyUpdate.debug?.intersectsRaw);
+      playerRectNorm = enemyUpdate.debug?.playerRectNorm ?? null;
+      enemyRectNorm = enemyUpdate.debug?.enemyRectNorm ?? null;
       if (enemyUpdate.nearestEnemyRect) {
-        const enemyRect = enemyUpdate.nearestEnemyRect;
+        const nextEnemyRect = enemyUpdate.nearestEnemyRect;
         debugEnemyRect = {
-          left: enemyRect.x + (worldRect?.left ?? 0),
-          top: enemyRect.y + (worldRect?.top ?? 0),
-          right: enemyRect.x + enemyRect.w + (worldRect?.left ?? 0),
-          bottom: enemyRect.y + enemyRect.h + (worldRect?.top ?? 0),
-          width: enemyRect.w,
-          height: enemyRect.h,
+          left: nextEnemyRect.x + (worldRect?.left ?? 0),
+          top: nextEnemyRect.y + (worldRect?.top ?? 0),
+          right: nextEnemyRect.x + nextEnemyRect.w + (worldRect?.left ?? 0),
+          bottom: nextEnemyRect.y + nextEnemyRect.h + (worldRect?.top ?? 0),
+          width: nextEnemyRect.w,
+          height: nextEnemyRect.h,
         };
       }
       const handledCollision = (
@@ -1745,7 +2042,6 @@ const dashGameScreen = {
         && !enemyUpdate.attackHandled
       );
       if (handledCollision) {
-        const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
         const collisionEvent = enemyUpdate.events?.find((event) => event?.type === 'collision') ?? null;
         const collisionEnemyId = collisionEvent?.enemyId ?? 'unknown';
         if (this.shouldLogCollisionStage('handle-enter', collisionEnemyId, nowMs)) {
@@ -1771,15 +2067,24 @@ const dashGameScreen = {
           });
           this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
           this.runnerHitUntilMs = nowMs + RUNNER_HIT_REACTION_MS;
-          this.runnerInvincibleUntilMs = nowMs + COLLISION_COOLDOWN_MS;
+          this.runnerInvincibleUntilMs = nowMs + DAMAGE_INVINCIBLE_MS;
           this.lastCollisionPenaltyAtMs = nowMs;
           if (this.shouldLogCollisionStage('penalty', collisionEnemyId, nowMs)) {
             console.log(
               `[dash-debug][COLLIDE:penalty] enemyId=${collisionEnemyId}, timeLeft:${Math.round(timeLeftBeforeMs)}->${Math.round(this.timeLeftMs)}, speed:${speedBefore.toFixed(2)}->${this.playerSpeed.toFixed(2)}`,
             );
           }
+          if (collisionDebugEnabled) {
+            console.debug('[dash-collision] collision event fired', {
+              enemyId: collisionEnemyId,
+              nowMs: Math.round(nowMs),
+              timeLeftBeforeMs: Math.round(timeLeftBeforeMs),
+              timeLeftAfterMs: Math.round(this.timeLeftMs),
+            });
+          }
           this.showDebugToast('HIT -3秒');
           this.verifyRunnerDom();
+          this.triggerHitEffects();
           this.triggerRunnerStumble();
           this.updateRunnerDamageState(nowMs);
           this.updateHud();
@@ -1795,12 +2100,68 @@ const dashGameScreen = {
         this.enemyGapM = collisionThreshold * 2;
       }
     }
+    const sample = {
+      dtMs,
+      enemyUpdateCalled: Boolean(enemyUpdate),
+      playerRectValid: Boolean(playerRect),
+      enemyRectValid: Boolean(enemyRect),
+      worldRectValid: Boolean(worldRect),
+      enemiesCount,
+      intersects,
+      intersectsRaw,
+      intersectsNorm: intersects,
+      collisionFired: Boolean(debugCollision && !debugAttackHandled && !isRunnerInvincible),
+      startGrace: enemyStartGrace,
+      invincible: isRunnerInvincible,
+      kicking: defeatSequenceActive,
+      collisionEnabled: enemyCollisionEnabled,
+      handledCollision: Boolean(debugCollision && !debugAttackHandled),
+      cooldownMs: Math.max(0, Math.round((this.runnerInvincibleUntilMs ?? 0) - nowMs)),
+    };
+    const pipelineStatus = this.classifyCollisionPipeline(sample);
+    if (collisionDebugEnabled && nowMs - (this.lastCollisionDebugMs ?? -Infinity) >= COLLISION_DEBUG_LOG_INTERVAL_MS) {
+      this.lastCollisionDebugMs = nowMs;
+      console.debug('[dash-collision]', {
+        ...sample,
+        pipelineStatus,
+        playerRect,
+        worldRect: worldRect ? {
+          left: Math.round(worldRect.left),
+          top: Math.round(worldRect.top),
+          width: Math.round(worldRect.width),
+          height: Math.round(worldRect.height),
+        } : null,
+        enemyRect,
+        enemyRectRaw,
+        playerRectNorm,
+        enemyRectNorm,
+      });
+    }
+    this.updateDiagnostics({
+      playerRect,
+      enemyRect,
+      enemyRectRaw,
+      playerRectNorm,
+      enemyRectNorm,
+      worldRect,
+      groundY,
+      collision: debugCollision,
+      attackHandled: debugAttackHandled,
+      pipelineStatus,
+      intersects,
+      intersectsRaw,
+      intersectsNorm: intersects,
+      enemiesCount,
+      flags: sample,
+      groundDebug,
+    });
+    const safeDebugEnemyRect = typeof debugEnemyRect === 'undefined' ? null : debugEnemyRect;
     this.updateDebugHud({
       hasPlayerRect: Boolean(playerRect),
       collided: debugCollision,
       attackHandled: debugAttackHandled,
-      cooldownMs: COLLISION_COOLDOWN_MS - (nowMs - (this.lastCollisionPenaltyAtMs ?? -Infinity)),
-      enemyRect: debugEnemyRect,
+      cooldownMs: DAMAGE_INVINCIBLE_MS - (nowMs - (this.lastCollisionPenaltyAtMs ?? -Infinity)),
+      enemyRect: safeDebugEnemyRect,
       nearestDxPx: enemyUpdate?.nearestDistancePx ?? null,
       nearestDyPx: null,
     });
@@ -1833,12 +2194,14 @@ const dashGameScreen = {
         this.loopFrameCount += 1;
         this.updateFrame(nextDtMs);
       } catch (error) {
+        const prevLoopErrorAtMs = this.lastLoopErrorAtMs ?? -Infinity;
         this.noteLoopError(error);
         this.lastTickTs = now;
-        try {
-          this.updateFrame(0);
-        } catch (nextError) {
-          this.noteLoopError(nextError);
+        const lastErrorAgoMs = now - prevLoopErrorAtMs;
+        if (this.isDashRunnerDebugEnabled() && lastErrorAgoMs > LOOP_ERROR_RECOVERY_COOLDOWN_MS) {
+          console.warn('[dash-game] loop error; recovery deferred to next frame', {
+            message: this.lastLoopErrorMessage,
+          });
         }
       } finally {
         this.updateLoopMonitorBadge(now);
@@ -1906,6 +2269,7 @@ const dashGameScreen = {
     uiRenderer.showScreen('dash-game');
     this.events = createEventRegistry('dash-game');
     this.ensureRunLayerMounted();
+    this.refreshRunDomRefs();
     this.verifyRunnerDom();
     this.ensureRunnerSpriteGuard();
     this.resetDashRunnerVisibilityState();
@@ -1945,6 +2309,7 @@ const dashGameScreen = {
     this.isSyncingAnswer = false;
     this.isBgmActive = false;
     this.debugToastTimeout = null;
+    this.hitEffectTimeouts = new WeakMap();
     this.debugToastEl = null;
     this.overlayRootEl = null;
     this.buildBadgeEl = null;
@@ -1959,6 +2324,8 @@ const dashGameScreen = {
     this.loopFrameCount = 0;
     this.loopRecoveryCount = 0;
     this.lastLoopErrorMessage = '';
+    this.lastLoopErrorAtMs = 0;
+    this.playerRectNullStreak = 0;
     this.runnerDebugProbeActive = false;
     this.runnerDebugProbeRafId = null;
     this.runnerDebugProbeUntilMs = 0;
@@ -1979,6 +2346,7 @@ const dashGameScreen = {
       stageId: this.dashStageId,
       getCurrentMode: () => gameState.dash.currentMode,
       isDebugEnabled: () => this.isDashRunnerDebugEnabled(),
+      isCollisionDebugEnabled: () => this.isCollisionDebugEnabled(),
       worldEl: domRefs.game.runWorld,
       containerEl: domRefs.game.runEnemies,
       onCollisionDebug: ({ stage, enemyId, nowMs }) => {
@@ -2328,11 +2696,28 @@ const dashGameScreen = {
     if (domRefs.dashGame.screen) {
       delete domRefs.dashGame.screen.dataset.debugRunnerwrap;
     }
-    domRefs.game.runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble');
+    domRefs.game.runnerWrap?.classList.remove('is-runner-hit', 'is-runner-invincible', 'is-debug-stumble', HIT_FLASH_CLASS);
     if (this.feedbackFxTimeout) {
       window.clearTimeout(this.feedbackFxTimeout);
       this.feedbackFxTimeout = null;
     }
+    const clearHitEffectTimeouts = (element) => {
+      const timeouts = this.hitEffectTimeouts?.get(element);
+      if (!timeouts) {
+        return;
+      }
+      timeouts.forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      timeouts.clear();
+    };
+    clearHitEffectTimeouts(domRefs.game.runWorld);
+    clearHitEffectTimeouts(domRefs.game.runnerWrap);
+    if (this.hitEffectTimeouts) {
+      this.hitEffectTimeouts = new WeakMap();
+    }
+    domRefs.game.runWorld?.classList.remove(HIT_SHAKE_CLASS);
+    domRefs.game.runnerWrap?.classList.remove(HIT_FLASH_CLASS);
   },
 };
 

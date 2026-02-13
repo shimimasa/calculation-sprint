@@ -97,12 +97,96 @@ const resolveEnemyTypeForStage = ({
   return pool[poolIndex] ?? DEFAULT_ENEMY_TYPE;
 };
 
-const intersects = (a, b) => (
-  a.x < b.x + b.w
-  && a.x + a.w > b.x
-  && a.y < b.y + b.h
-  && a.y + a.h > b.y
-);
+const toFiniteOrNull = (value) => (Number.isFinite(value) ? value : null);
+
+const normalizeRect = (rect) => {
+  if (!rect || typeof rect !== 'object') {
+    return null;
+  }
+
+  const x = toFiniteOrNull(rect.x);
+  const y = toFiniteOrNull(rect.y);
+  const wCandidate = toFiniteOrNull(rect.w ?? rect.width);
+  const hCandidate = toFiniteOrNull(rect.h ?? rect.height);
+  const leftCandidate = toFiniteOrNull(rect.left);
+  const topCandidate = toFiniteOrNull(rect.top);
+  const rightCandidate = toFiniteOrNull(rect.right);
+  const bottomCandidate = toFiniteOrNull(rect.bottom);
+
+  let left = leftCandidate;
+  let top = topCandidate;
+  let right = rightCandidate;
+  let bottom = bottomCandidate;
+
+  if (left === null && x !== null) {
+    left = x;
+  }
+  if (top === null && y !== null) {
+    top = y;
+  }
+
+  if (right === null && left !== null && wCandidate !== null) {
+    right = left + wCandidate;
+  }
+  if (bottom === null && top !== null && hCandidate !== null) {
+    bottom = top + hCandidate;
+  }
+
+  if (left === null && right !== null && wCandidate !== null) {
+    left = right - wCandidate;
+  }
+  if (top === null && bottom !== null && hCandidate !== null) {
+    top = bottom - hCandidate;
+  }
+
+  if ([left, top, right, bottom].some((value) => value === null)) {
+    return null;
+  }
+
+  if (right < left) {
+    [left, right] = [right, left];
+  }
+  if (bottom < top) {
+    [top, bottom] = [bottom, top];
+  }
+
+  const width = Math.abs(right - left);
+  const height = Math.abs(bottom - top);
+
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width,
+    height,
+    x: left,
+    y: top,
+    w: width,
+    h: height,
+  };
+};
+
+const intersectsNormalized = (aRect, bRect) => {
+  const a = normalizeRect(aRect);
+  const b = normalizeRect(bRect);
+  if (!a || !b) {
+    return false;
+  }
+  return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+};
+
+const intersectsRawXYWH = (a, b) => {
+  if (!a || !b) {
+    return false;
+  }
+  return (
+    a.x < b.x + b.w
+    && a.x + a.w > b.x
+    && a.y < b.y + b.h
+    && a.y + a.h > b.y
+  );
+};
 
 const getEnemyTransform = (enemy) => (
   `translate3d(${Math.round(enemy.x)}px, ${Math.round(enemy.y)}px, 0)`
@@ -221,6 +305,7 @@ export const createDashEnemySystem = ({
   getEnemyPool = null,
   getCurrentMode = null,
   isDebugEnabled = null,
+  isCollisionDebugEnabled = null,
   onCollisionDebug = null,
 } = {}) => {
   const system = {
@@ -235,6 +320,7 @@ export const createDashEnemySystem = ({
     getEnemyPool,
     getCurrentMode,
     isDebugEnabled,
+    isCollisionDebugEnabled,
     onCollisionDebug,
     lastCollisionTestLogKey: '',
   };
@@ -266,6 +352,10 @@ export const createDashEnemySystem = ({
 
   system.setDebugEnabledResolver = (resolver) => {
     system.isDebugEnabled = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setCollisionDebugEnabledResolver = (resolver) => {
+    system.isCollisionDebugEnabled = typeof resolver === 'function' ? resolver : null;
   };
 
   system.reset = () => {
@@ -465,6 +555,7 @@ export const createDashEnemySystem = ({
     dtMs,
     nowMs,
     groundY,
+    worldGroundTopY = null,
     playerRect,
     correctCount,
     attackActive,
@@ -526,6 +617,14 @@ export const createDashEnemySystem = ({
     let collision = false;
     let attackHandled = false;
     const events = [];
+    let firstEnemyRect = null;
+    let firstEnemyRectRaw = null;
+    let firstIntersectsRaw = false;
+    let firstIntersectsNorm = false;
+    let firstCollisionEnabled = false;
+    let firstPlayerRectRaw = null;
+    let firstEnemyRectNorm = null;
+    let firstPlayerRectNorm = null;
 
     system.enemies = system.enemies.filter((enemy) => {
       if (!enemy?.el) {
@@ -591,19 +690,65 @@ export const createDashEnemySystem = ({
         }
         if (metric < nearestEnemyMetric) {
           nearestEnemyMetric = metric;
+          const collisionY = Number.isFinite(worldGroundTopY)
+            ? worldGroundTopY - enemy.h
+            : enemy.y;
           nearestEnemyRect = {
             x: enemy.x,
-            y: enemy.y,
+            y: collisionY,
             w: enemy.w,
             h: enemy.h,
           };
         }
       }
 
+      if (!firstEnemyRect && enemy.state === 'approaching') {
+        const collisionY = Number.isFinite(worldGroundTopY)
+          ? worldGroundTopY - enemy.h
+          : enemy.y;
+        firstEnemyRect = {
+          x: enemy.x,
+          y: collisionY,
+          w: enemy.w,
+          h: enemy.h,
+        };
+        firstEnemyRectRaw = {
+          x: enemy.x,
+          y: enemy.y,
+          w: enemy.w,
+          h: enemy.h,
+        };
+      }
+
       if (playerRect && enemy.state === 'approaching' && enemy.collisionEnabled) {
         const distancePx = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
         nearestDistancePx = Math.min(nearestDistancePx, distancePx);
-        const isOverlap = intersects(playerRect, enemy);
+        const enemyRectRaw = {
+          x: enemy.x,
+          y: enemy.y,
+          w: enemy.w,
+          h: enemy.h,
+        };
+        const enemyRectForHit = {
+          x: enemy.x,
+          y: Number.isFinite(worldGroundTopY)
+            ? worldGroundTopY - enemy.h
+            : enemy.y,
+          w: enemy.w,
+          h: enemy.h,
+        };
+        const playerRectNorm = normalizeRect(playerRect);
+        const enemyRectNorm = normalizeRect(enemyRectForHit);
+        const isOverlapRaw = intersectsRawXYWH(playerRect, enemyRectForHit);
+        const isOverlap = intersectsNormalized(playerRect, enemyRectForHit);
+        if (!firstCollisionEnabled) {
+          firstCollisionEnabled = true;
+          firstIntersectsRaw = isOverlapRaw;
+          firstIntersectsNorm = isOverlap;
+          firstPlayerRectRaw = playerRect;
+          firstPlayerRectNorm = playerRectNorm;
+          firstEnemyRectNorm = enemyRectNorm;
+        }
         if (system.isDebugEnabled?.()) {
           const logKey = `${enemy.id}:${Math.round(nowMs)}`;
           if (system.lastCollisionTestLogKey !== logKey) {
@@ -611,12 +756,11 @@ export const createDashEnemySystem = ({
             console.log('[dash-debug][COLLIDE:test]', {
               enemyId: enemy.id,
               playerRect,
-              enemyRect: {
-                x: enemy.x,
-                y: enemy.y,
-                w: enemy.w,
-                h: enemy.h,
-              },
+              playerRectNorm,
+              enemyRect: enemyRectRaw,
+              enemyRectForHit,
+              enemyRectNorm,
+              isOverlapRaw,
               isOverlap,
               state: enemy.state,
               collisionEnabled: enemy.collisionEnabled,
@@ -650,6 +794,7 @@ export const createDashEnemySystem = ({
       nearestDistancePx = null;
     }
 
+    const collisionDebugEnabled = system.isCollisionDebugEnabled?.() === true;
     return {
       nearestDistancePx,
       collision,
@@ -657,6 +802,18 @@ export const createDashEnemySystem = ({
       events,
       nearestEnemyRect,
       resolvedGroundY,
+      debug: collisionDebugEnabled ? {
+        enemiesCount: system.enemies.length,
+        enemyRect: firstEnemyRect,
+        enemyRectRaw: firstEnemyRectRaw,
+        playerRectRaw: firstPlayerRectRaw,
+        playerRectNorm: firstPlayerRectNorm,
+        enemyRectNorm: firstEnemyRectNorm,
+        intersectsRaw: firstIntersectsRaw,
+        intersects: firstIntersectsNorm,
+        collisionEnabled: firstCollisionEnabled,
+        startGraceActive: system.elapsedMs < START_GRACE_MS,
+      } : undefined,
     };
   };
 
