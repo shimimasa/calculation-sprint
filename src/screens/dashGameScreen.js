@@ -45,6 +45,8 @@ const MAX_LUNGE_PX = 140;
 const LOOP_WATCHDOG_INTERVAL_MS = 1000;
 const LOOP_STOPPED_THRESHOLD_MS = 1500;
 const LOOP_RECOVERY_MAX_ATTEMPTS = 3;
+const LOOP_ERROR_RECOVERY_COOLDOWN_MS = 120;
+const PLAYER_RECT_NULL_RECOVERY_STREAK = 10;
 const AREA_2_START_M = 200;
 const AREA_3_START_M = 500;
 const AREA_4_START_M = 1000;
@@ -627,8 +629,31 @@ const dashGameScreen = {
   noteLoopError(error) {
     const message = error instanceof Error ? error.message : String(error ?? 'Unknown error');
     this.lastLoopErrorMessage = message;
+    this.lastLoopErrorAtMs = window.performance.now();
     console.error('[dash-game] loop error', error);
     this.updateLoopMonitorBadge();
+  },
+  refreshRunDomRefs() {
+    const screen = domRefs.dashGame.screen;
+    const runLayer = domRefs.game.runLayer;
+    if (!screen) {
+      return;
+    }
+    const resolveInScope = (selectors) => {
+      for (const selector of selectors) {
+        const found = screen.querySelector(selector);
+        if (found) {
+          return found;
+        }
+      }
+      return null;
+    };
+    domRefs.game.runWorld = runLayer?.querySelector('.run-world')
+      ?? resolveInScope(['.run-layer .run-world', '.run-world']);
+    domRefs.game.runnerWrap = domRefs.game.runWorld?.querySelector('.runner-wrap')
+      ?? resolveInScope(['.run-layer .runner-wrap', '.runner-wrap']);
+    domRefs.game.runner = domRefs.game.runnerWrap?.querySelector('#runner-sprite, img#runner-sprite')
+      ?? resolveInScope(['.run-layer #runner-sprite', '#runner-sprite']);
   },
   startLoopWatchdog() {
     this.stopLoopWatchdog();
@@ -1126,7 +1151,7 @@ const dashGameScreen = {
   getPlayerRect() {
     const runWorld = domRefs.game.runWorld;
     const runnerWrap = domRefs.game.runnerWrap;
-    if (!runWorld || !runnerWrap) {
+    if (!runWorld || !runnerWrap || !runWorld.isConnected || !runnerWrap.isConnected) {
       return null;
     }
     const worldRect = runWorld.getBoundingClientRect();
@@ -1708,7 +1733,22 @@ const dashGameScreen = {
     const groundY = worldRect && Number.isFinite(runGroundY)
       ? Math.round(runGroundY - worldRect.top)
       : null;
-    const playerRect = this.getPlayerRect();
+    let playerRect = this.getPlayerRect();
+    if (playerRect) {
+      this.playerRectNullStreak = 0;
+    } else {
+      this.playerRectNullStreak = (this.playerRectNullStreak ?? 0) + 1;
+      if (this.playerRectNullStreak >= PLAYER_RECT_NULL_RECOVERY_STREAK) {
+        this.ensureRunLayerMounted();
+        this.refreshRunDomRefs();
+        this.verifyRunnerDom();
+        this.updateRunnerGroundAlignment(true);
+        playerRect = this.getPlayerRect();
+        if (playerRect) {
+          this.playerRectNullStreak = 0;
+        }
+      }
+    }
     let debugCollision = false;
     let debugAttackHandled = false;
     let debugEnemyRect = null;
@@ -1795,12 +1835,13 @@ const dashGameScreen = {
         this.enemyGapM = collisionThreshold * 2;
       }
     }
+    const safeDebugEnemyRect = typeof debugEnemyRect === 'undefined' ? null : debugEnemyRect;
     this.updateDebugHud({
       hasPlayerRect: Boolean(playerRect),
       collided: debugCollision,
       attackHandled: debugAttackHandled,
       cooldownMs: COLLISION_COOLDOWN_MS - (nowMs - (this.lastCollisionPenaltyAtMs ?? -Infinity)),
-      enemyRect: debugEnemyRect,
+      enemyRect: safeDebugEnemyRect,
       nearestDxPx: enemyUpdate?.nearestDistancePx ?? null,
       nearestDyPx: null,
     });
@@ -1833,12 +1874,14 @@ const dashGameScreen = {
         this.loopFrameCount += 1;
         this.updateFrame(nextDtMs);
       } catch (error) {
+        const prevLoopErrorAtMs = this.lastLoopErrorAtMs ?? -Infinity;
         this.noteLoopError(error);
         this.lastTickTs = now;
-        try {
-          this.updateFrame(0);
-        } catch (nextError) {
-          this.noteLoopError(nextError);
+        const lastErrorAgoMs = now - prevLoopErrorAtMs;
+        if (this.isDashRunnerDebugEnabled() && lastErrorAgoMs > LOOP_ERROR_RECOVERY_COOLDOWN_MS) {
+          console.warn('[dash-game] loop error; recovery deferred to next frame', {
+            message: this.lastLoopErrorMessage,
+          });
         }
       } finally {
         this.updateLoopMonitorBadge(now);
@@ -1959,6 +2002,8 @@ const dashGameScreen = {
     this.loopFrameCount = 0;
     this.loopRecoveryCount = 0;
     this.lastLoopErrorMessage = '';
+    this.lastLoopErrorAtMs = 0;
+    this.playerRectNullStreak = 0;
     this.runnerDebugProbeActive = false;
     this.runnerDebugProbeRafId = null;
     this.runnerDebugProbeUntilMs = 0;
