@@ -573,10 +573,10 @@
 }
 
 .calc-sprint #dash-stage-select-screen {
-  --dash-select-card-bg: rgba(255, 255, 255, 0.84);
+  --dash-select-card-bg: rgba(255, 255, 255, 0.9);
   --dash-select-card-border: rgba(56, 103, 255, 0.18);
-  --dash-select-text: #1d2433;
-  --dash-select-muted: #5a6477;
+  --dash-select-text: var(--color-text);
+  --dash-select-muted: var(--color-text-sub);
 }
 .calc-sprint #dash-stage-select-screen .setting-note {
   margin: 0;
@@ -588,31 +588,88 @@
 .calc-sprint #dash-stage-select-screen .stage-select-list {
   gap: 10px;
 }
-.calc-sprint #dash-stage-select-screen .stage-select-list .secondary-button {
+.calc-sprint #dash-stage-select-screen .dash-stage-card {
+  position: relative;
   width: 100%;
-  min-height: 64px;
-  padding: 12px 14px;
+  min-height: 72px;
+  padding: 14px 14px 14px 58px;
   border-radius: var(--radius-md);
   border: 1px solid var(--dash-select-card-border);
-  background: var(--dash-select-card-bg);
+  background: linear-gradient(180deg, var(--dash-select-card-bg), color-mix(in srgb, var(--color-surface-soft) 72%, var(--color-surface)));
   display: grid;
   gap: 4px;
   justify-items: start;
+  align-content: center;
   text-align: left;
+  overflow: hidden;
 }
-.calc-sprint #dash-stage-select-screen .stage-select-list .secondary-button span {
+.calc-sprint #dash-stage-select-screen .dash-stage-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 12px;
+  background: var(--stage-color, var(--color-primary));
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card.stage-plus {
+  --stage-color: var(--stage-plus);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card.stage-minus {
+  --stage-color: var(--stage-minus);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card.stage-multi {
+  --stage-color: var(--stage-multi);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card.stage-divide {
+  --stage-color: var(--stage-divide);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card.stage-mix {
+  --stage-color: var(--stage-mix);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card__badge {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 900;
+  color: color-mix(in srgb, var(--stage-color) 70%, #20293d);
+  background: color-mix(in srgb, var(--stage-color) 18%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--stage-color) 45%, transparent);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card__title {
   font-size: 18px;
   font-weight: 700;
   color: var(--dash-select-text);
 }
-.calc-sprint #dash-stage-select-screen .stage-select-list .secondary-button small {
+.calc-sprint #dash-stage-select-screen .dash-stage-card__description {
   font-size: var(--font-caption);
   color: var(--dash-select-muted);
   line-height: 1.35;
 }
-.calc-sprint #dash-stage-select-screen .stage-select-list .secondary-button.is-current {
-  border-color: rgba(56, 103, 255, 0.5);
-  box-shadow: 0 0 0 3px rgba(56, 103, 255, 0.14);
+.calc-sprint #dash-stage-select-screen .dash-stage-card__selected {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  display: none;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-surface);
+  background: color-mix(in srgb, var(--stage-color) 68%, #243455);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card.is-current {
+  border-color: color-mix(in srgb, var(--stage-color) 68%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--stage-color) 24%, transparent), 0 10px 20px color-mix(in srgb, var(--stage-color) 18%, transparent);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card.is-current .dash-stage-card__selected {
+  display: inline-flex;
 }
 .calc-sprint #dash-stage-select-screen .stage-select-actions {
   width: 100%;
@@ -621,11 +678,11 @@
   width: 100%;
 }
 @media (max-width: 640px) {
-  .calc-sprint #dash-stage-select-screen .stage-select-list .secondary-button {
+  .calc-sprint #dash-stage-select-screen .dash-stage-card {
     min-height: 68px;
-    padding: 12px;
+    padding: 12px 12px 12px 54px;
   }
-  .calc-sprint #dash-stage-select-screen .stage-select-list .secondary-button span {
+  .calc-sprint #dash-stage-select-screen .dash-stage-card__title {
     font-size: 17px;
   }
 }
