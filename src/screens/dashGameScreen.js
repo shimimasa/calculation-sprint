@@ -846,6 +846,7 @@ const dashGameScreen = {
     intersectsNorm = false,
     enemiesCount = 0,
     flags = {},
+    groundDebug = null,
   }) {
     const debugEnabled = this.isDebugEnabled() || this.isCollisionDebugEnabled();
     if (!debugEnabled) {
@@ -874,9 +875,17 @@ const dashGameScreen = {
     };
     const normalizedPlayerRect = playerRectNorm ?? normalizeRect(playerRect);
     const normalizedEnemyRect = enemyRectNorm ?? normalizeRect(enemyRect);
+    const worldRectDebug = groundDebug?.worldRect ?? null;
+    const groundRectDebug = groundDebug?.groundRect ?? null;
+    const localTopDebug = groundDebug?.localTop ?? null;
+    const groundTopYFinalDebug = groundDebug?.worldGroundTopY ?? null;
     hud.textContent = [
       `ENEMY_SYS:${this.enemySystem ? 1 : 0} UPD:${this.enemyUpdateCount}`,
       `GROUND_Y:${groundY === null ? 'null' : Math.round(groundY)}`,
+      `WORLD: t:${worldRectDebug ? Math.round(worldRectDebug.top) : 'null'} h:${worldRectDebug ? Math.round(worldRectDebug.height) : 'null'}`,
+      `GROUND: t:${groundRectDebug ? Math.round(groundRectDebug.top) : 'null'} h:${groundRectDebug ? Math.round(groundRectDebug.height) : 'null'}`,
+      `GROUND_LOCAL_TOP:${Number.isFinite(localTopDebug) ? Math.round(localTopDebug) : 'null'}`,
+      `GROUND_TOP_Y(final):${groundTopYFinalDebug === null ? 'null' : Math.round(groundTopYFinalDebug)}`,
       this.formatDiagnosticRect('PLAYER(raw)', playerRect),
       this.formatDiagnosticRect('ENEMY(raw)', enemyRectRaw ?? enemyRect),
       this.formatDiagnosticRect('ENEMY(world)', enemyRect),
@@ -1264,12 +1273,11 @@ const dashGameScreen = {
     this.logGroundDebug();
   },
   getPlayerRect() {
-    const runWorld = domRefs.game.runWorld;
+    const worldRect = this.getWorldRectForCollision();
     const runnerWrap = domRefs.game.runnerWrap;
-    if (!runWorld || !runnerWrap || !runWorld.isConnected || !runnerWrap.isConnected) {
+    if (!worldRect || !runnerWrap || !runnerWrap.isConnected) {
       return null;
     }
-    const worldRect = runWorld.getBoundingClientRect();
     const runnerRect = runnerWrap.getBoundingClientRect();
     return {
       x: runnerRect.left - worldRect.left,
@@ -1278,21 +1286,75 @@ const dashGameScreen = {
       h: runnerRect.height,
     };
   },
+  getWorldRectForCollision() {
+    const runWorld = this.runWorld ?? domRefs.game.runWorld;
+    if (runWorld?.isConnected) {
+      return runWorld.getBoundingClientRect();
+    }
+    const runLayer = this.runLayer ?? domRefs.game.runLayer;
+    const runWorldFromLayer = runLayer?.isConnected ? runLayer.querySelector('.run-world') : null;
+    if (runWorldFromLayer?.isConnected) {
+      domRefs.game.runWorld = runWorldFromLayer;
+      return runWorldFromLayer.getBoundingClientRect();
+    }
+    const runZone = domRefs.dashGame.screen?.querySelector('.dash-run-zone');
+    if (runZone?.isConnected) {
+      return runZone.getBoundingClientRect();
+    }
+    return null;
+  },
   getWorldGroundTopY() {
-    const runWorld = domRefs.game.runWorld;
-    if (!runWorld || !runWorld.isConnected) {
+    const runWorld = this.runWorld ?? domRefs.game.runWorld;
+    const worldRect = this.getWorldRectForCollision();
+    if (!runWorld?.isConnected || !worldRect) {
+      this.lastGroundTopDiagnostics = {
+        worldRect,
+        groundRect: null,
+        localTop: null,
+        worldGroundTopY: null,
+      };
       return null;
     }
-    const worldRect = runWorld.getBoundingClientRect();
-    const groundEl = domRefs.game.runGround
-      ?? runWorld.querySelector('.run-ground')
-      ?? runWorld.querySelector('.run-ground__tile')?.parentElement
-      ?? null;
+    const runWorldGround = runWorld.querySelector('.run-ground');
+    const groundTile = runWorldGround ? null : runWorld.querySelector('.run-ground__tile');
+    const groundEl = runWorldGround
+      ?? (groundTile?.parentElement && runWorld.contains(groundTile.parentElement)
+        ? groundTile.parentElement
+        : null);
     if (!groundEl || !groundEl.isConnected) {
+      this.lastGroundTopDiagnostics = {
+        worldRect,
+        groundRect: null,
+        localTop: null,
+        worldGroundTopY: null,
+      };
       return null;
     }
     const groundRect = groundEl.getBoundingClientRect();
-    return Math.round(groundRect.top - worldRect.top);
+    const localTop = groundRect.top - worldRect.top;
+    let worldGroundTopY = Math.round(localTop);
+    const invalidLocalTop = (
+      !Number.isFinite(localTop)
+      || localTop < 0
+      || localTop > worldRect.height
+    );
+    if (invalidLocalTop) {
+      const playerRect = this.getPlayerRect();
+      if (playerRect) {
+        worldGroundTopY = Math.round(playerRect.y + playerRect.h);
+      } else if (Number.isFinite(groundRect.height)) {
+        worldGroundTopY = Math.round(worldRect.height - groundRect.height);
+      } else {
+        worldGroundTopY = Math.round(worldRect.height * 0.85);
+      }
+    }
+    this.lastGroundTopDiagnostics = {
+      worldRect,
+      groundRect,
+      localTop,
+      worldGroundTopY,
+    };
+    return worldGroundTopY;
   },
   getAnswerInput() {
     const input = domRefs.dashGame.answerInput;
@@ -1900,6 +1962,7 @@ const dashGameScreen = {
     let enemyCollisionEnabled = false;
     let enemyStartGrace = false;
     const worldGroundTopY = this.getWorldGroundTopY();
+    const groundDebug = this.lastGroundTopDiagnostics ?? null;
     const enemyUpdate = this.enemySystem?.update({
       dtMs,
       nowMs,
@@ -2054,6 +2117,7 @@ const dashGameScreen = {
       intersectsNorm: intersects,
       enemiesCount,
       flags: sample,
+      groundDebug,
     });
     const safeDebugEnemyRect = typeof debugEnemyRect === 'undefined' ? null : debugEnemyRect;
     this.updateDebugHud({
