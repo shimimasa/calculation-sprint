@@ -26,6 +26,41 @@ const calculateRewardTitle = ({ distanceM = 0, accuracy = 0, maxStreak = 0, miss
   return { title: 'がんばりランナー', sub: 'つぎのランでもっとのびる！' };
 };
 
+
+const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const playCelebrationEffect = () => {
+  if (prefersReducedMotion()) {
+    return;
+  }
+  const host = domRefs.dashResult.record;
+  if (!host) {
+    return;
+  }
+
+  const previous = host.querySelector('.dash-result-confetti');
+  previous?.remove();
+
+  const confetti = document.createElement('div');
+  confetti.className = 'dash-result-confetti';
+  confetti.setAttribute('aria-hidden', 'true');
+
+  for (let i = 0; i < 18; i += 1) {
+    const piece = document.createElement('span');
+    piece.className = 'dash-result-confetti__piece';
+    piece.style.setProperty('--piece-x', `${(i / 18) * 100}%`);
+    piece.style.setProperty('--piece-delay', `${(i % 6) * 60}ms`);
+    piece.style.setProperty('--piece-rot', `${(i % 2 === 0 ? 1 : -1) * (10 + (i % 5) * 8)}deg`);
+    piece.style.setProperty('--piece-hue', `${(i * 23) % 360}`);
+    confetti.append(piece);
+  }
+
+  host.append(confetti);
+  window.setTimeout(() => {
+    confetti.remove();
+  }, 3000);
+};
+
 const ensureRewardArea = () => {
   const record = domRefs.dashResult.record;
   if (!record) {
@@ -128,6 +163,7 @@ const dashResultScreen = {
       }
 
       domRefs.dashResult.replayButton?.classList.add('dash-result-replay-main');
+      playCelebrationEffect();
     };
     const inMemoryResult = gameState.dash?.result;
     if (inMemoryResult && typeof inMemoryResult === 'object') {

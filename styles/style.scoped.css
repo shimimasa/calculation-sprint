@@ -2417,6 +2417,7 @@
 }
 .calc-sprint .screen-dash-result .dash-result-record {
   width: min(920px, 92vw);
+  position: relative;
 }
 .calc-sprint .screen-dash-result .dash-result-reward {
   text-align: center;
@@ -2446,6 +2447,38 @@
   margin-top: 4px;
   font-size: 14px;
   color: var(--color-text-sub);
+}
+.calc-sprint .screen-dash-result .dash-result-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+.calc-sprint .screen-dash-result .dash-result-confetti__piece {
+  position: absolute;
+  top: -10px;
+  left: var(--piece-x);
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  background: hsl(var(--piece-hue) 95% 62%);
+  transform: translate3d(-50%, -6px, 0) rotate(var(--piece-rot));
+  animation: dash-result-confetti-fall 820ms ease-out var(--piece-delay) forwards;
+}
+@keyframes dash-result-confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -6px, 0) rotate(var(--piece-rot));
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(-50% + 10px), 180px, 0) rotate(calc(var(--piece-rot) * 3));
+  }
 }
 .calc-sprint .screen-dash-result .dash-result-stage {
   font-size: 15px;
@@ -2540,6 +2573,11 @@
   }
   .calc-sprint .screen-dash-result .dash-stat-card:hover {
     transform: none;
+  }
+  .calc-sprint .screen-dash-result .dash-result-confetti,
+  .calc-sprint .screen-dash-result .dash-result-confetti__piece {
+    animation: none;
+    display: none;
   }
 }.calc-sprint .question-area {
   display: flex;
