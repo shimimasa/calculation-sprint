@@ -29,6 +29,7 @@ import { toDashRunBgThemeId } from '../features/backgroundThemes.js';
 import { waitForImageDecode } from '../core/imageDecode.js';
 import { getStageCorePreloadPromise } from '../core/stageAssetPreloader.js';
 import { isStageFrameWaitEnabled, perfLog } from '../core/perf.js';
+import { resolveAssetUrl } from '../core/assetUrl.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
@@ -71,6 +72,7 @@ const DASH_BUILD_TAG = 'damagefix-20260212-01';
 const DASH_DEBUG_ALWAYS_ON = false;
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
+const RUNNER_DEFAULT_SPRITE_PATH = 'assets/runner/runner.png';
 const DASH_STAGE_TO_BGM_ID = Object.freeze({
   plus: 'bgm_add',
   minus: 'bgm_sub',
@@ -660,6 +662,64 @@ const dashGameScreen = {
     }
     if (messages.length) {
       this.showDebugToast(messages.join(' / '));
+    }
+  },
+  ensureRunnerSpriteGuard() {
+    this.verifyRunnerDom();
+    const runner = domRefs.game.runner;
+    if (!runner) {
+      return;
+    }
+
+    const defaultRunnerSrc = resolveAssetUrl(RUNNER_DEFAULT_SPRITE_PATH);
+    if (!this.runnerSpriteLastSuccessfulSrc) {
+      this.runnerSpriteLastSuccessfulSrc = runner.currentSrc || runner.src || defaultRunnerSrc;
+    }
+
+    if (runner.dataset.guardAttached !== 'true') {
+      runner.removeAttribute('onerror');
+      runner.dataset.guardAttached = 'true';
+      this.handleRunnerSpriteLoad = () => {
+        const loadedSrc = runner.currentSrc || runner.src;
+        if (!loadedSrc) {
+          return;
+        }
+        this.runnerSpriteLastSuccessfulSrc = loadedSrc;
+        runner.style.removeProperty('display');
+        runner.style.removeProperty('visibility');
+        runner.style.opacity = '1';
+      };
+      this.handleRunnerSpriteError = () => {
+        const failedSrc = runner.currentSrc || runner.src || '(unknown)';
+        if (!this.runnerSpriteLoadWarned) {
+          this.runnerSpriteLoadWarned = true;
+          this.runnerSpriteLastFailedSrc = failedSrc;
+          console.warn('[runner-sprite] image load failed; keeping runner visible with fallback sprite', {
+            failedSrc,
+          });
+        }
+
+        const fallbackSrc = this.runnerSpriteLastSuccessfulSrc || defaultRunnerSrc;
+        if (runner.src !== fallbackSrc) {
+          runner.src = fallbackSrc;
+        } else if (fallbackSrc !== defaultRunnerSrc) {
+          runner.src = defaultRunnerSrc;
+        }
+
+        runner.style.removeProperty('display');
+        runner.style.removeProperty('visibility');
+        runner.style.opacity = '1';
+        document.documentElement.classList.remove('runner-missing');
+        domRefs.game.runLayer?.classList.remove('runner-missing');
+        domRefs.dashGame.screen?.classList.remove('runner-missing');
+      };
+      runner.addEventListener('load', this.handleRunnerSpriteLoad);
+      runner.addEventListener('error', this.handleRunnerSpriteError);
+    }
+
+    const currentSrc = runner.currentSrc || runner.src || '';
+    if (!currentSrc || currentSrc.includes('/undefined')) {
+      runner.src = this.runnerSpriteLastSuccessfulSrc || defaultRunnerSrc;
     }
   },
   applyDashTheme() {
@@ -1603,6 +1663,7 @@ const dashGameScreen = {
     this.events = createEventRegistry('dash-game');
     this.ensureRunLayerMounted();
     this.verifyRunnerDom();
+    this.ensureRunnerSpriteGuard();
     this.resetDashRunnerVisibilityState();
     this.playerSpeed = baseSpeed;
     this.enemySpeed = enemyBaseSpeed;
@@ -1659,6 +1720,8 @@ const dashGameScreen = {
     this.runnerDebugProbeUntilMs = 0;
     this.runnerDebugProbeFrameCount = 0;
     this.runnerDebugOutlineEl = null;
+    this.runnerSpriteLoadWarned = false;
+    this.runnerSpriteLastFailedSrc = null;
     this.enemyUpdateCount = 0;
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
@@ -1911,6 +1974,17 @@ const dashGameScreen = {
     this.handleKeypadClick = null;
     this.handleKeypadCapture = null;
     this.clearStreakCue();
+    if (domRefs.game.runner && this.handleRunnerSpriteLoad) {
+      domRefs.game.runner.removeEventListener('load', this.handleRunnerSpriteLoad);
+    }
+    if (domRefs.game.runner && this.handleRunnerSpriteError) {
+      domRefs.game.runner.removeEventListener('error', this.handleRunnerSpriteError);
+    }
+    if (domRefs.game.runner?.dataset) {
+      delete domRefs.game.runner.dataset.guardAttached;
+    }
+    this.handleRunnerSpriteLoad = null;
+    this.handleRunnerSpriteError = null;
     this.stopBgm();
     if (domRefs.game.runClouds) {
       domRefs.game.runClouds.innerHTML = '';
