@@ -3869,3 +3869,47 @@ body > .dash-overlay-root .dash-runner-debug-outline {
   pointer-events: none;
 }
 
+
+.calc-sprint .dash-settings-card,
+.calc-sprint .dash-stats-card {
+  width: min(960px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.calc-sprint .dash-setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(56, 103, 255, 0.2);
+}
+.calc-sprint .dash-setting-row--select select {
+  min-width: 120px;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.calc-sprint .dash-stats-total {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+.calc-sprint .dash-stats-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+.calc-sprint .dash-stats-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.78);
+}
+.calc-sprint .dash-stats-table th,
+.calc-sprint .dash-stats-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(56, 103, 255, 0.16);
+  text-align: left;
+}

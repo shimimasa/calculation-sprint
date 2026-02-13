@@ -50,6 +50,8 @@
             <button id="title-start-button" class="primary-button primary-button--xl">ステージであそぶ</button>
             <button id="title-free-button" class="secondary-button primary-button--xl">じゆうにあそぶ</button>
             <button id="title-dash-button" class="secondary-button primary-button--xl">ダッシュラン</button>
+            <button id="title-dash-settings-button" class="secondary-button primary-button--xl">ダッシュ設定</button>
+            <button id="title-dash-stats-button" class="secondary-button primary-button--xl">ダッシュ記録/統計</button>
           </div>
           <div class="how-to">
             <p class="how-to__title">遊び方</p>
@@ -350,8 +352,68 @@
         <footer class="screen-footer dash-result-footer">
           <div class="title-actions">
             <button id="dash-result-replay-button" class="primary-button primary-button--xl">もう一回はしる</button>
+            <button id="dash-result-settings-button" class="secondary-button primary-button--xl">設定</button>
+            <button id="dash-result-stats-button" class="secondary-button primary-button--xl">記録/統計</button>
             <button id="dash-result-back-button" class="secondary-button primary-button--xl">タイトルへ戻る</button>
           </div>
+        </footer>
+      </section>
+
+      <section id="dash-settings-screen" class="screen screen-dash" hidden>
+        <header class="screen-header">
+          <p class="screen-kicker">DASH SETTINGS</p>
+          <h2 class="screen__title">ダッシュ設定</h2>
+          <p class="screen__description">音量と難易度は localStorage に保存されます。</p>
+        </header>
+        <div class="screen-main stage-card dash-settings-card">
+          <label class="dash-setting-row" for="dash-settings-bgm-toggle">
+            <span>BGM</span>
+            <input id="dash-settings-bgm-toggle" type="checkbox" checked />
+          </label>
+          <label class="dash-setting-row" for="dash-settings-sfx-toggle">
+            <span>SFX</span>
+            <input id="dash-settings-sfx-toggle" type="checkbox" checked />
+          </label>
+          <label class="dash-setting-row dash-setting-row--select" for="dash-settings-difficulty">
+            <span>難易度</span>
+            <select id="dash-settings-difficulty">
+              <option value="easy">easy</option>
+              <option value="normal" selected>normal</option>
+              <option value="hard">hard</option>
+            </select>
+          </label>
+          <p class="setting-note">※音声ON/OFFは次回再生から反映される場合があります。</p>
+        </div>
+        <footer class="screen-footer">
+          <button id="dash-settings-back-button" class="secondary-button primary-button--xl">戻る</button>
+        </footer>
+      </section>
+
+      <section id="dash-stats-screen" class="screen screen-dash" hidden>
+        <header class="screen-header">
+          <p class="screen-kicker">DASH STATS</p>
+          <h2 class="screen__title">ダッシュ記録/統計</h2>
+          <p class="screen__description">総合スコアは「走行距離 (m)」を採用しています。</p>
+        </header>
+        <div class="screen-main stage-card dash-stats-card">
+          <p class="dash-stats-total">総ハイスコア: <strong id="dash-stats-total-best">0.0</strong> m</p>
+          <div class="dash-stats-table-wrap">
+            <h3>ステージ別ベスト</h3>
+            <table class="dash-stats-table">
+              <thead><tr><th>ステージ</th><th>ベスト</th><th>プレイ回数</th></tr></thead>
+              <tbody id="dash-stats-stage-best-body"></tbody>
+            </table>
+          </div>
+          <div class="dash-stats-table-wrap">
+            <h3>直近履歴（20件）</h3>
+            <table class="dash-stats-table">
+              <thead><tr><th>日時</th><th>ステージ</th><th>総合スコア</th><th>結果</th></tr></thead>
+              <tbody id="dash-stats-history-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <footer class="screen-footer">
+          <button id="dash-stats-back-button" class="secondary-button primary-button--xl">タイトルへ戻る</button>
         </footer>
       </section>
 

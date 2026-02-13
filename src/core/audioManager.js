@@ -1,4 +1,5 @@
 import { diagnoseAssetResponse } from './assetDiagnostics.js';
+import dashSettingsStore from './dashSettingsStore.js';
 
 // ADR-004: Use relative asset paths so subpath hosting works (avoid absolute `/assets/...`).
 const BGM_URLS = {
@@ -103,7 +104,8 @@ class AudioManager {
   constructor() {
     this.currentBgmId = null;
     this.currentBgm = null;
-    this.muted = false;
+    this.bgmEnabled = true;
+    this.sfxEnabled = true;
     this.bgmVolume = 1;
     this.fadeToken = 0;
     this.unlocked = false;
@@ -111,15 +113,49 @@ class AudioManager {
     this.pendingBgmId = null;
   }
 
-  setMuted(muted) {
-    this.muted = Boolean(muted);
+  syncSettings(profileId) {
+    const settings = dashSettingsStore.get(profileId);
+    this.bgmEnabled = settings.bgmEnabled !== false;
+    this.sfxEnabled = settings.sfxEnabled !== false;
     if (this.currentBgm) {
-      this.currentBgm.volume = this.muted ? 0 : this.bgmVolume;
+      this.currentBgm.volume = this.bgmEnabled ? this.bgmVolume : 0;
     }
+    return settings;
+  }
+
+  setMuted(muted, profileId) {
+    const enabled = !Boolean(muted);
+    return this.applySettings({ bgmEnabled: enabled, sfxEnabled: enabled }, profileId);
   }
 
   isMuted() {
-    return this.muted;
+    return !this.bgmEnabled && !this.sfxEnabled;
+  }
+
+  setBgmEnabled(enabled, profileId) {
+    return this.applySettings({ bgmEnabled: Boolean(enabled) }, profileId);
+  }
+
+  setSfxEnabled(enabled, profileId) {
+    return this.applySettings({ sfxEnabled: Boolean(enabled) }, profileId);
+  }
+
+  applySettings(nextSettings, profileId) {
+    const settings = dashSettingsStore.save(nextSettings, profileId);
+    this.bgmEnabled = settings.bgmEnabled;
+    this.sfxEnabled = settings.sfxEnabled;
+    if (this.currentBgm) {
+      this.currentBgm.volume = this.bgmEnabled ? this.bgmVolume : 0;
+    }
+    return settings;
+  }
+
+  isBgmEnabled() {
+    return this.bgmEnabled;
+  }
+
+  isSfxEnabled() {
+    return this.sfxEnabled;
   }
 
   isUnlocked() {
@@ -159,6 +195,9 @@ class AudioManager {
   }
 
   setBgm(id, opts = {}) {
+    if (!this.bgmEnabled) {
+      return;
+    }
     warnUnknownBgmId(id);
     const resolvedId = resolveBgmId(id);
     const force = Boolean(opts.force);
@@ -181,7 +220,7 @@ class AudioManager {
     const nextAudio = new Audio(url);
     nextAudio.loop = opts.loop ?? true;
     nextAudio.preload = 'auto';
-    nextAudio.volume = this.muted ? 0 : this.bgmVolume;
+    nextAudio.volume = this.bgmEnabled ? this.bgmVolume : 0;
     nextAudio.addEventListener('error', () => {
       diagnoseAssetResponse(url, `bgm:${resolvedId}`);
       console.warn(`BGM failed to load: ${resolvedId}`);
@@ -199,7 +238,7 @@ class AudioManager {
           console.warn(`BGM playback blocked: ${resolvedId}`);
         });
       }
-      if (fadeMs > 0 && !this.muted) {
+      if (fadeMs > 0 && this.bgmEnabled) {
         nextAudio.volume = 0;
         fadeAudio(nextAudio, 0, this.bgmVolume, fadeMs, null, fadeGuard);
       }
@@ -263,6 +302,9 @@ class AudioManager {
   }
 
   transitionBgm(nextId, opts = {}) {
+    if (!this.bgmEnabled) {
+      return;
+    }
     const fadeOutMs = opts.fadeOutMs ?? 0;
     const fadeInMs = opts.fadeInMs ?? 0;
 
@@ -291,7 +333,7 @@ class AudioManager {
       const nextAudio = new Audio(url);
       nextAudio.loop = true;
       nextAudio.preload = 'auto';
-      nextAudio.volume = this.muted ? 0 : this.bgmVolume;
+      nextAudio.volume = this.bgmEnabled ? this.bgmVolume : 0;
       nextAudio.addEventListener('error', () => {
         diagnoseAssetResponse(url, `bgm:${resolvedId}`);
         console.warn(`BGM failed to load: ${resolvedId}`);
@@ -305,7 +347,7 @@ class AudioManager {
           console.warn(`BGM playback blocked: ${resolvedId}`);
         });
       }
-      if (fadeInMs > 0 && !this.muted) {
+      if (fadeInMs > 0 && this.bgmEnabled) {
         nextAudio.volume = 0;
         fadeAudio(nextAudio, 0, this.bgmVolume, fadeInMs, null, fadeGuard);
       }
@@ -337,6 +379,9 @@ class AudioManager {
     if (!id) {
       return;
     }
+    if (!this.sfxEnabled) {
+      return;
+    }
     if (!this.unlocked) {
       return;
     }
@@ -349,7 +394,7 @@ class AudioManager {
     audio.loop = false;
     audio.preload = 'auto';
     const volume = clamp(opts.volume ?? 1, 0, 1);
-    audio.volume = this.muted ? 0 : volume;
+    audio.volume = this.sfxEnabled ? volume : 0;
     audio.addEventListener('error', () => {
       diagnoseAssetResponse(url, `sfx:${id}`);
       console.warn(`SFX failed to load: ${id}`);

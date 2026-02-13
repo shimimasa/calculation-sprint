@@ -72,7 +72,7 @@ const dashResultScreen = {
     const inMemoryResult = gameState.dash?.result;
     if (inMemoryResult && typeof inMemoryResult === 'object') {
       renderResult(inMemoryResult);
-      dashStatsStore.saveSession(inMemoryResult);
+      dashStatsStore.finalizeRun(inMemoryResult);
     } else {
       const storedResult = dashStatsStore.getSession(gameState.profileId);
       if (storedResult) {
@@ -99,8 +99,18 @@ const dashResultScreen = {
       const nextScreen = normalizeDashStageId(stageId) ? 'dash-game' : 'dash-stage-select';
       screenManager.changeScreen(nextScreen);
     };
+    this.handleSettings = () => {
+      audioManager.playSfx('sfx_click');
+      screenManager.changeScreen('dash-settings', { backScreen: 'dash-result' });
+    };
+    this.handleStats = () => {
+      audioManager.playSfx('sfx_click');
+      screenManager.changeScreen('dash-stats');
+    };
     this.events.on(domRefs.dashResult.backButton, 'click', this.handleBack);
     this.events.on(domRefs.dashResult.replayButton, 'click', this.handleReplay);
+    this.events.on(domRefs.dashResult.settingsButton, 'click', this.handleSettings);
+    this.events.on(domRefs.dashResult.statsButton, 'click', this.handleStats);
   },
   render() {},
   exit() {

@@ -4,7 +4,11 @@ import {
   makeStoreKey,
   resolveProfileId,
 } from './storageKeys.js';
-import { toDashStageId } from '../features/dashStages.js';
+import { DASH_STAGE_IDS, toDashStageId } from '../features/dashStages.js';
+
+const DASH_STATS_SCHEMA_VERSION = 'v2';
+const MAX_HISTORY = 20;
+const VALID_END_REASONS = new Set(['collision', 'timeup', 'manual']);
 
 const readFromStorage = (storageKey) => {
   try {
@@ -13,10 +17,7 @@ const readFromStorage = (storageKey) => {
       return null;
     }
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') {
-      return null;
-    }
-    return parsed;
+    return parsed && typeof parsed === 'object' ? parsed : null;
   } catch (error) {
     return null;
   }
@@ -30,14 +31,14 @@ const writeToStorage = (storageKey, data) => {
   }
 };
 
-const VALID_END_REASONS = new Set(['collision', 'timeup', 'manual']);
-
 const normalizeEndReason = (endReason) => (
   typeof endReason === 'string' && VALID_END_REASONS.has(endReason) ? endReason : 'unknown'
 );
 
 const normalizeSession = (session) => ({
+  runId: typeof session?.runId === 'string' ? session.runId : null,
   distanceM: Number.isFinite(session?.distanceM) ? session.distanceM : 0,
+  score: Number.isFinite(session?.score) ? session.score : (Number.isFinite(session?.distanceM) ? session.distanceM : 0),
   correctCount: Number.isFinite(session?.correctCount) ? session.correctCount : 0,
   wrongCount: Number.isFinite(session?.wrongCount) ? session.wrongCount : 0,
   defeatedCount: Number.isFinite(session?.defeatedCount) ? session.defeatedCount : 0,
@@ -45,32 +46,108 @@ const normalizeSession = (session) => ({
   timeLeftMs: Number.isFinite(session?.timeLeftMs) ? session.timeLeftMs : 0,
   stageId: toDashStageId(session?.stageId),
   endReason: normalizeEndReason(session?.endReason),
-  endedAt: typeof session?.endedAt === 'string' ? session.endedAt : null,
-  schemaVersion: typeof session?.schemaVersion === 'string'
-    ? session.schemaVersion
-    : DEFAULT_SCHEMA_VERSION,
+  retired: Boolean(session?.retired ?? session?.endReason !== 'timeup'),
+  endedAt: typeof session?.endedAt === 'string' ? session.endedAt : new Date().toISOString(),
+  schemaVersion: DASH_STATS_SCHEMA_VERSION,
 });
 
+const createEmptyAggregate = () => {
+  const stageBest = {};
+  const stagePlayCount = {};
+  DASH_STAGE_IDS.forEach((stageId) => {
+    stageBest[stageId] = 0;
+    stagePlayCount[stageId] = 0;
+  });
+  return {
+    bestScore: 0,
+    stageBest,
+    stagePlayCount,
+  };
+};
+
+const computeAggregate = (history) => {
+  const aggregate = createEmptyAggregate();
+  history.forEach((session) => {
+    const score = Number.isFinite(session.score) ? session.score : session.distanceM;
+    aggregate.bestScore = Math.max(aggregate.bestScore, score);
+    const stageId = toDashStageId(session.stageId);
+    aggregate.stageBest[stageId] = Math.max(aggregate.stageBest[stageId] ?? 0, score);
+    aggregate.stagePlayCount[stageId] = (aggregate.stagePlayCount[stageId] ?? 0) + 1;
+  });
+  return aggregate;
+};
+
+const normalizeStats = (raw) => {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const history = Array.isArray(source.history)
+    ? source.history.map((entry) => normalizeSession(entry)).slice(0, MAX_HISTORY)
+    : [];
+  const aggregate = computeAggregate(history);
+  return {
+    schemaVersion: DASH_STATS_SCHEMA_VERSION,
+    history,
+    aggregate,
+    lastRunId: typeof source.lastRunId === 'string' ? source.lastRunId : null,
+    lastSession: history[0] ?? null,
+  };
+};
+
+const migrateFromLegacySessionIfNeeded = (resolvedProfileId, stats) => {
+  if (stats.history.length > 0) {
+    return stats;
+  }
+  const legacyKey = makeStoreKey(resolvedProfileId, STORE_NAMES.dashSession);
+  const legacySession = readFromStorage(legacyKey);
+  if (!legacySession) {
+    return stats;
+  }
+  const migratedSession = normalizeSession(legacySession);
+  const migrated = normalizeStats({ history: [migratedSession], lastRunId: migratedSession.runId });
+  writeToStorage(makeStoreKey(resolvedProfileId, STORE_NAMES.dashStats), migrated);
+  return migrated;
+};
+
 const dashStatsStore = {
-  getSession(profileId) {
+  getStats(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
-    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.dashSession);
-    const stored = readFromStorage(storageKey);
-    if (!stored) {
-      return null;
-    }
-    return normalizeSession(stored);
+    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.dashStats);
+    const stats = normalizeStats(readFromStorage(storageKey));
+    return migrateFromLegacySessionIfNeeded(resolvedProfileId, stats);
+  },
+  getSession(profileId) {
+    const stats = this.getStats(profileId);
+    return stats.lastSession;
   },
   saveSession(session, profileId) {
+    return this.finalizeRun(session, profileId);
+  },
+  finalizeRun(session, profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
-    const storageKey = makeStoreKey(resolvedProfileId, STORE_NAMES.dashSession);
-    const record = normalizeSession({
+    const normalized = normalizeSession({
       ...session,
-      endedAt: new Date().toISOString(),
       schemaVersion: DEFAULT_SCHEMA_VERSION,
+      endedAt: session?.endedAt ?? new Date().toISOString(),
     });
-    writeToStorage(storageKey, record);
-    return record;
+    const statsKey = makeStoreKey(resolvedProfileId, STORE_NAMES.dashStats);
+    const sessionKey = makeStoreKey(resolvedProfileId, STORE_NAMES.dashSession);
+    const current = this.getStats(resolvedProfileId);
+    if (normalized.runId && current.lastRunId && normalized.runId === current.lastRunId) {
+      return current.lastSession;
+    }
+
+    const history = [normalized, ...current.history]
+      .slice(0, MAX_HISTORY)
+      .map((entry) => normalizeSession(entry));
+    const next = {
+      schemaVersion: DASH_STATS_SCHEMA_VERSION,
+      history,
+      aggregate: computeAggregate(history),
+      lastRunId: normalized.runId,
+      lastSession: normalized,
+    };
+    writeToStorage(statsKey, next);
+    writeToStorage(sessionKey, normalized);
+    return normalized;
   },
 };
 
