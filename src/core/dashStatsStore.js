@@ -5,10 +5,11 @@ import {
   resolveProfileId,
 } from './storageKeys.js';
 import { DASH_STAGE_IDS, toDashStageId } from '../features/dashStages.js';
+import { DEFAULT_DASH_MODE, normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
 
 const DASH_STATS_SCHEMA_VERSION = 'v2';
 const MAX_HISTORY = 20;
-const VALID_END_REASONS = new Set(['collision', 'timeup', 'manual']);
+const VALID_END_REASONS = new Set(['collision', 'timeup', 'goal', 'manual']);
 
 const readFromStorage = (storageKey) => {
   try {
@@ -37,6 +38,7 @@ const normalizeEndReason = (endReason) => (
 
 const normalizeSession = (session) => ({
   runId: typeof session?.runId === 'string' ? session.runId : null,
+  mode: normalizeDashModeId(session?.mode ?? DEFAULT_DASH_MODE),
   distanceM: Number.isFinite(session?.distanceM) ? session.distanceM : 0,
   score: Number.isFinite(session?.score) ? session.score : (Number.isFinite(session?.distanceM) ? session.distanceM : 0),
   correctCount: Number.isFinite(session?.correctCount) ? session.correctCount : 0,
@@ -48,6 +50,11 @@ const normalizeSession = (session) => ({
   endReason: normalizeEndReason(session?.endReason),
   retired: Boolean(session?.retired ?? session?.endReason !== 'timeup'),
   endedAt: typeof session?.endedAt === 'string' ? session.endedAt : new Date().toISOString(),
+  cleared: Boolean(session?.cleared),
+  goalDistanceM: Number.isFinite(session?.goalDistanceM) ? session.goalDistanceM : null,
+  clearTimeMs: Number.isFinite(session?.clearTimeMs) ? session.clearTimeMs : null,
+  rank: typeof session?.rank === 'string' ? session.rank : null,
+  hits: Number.isFinite(session?.hits) ? session.hits : 0,
   schemaVersion: DASH_STATS_SCHEMA_VERSION,
 });
 
@@ -65,16 +72,52 @@ const createEmptyAggregate = () => {
   };
 };
 
+
+const createEmptyModeAggregate = () => {
+  const bestTimeByStage = {};
+  const clearCountByStage = {};
+  const playCountByStage = {};
+  DASH_STAGE_IDS.forEach((stageId) => {
+    bestTimeByStage[stageId] = null;
+    clearCountByStage[stageId] = 0;
+    playCountByStage[stageId] = 0;
+  });
+  return {
+    goalRun: {
+      bestTimeByStage,
+      clearCountByStage,
+      playCountByStage,
+    },
+  };
+};
+
 const computeAggregate = (history) => {
   const aggregate = createEmptyAggregate();
+  const modes = createEmptyModeAggregate();
   history.forEach((session) => {
     const score = Number.isFinite(session.score) ? session.score : session.distanceM;
     aggregate.bestScore = Math.max(aggregate.bestScore, score);
     const stageId = toDashStageId(session.stageId);
     aggregate.stageBest[stageId] = Math.max(aggregate.stageBest[stageId] ?? 0, score);
     aggregate.stagePlayCount[stageId] = (aggregate.stagePlayCount[stageId] ?? 0) + 1;
+
+    if (session.mode === 'goalRun') {
+      const modeAgg = modes.goalRun;
+      modeAgg.playCountByStage[stageId] = (modeAgg.playCountByStage[stageId] ?? 0) + 1;
+      if (session.cleared) {
+        modeAgg.clearCountByStage[stageId] = (modeAgg.clearCountByStage[stageId] ?? 0) + 1;
+        const currentBest = modeAgg.bestTimeByStage[stageId];
+        const clearTimeMs = Number.isFinite(session.clearTimeMs) ? session.clearTimeMs : null;
+        if (clearTimeMs !== null && (currentBest === null || clearTimeMs < currentBest)) {
+          modeAgg.bestTimeByStage[stageId] = clearTimeMs;
+        }
+      }
+    }
   });
-  return aggregate;
+  return {
+    ...aggregate,
+    modes,
+  };
 };
 
 const normalizeStats = (raw) => {
