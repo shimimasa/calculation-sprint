@@ -65,7 +65,9 @@ const DEFAULT_CLOUD_WIDTH = 220;
 const RUNNER_BASE_LEFT_PX = 64;
 const RUNNER_FOOT_OFFSET_PX = 62;
 const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
-const DASH_DEBUG_QUERY_KEY = 'dashDebugRunner';
+const DASH_DEBUG_QUERY_KEY = 'dashDebug';
+const DASH_DEBUG_LEGACY_QUERY_KEY = 'dashDebugRunner';
+const DASH_DEBUG_STORAGE_KEY = 'dashDebugRunner';
 const DASH_DEBUG_WINDOW_FLAG = '__DASH_DEBUG_RUNNER';
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
@@ -157,11 +159,100 @@ const dashGameScreen = {
   isDebugEnabled() {
     return DASH_DEBUG_ALWAYS_ON === true;
   },
-  // Enable runner debug via window.__DASH_DEBUG_RUNNER=true or ?dashDebugRunner=1
+  // Enable runner debug via window.__DASH_DEBUG_RUNNER=true or ?dashDebug=1 or localStorage[dashDebugRunner]=1
   isDashRunnerDebugEnabled() {
     const flagFromWindow = window?.[DASH_DEBUG_WINDOW_FLAG] === true;
-    const queryValue = new URLSearchParams(window.location.search).get(DASH_DEBUG_QUERY_KEY);
-    return flagFromWindow || queryValue === '1';
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryValue = searchParams.get(DASH_DEBUG_QUERY_KEY) ?? searchParams.get(DASH_DEBUG_LEGACY_QUERY_KEY);
+    const storageValue = window.localStorage?.getItem(DASH_DEBUG_STORAGE_KEY);
+    return flagFromWindow || queryValue === '1' || storageValue === '1';
+  },
+  getCollisionEnemyDebugInfo(enemyUpdate) {
+    const collisionEvent = enemyUpdate?.events?.find((event) => event?.type === 'collision') ?? null;
+    const enemyId = collisionEvent?.enemyId ?? null;
+    const enemyType = this.enemySystem?.enemies?.find((enemy) => enemy.id === enemyId)?.type ?? null;
+    return { enemyId, enemyType };
+  },
+  computeRunnerDebugFindings(wrapSnapshot, spriteSnapshot, wrapParentSnapshot) {
+    const findings = [];
+    if (!wrapSnapshot.exists || !spriteSnapshot.exists) {
+      findings.push('A(domMissing)');
+    }
+    const hasHiddenStyle = [wrapSnapshot, spriteSnapshot].some((snapshot) => (
+      snapshot.exists
+      && (
+        snapshot.computed.display === 'none'
+        || snapshot.computed.visibility === 'hidden'
+        || snapshot.computed.opacity <= 0.01
+      )
+    ));
+    if (hasHiddenStyle) {
+      findings.push('B(hidden)');
+    }
+    const hasOffscreen = [wrapSnapshot, spriteSnapshot].some((snapshot) => {
+      if (!snapshot.exists || !snapshot.rect) {
+        return false;
+      }
+      return (
+        snapshot.rect.right < 0
+        || snapshot.rect.left > window.innerWidth
+        || snapshot.rect.bottom < 0
+        || snapshot.rect.top > window.innerHeight
+      );
+    });
+    if (hasOffscreen) {
+      findings.push('C(offscreen)');
+    }
+    const hasStackingRisk = [wrapSnapshot, spriteSnapshot].some((snapshot) => (
+      snapshot.exists
+      && (
+        snapshot.computed.zIndex === 'auto'
+        || Number.isFinite(Number(snapshot.computed.zIndex))
+      )
+    )) && (
+      wrapParentSnapshot?.exists
+      && (wrapParentSnapshot.computed.isolation === 'isolate' || wrapParentSnapshot.computed.transform !== 'none')
+    );
+    if (hasStackingRisk) {
+      findings.push('D(behind)');
+    }
+    return findings.length > 0 ? findings : ['none'];
+  },
+  logCollisionRunnerDebugDump({ nowMs, timeLeftBeforeMs, enemyUpdate, isRunnerInvincible, defeatSequenceActive }) {
+    if (!this.isDashRunnerDebugEnabled() || this.lastCollisionDebugMs === nowMs) {
+      return;
+    }
+    this.lastCollisionDebugMs = nowMs;
+    const runnerWrap = domRefs.game.runnerWrap ?? document.querySelector('.runner-wrap');
+    const runnerSprite = domRefs.game.runner ?? document.querySelector('#runner-sprite');
+    const wrapSnapshot = this.captureRunnerDebugSnapshot(runnerWrap, '.runner-wrap');
+    const spriteSnapshot = this.captureRunnerDebugSnapshot(runnerSprite, '#runner-sprite');
+    const wrapParentSnapshot = this.captureRunnerDebugSnapshot(runnerWrap?.parentElement ?? null, '.runner-wrap parent');
+    const { enemyId, enemyType } = this.getCollisionEnemyDebugInfo(enemyUpdate);
+    const findings = this.computeRunnerDebugFindings(wrapSnapshot, spriteSnapshot, wrapParentSnapshot);
+    console.log('[dash-debug] collision-runner-dump', {
+      nowMs,
+      timeLeftBeforeMs,
+      timeLeftAfterMs: this.timeLeftMs,
+      enemyId,
+      enemyType,
+      runnerState: {
+        isRunnerHit: nowMs < (this.runnerHitUntilMs ?? 0),
+        isRunnerInvincible,
+        isKicking: nowMs < (this.kickUntilMs ?? 0),
+        defeatSequenceActive,
+        kickUntilMs: this.kickUntilMs ?? 0,
+        runnerInvincibleUntilMs: this.runnerInvincibleUntilMs ?? 0,
+      },
+      runnerWrap: wrapSnapshot,
+      runnerSprite: spriteSnapshot,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
+      summary: findings.join('/'),
+      note: 'E/F are verified by changeScreen trace and probe continuity logs',
+    });
   },
   classifyRunnerDebugSnapshot(snapshot, parentSnapshot) {
     if (!snapshot.exists) {
@@ -246,7 +337,10 @@ const dashGameScreen = {
     const wrapLabel = this.classifyRunnerDebugSnapshot(wrapSnapshot, wrapParentSnapshot);
     const spriteLabel = this.classifyRunnerDebugSnapshot(spriteSnapshot, spriteParentSnapshot);
 
-    console.log('[dash-debug-runner-hit]', {
+    console.log('[dash-debug] runner-probe-frame', {
+      frameCount: this.runnerDebugProbeFrameCount,
+      timestamp: window.performance.now(),
+      recentScreenChange: window.__DASH_DEBUG_LAST_SCREEN_CHANGE ?? null,
       frame: this.runnerDebugProbeFrameCount,
       wrap: {
         label: wrapLabel,
@@ -298,7 +392,7 @@ const dashGameScreen = {
         return;
       }
       this.runnerDebugProbeFrameCount += 1;
-      if (this.runnerDebugProbeFrameCount % 10 === 0) {
+      if (this.runnerDebugProbeFrameCount % 12 === 0) {
         this.logRunnerDebugProbeFrame();
       }
       if (timestamp >= this.runnerDebugProbeUntilMs) {
@@ -1530,12 +1624,20 @@ const dashGameScreen = {
       if (handledCollision) {
         const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
         if (!isRunnerInvincible) {
+          const timeLeftBeforeMs = this.timeLeftMs;
           // Hit-confirm point: collision && !attackHandled && !invincible.
           this.startRunnerHitDebugProbe(nowMs);
           // NOTE: playSfx is ignored until audio is unlocked; keep this here so
           // damage SFX only attempts on confirmed penalty (not cooldown skips).
           audioManager.playSfx('sfx_damage');
           this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
+          this.logCollisionRunnerDebugDump({
+            nowMs,
+            timeLeftBeforeMs,
+            enemyUpdate,
+            isRunnerInvincible,
+            defeatSequenceActive,
+          });
           this.slowUntilMs = nowMs + COLLISION_SLOW_MS;
           this.runnerHitUntilMs = nowMs + RUNNER_HIT_REACTION_MS;
           this.runnerInvincibleUntilMs = nowMs + COLLISION_COOLDOWN_MS;
@@ -1723,6 +1825,7 @@ const dashGameScreen = {
     this.runnerSpriteLoadWarned = false;
     this.runnerSpriteLastFailedSrc = null;
     this.enemyUpdateCount = 0;
+    this.lastCollisionDebugMs = -Infinity;
     this.dashStageId = toDashStageId(gameState.dash?.stageId);
     gameState.dash.stageId = this.dashStageId;
     this.applyDashTheme();
@@ -1933,6 +2036,30 @@ const dashGameScreen = {
     domRefs.dashGame.keypadToggle?.setAttribute('aria-expanded', 'false');
 
     this.loadNextQuestion();
+    if (this.isDashRunnerDebugEnabled()) {
+      const errorHandler = (event) => {
+        console.error('[dash-debug] window.error', {
+          message: event.message,
+          source: event.filename,
+          line: event.lineno,
+          column: event.colno,
+          error: event.error,
+        });
+      };
+      const rejectionHandler = (event) => {
+        console.error('[dash-debug] window.unhandledrejection', {
+          reason: event.reason,
+        });
+      };
+      this.dashDebugErrorHandler = errorHandler;
+      this.dashDebugRejectionHandler = rejectionHandler;
+      window.addEventListener('error', errorHandler);
+      window.addEventListener('unhandledrejection', rejectionHandler);
+      this.startRunnerHitDebugProbe();
+      console.log('[dash-debug] enabled', {
+        hint: 'Use ?dashDebug=1 or localStorage.setItem("dashDebugRunner","1")',
+      });
+    }
     this.startBgm();
     this.startLoop();
     this.startLoopWatchdog();
@@ -1993,6 +2120,14 @@ const dashGameScreen = {
     this.enemySystem?.destroy();
     this.enemySystem = null;
     this.stopRunnerHitDebugProbe();
+    if (this.dashDebugErrorHandler) {
+      window.removeEventListener('error', this.dashDebugErrorHandler);
+      this.dashDebugErrorHandler = null;
+    }
+    if (this.dashDebugRejectionHandler) {
+      window.removeEventListener('unhandledrejection', this.dashDebugRejectionHandler);
+      this.dashDebugRejectionHandler = null;
+    }
     this.destroyRunnerDebugOutline();
     if (this.debugToastTimeout) {
       window.clearTimeout(this.debugToastTimeout);
