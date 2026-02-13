@@ -2705,19 +2705,27 @@
 @keyframes runnerBlink {
   0%,
   100% {
-    opacity: 1;
+    opacity: 0;
   }
   50% {
-    opacity: 0.25;
+    opacity: 0.42;
   }
 }
 
-.calc-sprint .runner-wrap.is-runner-invincible {
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-runner-invincible::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.46);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
   animation: runnerBlink 0.12s steps(2, end) infinite;
 }
 
-.calc-sprint .runner-wrap.is-runner-hit.is-runner-invincible {
-  animation: none;
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-runner-invincible {
+  opacity: 1;
 }
 
 .calc-sprint .runner-wrap {
@@ -3807,3 +3815,12 @@ body > .dash-overlay-root .dash-debug-hud {
   border: 2px solid rgba(255, 80, 80, 0.92);
   background: rgba(255, 80, 80, 0.16);
 }
+
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) .dash-runner-debug-outline,
+body > .dash-overlay-root .dash-runner-debug-outline {
+  position: fixed;
+  border: 2px solid rgba(255, 42, 42, 0.95);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55) inset;
+  pointer-events: none;
+}
+
