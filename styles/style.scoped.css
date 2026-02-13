@@ -4372,3 +4372,63 @@ body > .dash-overlay-root .dash-runner-debug-outline {
   color: var(--color-surface);
   background: color-mix(in srgb, var(--color-accent) 72%, #243455);
 }
+
+.calc-sprint .dash-goal-progress {
+  margin-top: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.calc-sprint .dash-goal-progress__track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+
+.calc-sprint .dash-goal-progress__fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #42d392, #20a4f3);
+  transition: width 120ms linear;
+}
+
+.calc-sprint .dash-goal-progress__text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.calc-sprint .dash-result-mode-summary {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.calc-sprint .dash-result-mode-summary__title {
+  margin: 0;
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+.calc-sprint .dash-result-mode-summary__status {
+  margin: 2px 0 4px;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.calc-sprint .dash-result-mode-summary__status[data-cleared='1'] {
+  color: #34d399;
+}
+
+.calc-sprint .dash-result-mode-summary__status[data-cleared='0'] {
+  color: #f87171;
+}
+
+.calc-sprint .dash-result-mode-summary__detail {
+  margin: 2px 0;
+  font-size: 0.82rem;
+}

@@ -241,7 +241,9 @@ const dashGameScreen = {
     return DASH_DEBUG_ALWAYS_ON === true;
   },
   resolveRunModeId() {
-    return normalizeDashModeId(gameState.dash?.modeId);
+    const params = new URLSearchParams(window.location.search);
+    const queryMode = params.get('dashMode');
+    return normalizeDashModeId(gameState.dash?.modeId ?? queryMode);
   },
   resolveModeStrategy() {
     const modeId = this.resolveRunModeId();
@@ -249,14 +251,60 @@ const dashGameScreen = {
     this.modeStrategy = getDashModeStrategy(modeId);
   },
   tryEndByMode() {
-    const decision = this.modeStrategy?.checkEnd?.({
-      timeLeftMs: this.timeLeftMs,
-    });
+    const modeContext = this.getModeContext();
+    const decision = this.modeStrategy?.checkEnd?.(modeContext);
     if (decision?.ended) {
-      this.endSession(decision.endReason ?? 'unknown');
+      this.endSession(decision.endReason ?? 'unknown', decision);
       return true;
     }
     return false;
+  },
+  getModeContext() {
+    return {
+      distanceM: gameState.dash.distanceM,
+      timeLeftMs: this.timeLeftMs,
+      modeRuntime: this.modeRuntime,
+    };
+  },
+  applyModeHud(modeHud) {
+    const distanceCard = domRefs.dashGame.distance?.closest('.dash-stat-card');
+    const distanceLabelEl = distanceCard?.querySelector('.dash-stat-label');
+    const distanceUnitEl = distanceCard?.querySelector('.dash-stat-unit');
+    if (distanceLabelEl) {
+      distanceLabelEl.textContent = modeHud?.distanceLabel ?? '走ったきょり';
+    }
+    if (distanceUnitEl) {
+      distanceUnitEl.textContent = modeHud?.distanceUnit ?? 'm';
+    }
+
+    if (!this.goalProgressWrapEl && distanceCard) {
+      const wrap = document.createElement('div');
+      wrap.className = 'dash-goal-progress';
+      wrap.hidden = true;
+      wrap.innerHTML = '<div class="dash-goal-progress__track"><div class="dash-goal-progress__fill"></div></div><span class="dash-goal-progress__text"></span>';
+      distanceCard.append(wrap);
+      this.goalProgressWrapEl = wrap;
+      this.goalProgressFillEl = wrap.querySelector('.dash-goal-progress__fill');
+      this.goalProgressTextEl = wrap.querySelector('.dash-goal-progress__text');
+    }
+
+    if (!modeHud || !Number.isFinite(modeHud.progressRatio)) {
+      if (this.goalProgressWrapEl) {
+        this.goalProgressWrapEl.hidden = true;
+      }
+      return;
+    }
+
+    if (this.goalProgressWrapEl) {
+      this.goalProgressWrapEl.hidden = false;
+    }
+    if (this.goalProgressFillEl) {
+      const ratio = Math.max(0, Math.min(modeHud.progressRatio, 1));
+      this.goalProgressFillEl.style.width = `${(ratio * 100).toFixed(1)}%`;
+    }
+    if (this.goalProgressTextEl) {
+      this.goalProgressTextEl.textContent = modeHud.progressText ?? '';
+    }
   },
   // Enable runner debug via window.__DASH_DEBUG_RUNNER=true or ?dashDebug=1 or localStorage[dashDebugRunner]=1
   isDashRunnerDebugEnabled() {
@@ -1745,10 +1793,19 @@ const dashGameScreen = {
     }
   },
   updateHud() {
+    const modeHud = this.modeStrategy?.getHudState?.(this.getModeContext()) ?? null;
     if (domRefs.dashGame.distance) {
-      domRefs.dashGame.distance.textContent = gameState.dash.distanceM.toFixed(1);
+      domRefs.dashGame.distance.textContent = modeHud?.distanceText ?? gameState.dash.distanceM.toFixed(1);
     }
-    this.updateNextAreaIndicator(gameState.dash.distanceM);
+    this.applyModeHud(modeHud);
+    if (modeHud?.hideNextArea) {
+      if (domRefs.dashGame.nextArea) {
+        domRefs.dashGame.nextArea.hidden = true;
+        domRefs.dashGame.nextArea.textContent = '';
+      }
+    } else {
+      this.updateNextAreaIndicator(gameState.dash.distanceM);
+    }
     if (domRefs.dashGame.speed) {
       domRefs.dashGame.speed.textContent = this.playerSpeed.toFixed(1);
     }
@@ -2085,6 +2142,7 @@ const dashGameScreen = {
           // damage SFX only attempts on confirmed penalty (not cooldown skips).
           audioManager.playSfx('sfx_damage');
           this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
+          this.collisionHits += 1;
           this.logCollisionRunnerDebugDump({
             nowMs,
             timeLeftBeforeMs,
@@ -2264,7 +2322,7 @@ const dashGameScreen = {
     console.log('[BGM] dash stop');
     audioManager.stopBgm();
   },
-  endSession(endReason = 'unknown') {
+  endSession(endReason = 'unknown', modeEndDecision = null) {
     if (this.hasEnded) {
       return;
     }
@@ -2277,6 +2335,17 @@ const dashGameScreen = {
     this.hasEnded = true;
     this.stopBgm();
     this.stopLoop();
+    const endFx = this.modeStrategy?.onBeforeEnd?.({
+      endReason,
+      modeRuntime: this.modeRuntime,
+      modeEndDecision,
+    }) ?? null;
+    if (endFx?.cueText) {
+      this.showStreakCue(endFx.cueText);
+    }
+    if (endFx?.sfxId) {
+      audioManager.playSfx(endFx.sfxId);
+    }
     const buildContext = {
       runId: gameState.dash.currentRunId,
       distanceM: gameState.dash.distanceM,
@@ -2287,6 +2356,9 @@ const dashGameScreen = {
       timeLeftMs: this.timeLeftMs,
       stageId: gameState.dash?.stageId,
       endReason,
+      initialTimeLimitMs: this.initialTimeLimitMs,
+      modeRuntime: this.modeRuntime,
+      hits: this.collisionHits,
     };
     gameState.dash.result = this.modeStrategy?.buildResult?.(buildContext) ?? {
       ...buildContext,
@@ -2295,6 +2367,13 @@ const dashGameScreen = {
       stageId: toDashStageId(gameState.dash?.stageId),
       retired: endReason !== 'timeup',
     };
+    const delayMs = Math.max(0, Number(endFx?.delayMs) || 0);
+    if (delayMs > 0) {
+      window.setTimeout(() => {
+        screenManager.changeScreen('dash-result');
+      }, delayMs);
+      return;
+    }
     screenManager.changeScreen('dash-result');
   },
   enter() {
@@ -2320,6 +2399,8 @@ const dashGameScreen = {
     this.currentQuestion = null;
     this.hasEnded = false;
     this.resolveModeStrategy();
+    const settings = dashSettingsStore.get();
+    this.modeRuntime = this.modeStrategy?.initRun?.({ difficulty: settings?.difficulty ?? "normal" }) ?? null;
     this.maxStreak = 0;
     this.clearStreakCue();
     gameState.dash.distanceM = 0;
@@ -2370,6 +2451,7 @@ const dashGameScreen = {
     this.runnerSpriteLastFailedSrc = null;
     this.enemyUpdateCount = 0;
     this.hasLoggedCollisionResultDebug = false;
+    this.collisionHits = 0;
     this.lastCollisionDebugMs = -Infinity;
     this.lastCollisionStageLogKey = '';
     this.runnerMutationObservers = [];
@@ -2753,6 +2835,12 @@ const dashGameScreen = {
     }
     domRefs.game.runWorld?.classList.remove(HIT_SHAKE_CLASS);
     domRefs.game.runnerWrap?.classList.remove(HIT_FLASH_CLASS);
+    if (this.goalProgressWrapEl) {
+      this.goalProgressWrapEl.remove();
+      this.goalProgressWrapEl = null;
+      this.goalProgressFillEl = null;
+      this.goalProgressTextEl = null;
+    }
   },
 };
 
