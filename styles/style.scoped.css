@@ -2705,19 +2705,27 @@
 @keyframes runnerBlink {
   0%,
   100% {
-    opacity: 1;
+    opacity: 0;
   }
   50% {
-    opacity: 0.25;
+    opacity: 0.42;
   }
 }
 
-.calc-sprint .runner-wrap.is-runner-invincible {
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-runner-invincible::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.46);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
   animation: runnerBlink 0.12s steps(2, end) infinite;
 }
 
-.calc-sprint .runner-wrap.is-runner-hit.is-runner-invincible {
-  animation: none;
+.calc-sprint :is(#dash-game-screen, .screen-dash, #dash-game) :is(.runner-wrap, #runner-wrap).is-runner-invincible {
+  opacity: 1;
 }
 
 .calc-sprint .runner-wrap {
