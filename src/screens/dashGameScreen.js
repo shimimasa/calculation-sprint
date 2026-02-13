@@ -1739,7 +1739,6 @@ const dashGameScreen = {
       const handledCollision = (
         enemyUpdate.collision
         && !enemyUpdate.attackHandled
-        && !defeatSequenceActive
       );
       if (handledCollision) {
         const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);

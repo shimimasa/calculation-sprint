@@ -596,16 +596,14 @@ export const createDashEnemySystem = ({
       if (playerRect && enemy.state === 'approaching' && enemy.collisionEnabled) {
         const distancePx = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
         nearestDistancePx = Math.min(nearestDistancePx, distancePx);
-        if (
-          !defeatSequenceActive
-          && !collision
-          && intersects(playerRect, enemy)
-        ) {
+        const isOverlap = intersects(playerRect, enemy);
+        if (!collision && isOverlap) {
           system.onCollisionDebug?.({
             stage: 'overlap',
             enemyId: enemy.id,
             nowMs,
             attackActive: Boolean(attackActive),
+            defeatSequenceActive: Boolean(defeatSequenceActive),
           });
           if (attackActive) {
             attackHandled = true;
