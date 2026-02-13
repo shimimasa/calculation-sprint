@@ -3,6 +3,8 @@ import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import audioManager from '../core/audioManager.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
+import gameState from '../core/gameState.js';
+import { DEFAULT_DASH_MODE } from '../game/dash/modes/modeTypes.js';
 
 const titleScreen = {
   enter() {
@@ -17,6 +19,7 @@ const titleScreen = {
       audioManager.unlock();
       audioManager.playSfx('sfx_click');
       const nextScreen = domRefs.screens['dash-stage-select'] ? 'dash-stage-select' : 'dash-game';
+      gameState.dash.modeId = gameState.dash?.modeId || DEFAULT_DASH_MODE;
       screenManager.changeScreen(nextScreen);
     };
     this.handleDashSettings = () => {

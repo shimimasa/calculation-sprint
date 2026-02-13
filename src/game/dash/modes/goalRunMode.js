@@ -1,13 +1,7 @@
 import { DASH_MODE_TYPES } from './modeTypes.js';
 import { toDashStageId } from '../../../features/dashStages.js';
 
-const GOAL_DISTANCE_BY_DIFFICULTY = Object.freeze({
-  easy: 800,
-  normal: 1000,
-  hard: 1200,
-});
-
-const getGoalDistance = (difficulty) => GOAL_DISTANCE_BY_DIFFICULTY[difficulty] ?? GOAL_DISTANCE_BY_DIFFICULTY.normal;
+const GOAL_DISTANCE_M = 1000;
 
 const computeRank = ({ cleared, accuracy, hits }) => {
   if (!cleared) {
@@ -27,13 +21,13 @@ const computeRank = ({ cleared, accuracy, hits }) => {
 
 const goalRunModeStrategy = {
   id: DASH_MODE_TYPES.goalRun,
-  initRun({ difficulty }) {
+  initRun() {
     return {
-      goalDistanceM: getGoalDistance(difficulty),
+      goalDistanceM: GOAL_DISTANCE_M,
     };
   },
   checkEnd({ distanceM, timeLeftMs, modeRuntime }) {
-    const goalDistanceM = Number(modeRuntime?.goalDistanceM) || getGoalDistance();
+    const goalDistanceM = Number(modeRuntime?.goalDistanceM) || GOAL_DISTANCE_M;
     if (Number.isFinite(distanceM) && distanceM >= goalDistanceM) {
       return { ended: true, endReason: 'goal', cleared: true };
     }
@@ -43,7 +37,7 @@ const goalRunModeStrategy = {
     return { ended: false, endReason: null, cleared: false };
   },
   getHudState({ distanceM, modeRuntime }) {
-    const goalDistanceM = Number(modeRuntime?.goalDistanceM) || getGoalDistance();
+    const goalDistanceM = Number(modeRuntime?.goalDistanceM) || GOAL_DISTANCE_M;
     const safeDistance = Number.isFinite(distanceM) ? distanceM : 0;
     const progress = goalDistanceM > 0 ? Math.max(0, Math.min(safeDistance / goalDistanceM, 1)) : 0;
     return {
@@ -70,7 +64,7 @@ const goalRunModeStrategy = {
     const totalAnswered = (Number(correctCount) || 0) + (Number(wrongCount) || 0);
     const accuracy = totalAnswered > 0 ? (Number(correctCount) / totalAnswered) * 100 : 0;
     const cleared = endReason === 'goal';
-    const goalDistanceM = Number(modeRuntime?.goalDistanceM) || getGoalDistance();
+    const goalDistanceM = Number(modeRuntime?.goalDistanceM) || GOAL_DISTANCE_M;
     const elapsedMs = Math.max(0, (Number(initialTimeLimitMs) || 0) - safeTimeLeft);
     const hitCount = Number(hits) || 0;
     return {
