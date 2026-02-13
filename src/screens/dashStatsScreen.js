@@ -6,6 +6,8 @@ import dashStatsStore from '../core/dashStatsStore.js';
 import { DASH_STAGE_IDS, getDashStageLabelJa } from '../features/dashStages.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 
+const getStageClassName = (stageId) => `stage-${String(stageId || 'mix')}`;
+
 const formatDateTime = (isoValue) => {
   if (!isoValue) {
     return '-';
@@ -33,6 +35,7 @@ const dashStatsScreen = {
       domRefs.dashStats.stageBestBody.textContent = '';
       DASH_STAGE_IDS.forEach((stageId) => {
         const tr = document.createElement('tr');
+        tr.className = `dash-stats-row ${getStageClassName(stageId)}`;
         const best = Number(stats.aggregate.stageBest?.[stageId] ?? 0);
         const count = Number(stats.aggregate.stagePlayCount?.[stageId] ?? 0);
         tr.innerHTML = `<th scope="row">${getDashStageLabelJa(stageId)}</th><td>${best.toFixed(1)} m</td><td>${count} 回</td>`;
@@ -44,9 +47,14 @@ const dashStatsScreen = {
       domRefs.dashStats.historyBody.textContent = '';
       stats.history.forEach((entry) => {
         const tr = document.createElement('tr');
+        const stageId = String(entry.stageId || 'mix');
+        tr.className = `dash-stats-row ${getStageClassName(stageId)}`;
         const statusLabel = entry.retired ? 'リタイア' : '完走';
         const score = Number.isFinite(entry.score) ? entry.score : entry.distanceM;
-        tr.innerHTML = `<td>${formatDateTime(entry.endedAt)}</td><td>${getDashStageLabelJa(entry.stageId)}</td><td>${score.toFixed(1)} m</td><td>${statusLabel}</td>`;
+        const stageBest = Number(stats.aggregate.stageBest?.[stageId] ?? 0);
+        const isNewBest = score > 0 && Math.abs(score - stageBest) < 0.0001;
+        const newBadge = isNewBest ? '<span class="badge dash-badge-new">NEW</span>' : '';
+        tr.innerHTML = `<td>${formatDateTime(entry.endedAt)}</td><td>${getDashStageLabelJa(stageId)}</td><td>${score.toFixed(1)} m</td><td>${statusLabel} ${newBadge}</td>`;
         domRefs.dashStats.historyBody.append(tr);
       });
     }
