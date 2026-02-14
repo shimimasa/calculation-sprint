@@ -36,7 +36,8 @@ const ENEMY_STATES = Object.freeze([
 const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
 const MIN_REACTION_DISTANCE_PX = 180;
-const ENEMY_SPAWN_SCREEN_X_RATIO = 0.78;
+const ENEMY_SPAWN_SCREEN_X_RATIO = 0.84;
+const ENEMY_SPAWN_SAFE_MARGIN_PX = 16;
 const HIT_DURATION_MS = 120;
 const DEAD_DURATION_MS = 300;
 const HIT_PULL_DURATION_MS = 80;
@@ -574,9 +575,13 @@ export const createDashEnemySystem = ({
     const viewportW = worldWidth;
     const safeCameraX = Number.isFinite(cameraX) ? cameraX : 0;
     // Collision-test mode (debug only): spawn near player to force overlap without changing speed/timing.
+    const ratioSpawnX = safeCameraX + viewportW * ENEMY_SPAWN_SCREEN_X_RATIO;
+    const maxSpawnX = safeCameraX + viewportW - width - ENEMY_SPAWN_SAFE_MARGIN_PX;
+    const clampedRatioSpawnX = Math.min(ratioSpawnX, maxSpawnX);
     const spawnX = collisionTestModeEnabled && playerRect
       ? (playerRect.x + playerRect.w + 160)
-      : (safeCameraX + viewportW * ENEMY_SPAWN_SCREEN_X_RATIO);
+      : clampedRatioSpawnX;
+    const spawnClamped = !collisionTestModeEnabled && clampedRatioSpawnX < ratioSpawnX;
     const rightmostEnemyX = system.enemies.reduce((maxX, enemy) => (
       enemy?.isAlive ? Math.max(maxX, enemy.x + enemy.w) : maxX
     ), Number.NEGATIVE_INFINITY);
@@ -635,6 +640,8 @@ export const createDashEnemySystem = ({
       spawnY: Number(enemy.y.toFixed(2)),
       cameraX: safeCameraX,
       viewportW,
+      ratio: ENEMY_SPAWN_SCREEN_X_RATIO,
+      clamped: spawnClamped,
       groundTopY: Number.isFinite(groundTopY) ? Number(groundTopY.toFixed(2)) : null,
     });
     return enemy;
