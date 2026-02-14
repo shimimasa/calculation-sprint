@@ -21,6 +21,12 @@ const ENEMY_MAX_HP_BY_TYPE = Object.freeze({
   multi: 1,
   divide: 1,
 });
+const ENEMY_FOOT_OFFSETS = Object.freeze({
+  plus: 0,
+  minus: 0,
+  multi: 0,
+  divide: 0,
+});
 const ENEMY_STATES = Object.freeze([
   'approaching',
   'collision_resolved',
@@ -30,7 +36,7 @@ const ENEMY_STATES = Object.freeze([
 const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
 const MIN_REACTION_DISTANCE_PX = 180;
-const MIN_TIME_TO_COLLISION_SEC = 2.2;
+const ENEMY_SPAWN_SCREEN_X_RATIO = 0.78;
 const HIT_DURATION_MS = 120;
 const DEAD_DURATION_MS = 300;
 const HIT_PULL_DURATION_MS = 80;
@@ -539,7 +545,8 @@ export const createDashEnemySystem = ({
 
   system.spawnEnemy = ({
     nowMs,
-    groundY,
+    groundTopY,
+    cameraX = 0,
     speedPxPerSec,
     playerRect,
     minGapPx = MIN_SPAWN_GAP_PX,
@@ -563,13 +570,13 @@ export const createDashEnemySystem = ({
     const state = 'approaching';
     const width = ENEMY_SIZE_PX;
     const height = ENEMY_SIZE_PX;
-    const baseOffset = width * 0.3;
-    const speedMagnitude = Math.abs(speedPxPerSec);
     const collisionTestModeEnabled = system.isCollisionTestModeEnabled?.() === true;
+    const viewportW = worldWidth;
+    const safeCameraX = Number.isFinite(cameraX) ? cameraX : 0;
     // Collision-test mode (debug only): spawn near player to force overlap without changing speed/timing.
     const spawnX = collisionTestModeEnabled && playerRect
       ? (playerRect.x + playerRect.w + 160)
-      : (worldWidth + baseOffset + speedMagnitude * MIN_TIME_TO_COLLISION_SEC);
+      : (safeCameraX + viewportW * ENEMY_SPAWN_SCREEN_X_RATIO);
     const rightmostEnemyX = system.enemies.reduce((maxX, enemy) => (
       enemy?.isAlive ? Math.max(maxX, enemy.x + enemy.w) : maxX
     ), Number.NEGATIVE_INFINITY);
@@ -591,7 +598,7 @@ export const createDashEnemySystem = ({
       name: getEnemyDisplayName(type),
       state,
       x: spawnX,
-      y: Math.max(0, (groundY ?? 0) - height),
+      y: Math.max(0, ((groundTopY ?? 0) - height + (ENEMY_FOOT_OFFSETS[type] ?? 0))),
       w: width,
       h: height,
       vx: speedPxPerSec,
@@ -622,6 +629,14 @@ export const createDashEnemySystem = ({
     applyEnemyStateClasses(enemy);
     container.appendChild(enemy.el);
     system.enemies.push(enemy);
+    system.logEnemyDebug('spawn', {
+      enemyId: enemy.id,
+      spawnX: Number(enemy.x.toFixed(2)),
+      spawnY: Number(enemy.y.toFixed(2)),
+      cameraX: safeCameraX,
+      viewportW,
+      groundTopY: Number.isFinite(groundTopY) ? Number(groundTopY.toFixed(2)) : null,
+    });
     return enemy;
   };
 
@@ -771,6 +786,7 @@ export const createDashEnemySystem = ({
     nowMs,
     groundY,
     worldGroundTopY = null,
+    cameraX = 0,
     playerRect,
     correctCount,
     attackActive,
@@ -819,7 +835,8 @@ export const createDashEnemySystem = ({
       }
       system.spawnEnemy({
         nowMs,
-        groundY,
+        groundTopY: worldGroundTopY,
+        cameraX,
         speedPxPerSec,
         playerRect,
       });

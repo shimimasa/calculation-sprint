@@ -2190,6 +2190,8 @@ const dashGameScreen = {
       nowMs,
       groundY,
       worldGroundTopY,
+      // Dash enemy coordinates are run-world local; left edge cameraX is 0 in current pipeline.
+      cameraX: 0,
       playerRect,
       correctCount: gameState.dash.correctCount,
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
