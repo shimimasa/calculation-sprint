@@ -12,6 +12,7 @@ export const DEFAULT_DASH_SETTINGS = Object.freeze({
   bgmEnabled: true,
   sfxEnabled: true,
   difficulty: 'normal',
+  worldLevelEnabled: false,
   schemaVersion: DEFAULT_SCHEMA_VERSION,
 });
 
@@ -25,6 +26,7 @@ const normalizeSettings = (raw) => {
     bgmEnabled: settings.bgmEnabled !== false,
     sfxEnabled: settings.sfxEnabled !== false,
     difficulty: normalizeDifficulty(settings.difficulty),
+    worldLevelEnabled: settings.worldLevelEnabled === true,
     schemaVersion: DEFAULT_SCHEMA_VERSION,
   };
 };
@@ -92,6 +94,9 @@ const dashSettingsStore = {
     });
     writeStorage(key, merged);
     return merged;
+  },
+  getWorldLevelEnabled(profileId) {
+    return this.get(profileId).worldLevelEnabled === true;
   },
 };
 
