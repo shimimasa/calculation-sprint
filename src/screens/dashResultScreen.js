@@ -5,6 +5,7 @@ import audioManager from '../core/audioManager.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 import gameState from '../core/gameState.js';
 import dashStatsStore from '../core/dashStatsStore.js';
+import dashSettingsStore from '../core/dashSettingsStore.js';
 import { getDashStageLabelJa, normalizeDashStageId, toDashStageId } from '../features/dashStages.js';
 
 const calculateRewardTitle = ({ distanceM = 0, accuracy = 0, maxStreak = 0, missRate = 0, correctCount = 0 }) => {
@@ -256,7 +257,10 @@ const dashResultScreen = {
     this.handleReplay = () => {
       audioManager.playSfx('sfx_confirm');
       const stageId = gameState.dash?.stageId;
-      const nextScreen = normalizeDashStageId(stageId) ? 'dash-game' : 'dash-stage-select';
+      const worldLevelEnabled = dashSettingsStore.getWorldLevelEnabled();
+      const nextScreen = worldLevelEnabled || normalizeDashStageId(stageId)
+        ? 'dash-game'
+        : 'dash-stage-select';
       screenManager.changeScreen(nextScreen);
     };
     this.handleSettings = () => {

@@ -2034,9 +2034,10 @@ const dashGameScreen = {
     this.lastNextAreaText = nextText;
   },
   loadNextQuestion() {
+    const worldLevelEnabled = dashSettingsStore.getWorldLevelEnabled();
     this.currentQuestion = questionGenerator.next({
       ...gameState.settings,
-      stageId: this.dashStageId,
+      stageId: worldLevelEnabled ? null : this.dashStageId,
       questionMode: gameState.dash.currentMode,
     });
     gameState.dash.currentMode = this.currentQuestion?.meta?.mode ?? null;
