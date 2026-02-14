@@ -3,6 +3,8 @@ import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import gameState from '../core/gameState.js';
 import audioManager from '../core/audioManager.js';
+import dashSettingsStore from '../core/dashSettingsStore.js';
+import dashWorldLevelStore from '../core/dashWorldLevelStore.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 import { perfLog } from '../core/perf.js';
 import { preloadStageCoreImages } from '../core/stageAssetPreloader.js';
@@ -127,6 +129,11 @@ const dashStageSelectScreen = {
       audioManager.unlock();
       audioManager.playSfx('sfx_confirm');
       gameState.dash.stageId = stage.id;
+      if (dashSettingsStore.getWorldLevelEnabled()) {
+        const worldLevel = dashWorldLevelStore.setFromStageId(stage.id);
+        gameState.dash.worldKey = worldLevel.worldKey;
+        gameState.dash.levelId = worldLevel.levelId;
+      }
       gameState.dash.modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
       gameState.dash.currentMode = null;
       preloadStageCoreImages(stage.id, { mode: 'dash' });

@@ -3,6 +3,7 @@ import uiRenderer from '../ui/uiRenderer.js';
 import screenManager from '../core/screenManager.js';
 import audioManager from '../core/audioManager.js';
 import dashSettingsStore from '../core/dashSettingsStore.js';
+import dashWorldLevelStore from '../core/dashWorldLevelStore.js';
 import gameState from '../core/gameState.js';
 import inputActions from '../core/inputActions.js';
 import questionGenerator from '../features/questionGenerator.js';
@@ -2575,7 +2576,15 @@ const dashGameScreen = {
     this.lastCollisionDebugMs = -Infinity;
     this.lastCollisionStageLogKey = '';
     this.runnerMutationObservers = [];
-    this.dashStageId = toDashStageId(gameState.dash?.stageId);
+    const worldLevelEnabled = dashSettingsStore.getWorldLevelEnabled();
+    if (worldLevelEnabled) {
+      const worldLevel = dashWorldLevelStore.setFromStageId(gameState.dash?.stageId);
+      gameState.dash.worldKey = worldLevel.worldKey;
+      gameState.dash.levelId = worldLevel.levelId;
+      this.dashStageId = toDashStageId(worldLevel.worldKey);
+    } else {
+      this.dashStageId = toDashStageId(gameState.dash?.stageId);
+    }
     gameState.dash.stageId = this.dashStageId;
     this.applyDashTheme();
     gameState.dash.currentMode = null;
