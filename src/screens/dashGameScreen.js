@@ -7,6 +7,7 @@ import dashWorldLevelStore from '../core/dashWorldLevelStore.js';
 import gameState from '../core/gameState.js';
 import inputActions from '../core/inputActions.js';
 import questionGenerator from '../features/questionGenerator.js';
+import { getEnemyStageKeyForQuestion } from '../features/dashEnemyStageKey.js';
 import {
   baseSpeed,
   speedIncrementPerCorrect,
@@ -2593,6 +2594,12 @@ const dashGameScreen = {
     gameState.dash.currentMode = null;
     this.enemySystem = createDashEnemySystem({
       stageId: this.dashStageId,
+      getEnemyType: () => {
+        if (!worldLevelEnabled) {
+          return null;
+        }
+        return getEnemyStageKeyForQuestion(this.currentQuestion, gameState.dash.worldKey);
+      },
       getCurrentMode: () => gameState.dash.currentMode,
       isDebugEnabled: () => this.isDashRunnerDebugEnabled(),
       isEnemyDebugEnabled: () => this.isDashEnemyDebugEnabled(),
