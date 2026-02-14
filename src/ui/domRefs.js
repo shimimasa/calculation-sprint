@@ -33,9 +33,12 @@ const domRefs = {
   dashStageSelect: {
     list: byId('dash-stage-select-list'),
     buttons: qsa('#dash-stage-select-list [data-dash-stage-id]'),
+    levelPanel: byId('dash-level-select-panel'),
+    levelList: byId('dash-level-select-list'),
     modeList: byId('dash-mode-select-list'),
     modeButtons: qsa('#dash-mode-select-list [data-dash-mode-id]'),
     modeNote: byId('dash-stage-select-mode-note'),
+    startButton: byId('dash-stage-select-start-button'),
     backButton: byId('dash-stage-select-back-button'),
   },
   dashGame: {

@@ -11,6 +11,19 @@ const dashWorldLevelStore = {
   get() {
     return cloneState();
   },
+
+  getSelectedWorldKey() {
+    return state.worldKey;
+  },
+  setSelectedWorldKey(worldKey) {
+    return this.save({ worldKey, levelId: state.levelId });
+  },
+  getSelectedLevelId() {
+    return state.levelId;
+  },
+  setSelectedLevelId(levelId) {
+    return this.save({ worldKey: state.worldKey, levelId });
+  },
   save(nextState) {
     const worldLevel = getDashWorldLevel(nextState?.worldKey, nextState?.levelId);
     state = Object.freeze({

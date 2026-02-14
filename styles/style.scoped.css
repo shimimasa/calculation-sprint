@@ -782,6 +782,30 @@
 .calc-sprint #dash-stage-select-screen .dash-stage-card.is-current .dash-stage-card__selected {
   display: inline-flex;
 }
+
+.calc-sprint #dash-stage-select-screen .dash-level-select-panel {
+  width: min(100%, 520px);
+  margin: 10px auto 0;
+  display: grid;
+  gap: 8px;
+}
+.calc-sprint #dash-stage-select-screen .dash-level-select-panel__title {
+  margin: 0;
+  font-size: 15px;
+  color: var(--dash-select-muted);
+}
+.calc-sprint #dash-stage-select-screen .dash-level-select-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 8px;
+}
+.calc-sprint #dash-stage-select-screen .dash-level-button {
+  min-height: 44px;
+}
+.calc-sprint #dash-stage-select-screen .dash-level-button.is-current {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
 .calc-sprint #dash-stage-select-screen .stage-select-actions {
   width: 100%;
 }

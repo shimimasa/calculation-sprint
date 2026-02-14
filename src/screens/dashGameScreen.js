@@ -2582,7 +2582,10 @@ const dashGameScreen = {
     this.runnerMutationObservers = [];
     const worldLevelEnabled = dashSettingsStore.getWorldLevelEnabled();
     if (worldLevelEnabled) {
-      const worldLevel = dashWorldLevelStore.setFromStageId(gameState.dash?.stageId);
+      const worldLevel = dashWorldLevelStore.save({
+        worldKey: gameState.dash?.worldKey ?? gameState.dash?.stageId,
+        levelId: gameState.dash?.levelId ?? dashWorldLevelStore.getSelectedLevelId(),
+      });
       gameState.dash.worldKey = worldLevel.worldKey;
       gameState.dash.levelId = worldLevel.levelId;
       this.dashStageId = toDashStageId(worldLevel.worldKey);
