@@ -81,6 +81,10 @@ const dashStageSelectScreen = {
     if (!levelList) {
       return;
     }
+    if (!this.worldLevelEnabled) {
+      levelList.innerHTML = '';
+      return;
+    }
     const levels = DASH_WORLD_LEVELS[this.selectedWorldKey] ?? [];
     levelList.innerHTML = levels
       .map((entry) => {
@@ -95,6 +99,33 @@ const dashStageSelectScreen = {
       const stageId = toDashStageId(button.dataset.dashStageId);
       updateSelectionState(button, stageId === this.selectedWorldKey);
     });
+  },
+  syncWorldLevelStateFromStore() {
+    const selectedStage = toDashStageId(gameState.dash?.stageId);
+    if (this.worldLevelEnabled) {
+      const storeWorldKey = dashWorldLevelStore.getSelectedWorldKey();
+      const storeLevelId = dashWorldLevelStore.getSelectedLevelId();
+      const resolved = getDashWorldLevel(storeWorldKey ?? selectedStage, storeLevelId ?? 1);
+      this.selectedWorldKey = resolved.worldKey;
+      this.selectedLevelId = resolved.levelId;
+      return;
+    }
+    this.selectedWorldKey = selectedStage;
+    this.selectedLevelId = null;
+  },
+  applyWorldLevelUiMode() {
+    if (domRefs.dashStageSelect.worldLevelToggle) {
+      domRefs.dashStageSelect.worldLevelToggle.checked = this.worldLevelEnabled;
+    }
+    if (domRefs.dashStageSelect.levelPanel) {
+      domRefs.dashStageSelect.levelPanel.hidden = !this.worldLevelEnabled;
+    }
+    if (domRefs.dashStageSelect.startButton) {
+      domRefs.dashStageSelect.startButton.hidden = !this.worldLevelEnabled;
+    }
+    this.syncWorldLevelStateFromStore();
+    this.syncWorldSelectionUi();
+    this.renderLevelButtons();
   },
   startDashWithSelection() {
     const stage = findDashStageById(this.selectedWorldKey) ?? getDashStageOrFallback(this.selectedWorldKey);
@@ -113,27 +144,14 @@ const dashStageSelectScreen = {
   enter() {
     uiRenderer.showScreen('dash-stage-select');
     this.events = createEventRegistry('dash-stage-select');
-    const worldLevelEnabled = dashSettingsStore.getWorldLevelEnabled();
+    this.worldLevelEnabled = dashSettingsStore.getWorldLevelEnabled();
 
-    const selectedStage = toDashStageId(gameState.dash?.stageId);
     const selectedModeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
     gameState.dash.modeId = selectedModeId;
-
-    if (worldLevelEnabled) {
-      const storeWorldKey = dashWorldLevelStore.getSelectedWorldKey();
-      const storeLevelId = dashWorldLevelStore.getSelectedLevelId();
-      const resolved = getDashWorldLevel(storeWorldKey ?? selectedStage, storeLevelId ?? 1);
-      this.selectedWorldKey = resolved.worldKey;
-      this.selectedLevelId = resolved.levelId;
-    } else {
-      this.selectedWorldKey = selectedStage;
-      this.selectedLevelId = null;
-    }
 
     domRefs.dashStageSelect.buttons.forEach((button) => {
       enhanceStageButton(button);
     });
-    this.syncWorldSelectionUi();
 
     domRefs.dashStageSelect.modeButtons.forEach((button) => {
       const modeId = normalizeDashModeId(button.dataset.dashModeId);
@@ -143,17 +161,15 @@ const dashStageSelectScreen = {
       domRefs.dashStageSelect.modeNote.textContent = MODE_NOTE_MAP[selectedModeId] ?? MODE_NOTE_MAP.infinite;
     }
 
-    if (domRefs.dashStageSelect.levelPanel) {
-      domRefs.dashStageSelect.levelPanel.hidden = !worldLevelEnabled;
-    }
-    if (domRefs.dashStageSelect.startButton) {
-      domRefs.dashStageSelect.startButton.hidden = !worldLevelEnabled;
-    }
-    if (worldLevelEnabled) {
-      this.renderLevelButtons();
-    } else if (domRefs.dashStageSelect.levelList) {
-      domRefs.dashStageSelect.levelList.innerHTML = '';
-    }
+    this.applyWorldLevelUiMode();
+
+    this.handleToggleWorldLevel = (event) => {
+      const enabled = event.currentTarget?.checked === true;
+      dashSettingsStore.setWorldLevelEnabled(enabled);
+      this.worldLevelEnabled = enabled;
+      this.applyWorldLevelUiMode();
+      audioManager.playSfx('sfx_click');
+    };
 
     this.handleSelectMode = (event) => {
       const button = event.target.closest('[data-dash-mode-id]');
@@ -184,7 +200,7 @@ const dashStageSelectScreen = {
         return;
       }
 
-      if (!worldLevelEnabled) {
+      if (!this.worldLevelEnabled) {
         audioManager.unlock();
         audioManager.playSfx('sfx_confirm');
         gameState.dash.stageId = stage.id;
@@ -204,7 +220,7 @@ const dashStageSelectScreen = {
     };
 
     this.handleSelectLevel = (event) => {
-      if (!worldLevelEnabled) {
+      if (!this.worldLevelEnabled) {
         return;
       }
       const button = event.target.closest('[data-level-id]');
@@ -219,7 +235,7 @@ const dashStageSelectScreen = {
     };
 
     this.handleStart = () => {
-      if (!worldLevelEnabled) {
+      if (!this.worldLevelEnabled) {
         return;
       }
       audioManager.unlock();
@@ -233,6 +249,7 @@ const dashStageSelectScreen = {
       screenManager.changeScreen('title');
     };
 
+    this.events.on(domRefs.dashStageSelect.worldLevelToggle, 'change', this.handleToggleWorldLevel);
     this.events.on(domRefs.dashStageSelect.modeList, 'click', this.handleSelectMode);
     this.events.on(domRefs.dashStageSelect.list, 'click', this.handleSelectStage);
     this.events.on(domRefs.dashStageSelect.levelList, 'click', this.handleSelectLevel);

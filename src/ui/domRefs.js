@@ -38,6 +38,7 @@ const domRefs = {
     modeList: byId('dash-mode-select-list'),
     modeButtons: qsa('#dash-mode-select-list [data-dash-mode-id]'),
     modeNote: byId('dash-stage-select-mode-note'),
+    worldLevelToggle: byId('dash-world-level-toggle-input'),
     startButton: byId('dash-stage-select-start-button'),
     backButton: byId('dash-stage-select-back-button'),
   },

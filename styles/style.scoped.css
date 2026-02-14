@@ -686,6 +686,18 @@
   color: var(--dash-select-muted);
   line-height: 1.55;
 }
+.calc-sprint #dash-stage-select-screen .dash-world-level-toggle {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--dash-select-muted);
+}
+.calc-sprint #dash-stage-select-screen .dash-world-level-toggle input {
+  width: 14px;
+  height: 14px;
+}
 @media (max-width: 640px) {
   .calc-sprint #dash-stage-select-screen .dash-stage-select-header {
     margin-bottom: 12px;

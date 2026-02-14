@@ -57,7 +57,8 @@ Dash敵画像は次の順で探索されます（`stageKey`, `tier`, `state` を
   - `big=2`
   - `boss=3`
 - Feature Flag: `dash.worldLevel.enabled`（既定値 `false`。ON時のみ Phase2 の World/Level/難易度 schema 経路を使用）。
-- Phase2補助: フラグON時のみ Dash 内部で `worldKey` / `levelId`（difficultyKey参照用）を保持します（UI変更なし）。
+- Phase2補助: Dashステージ選択画面の `World/Level（β）` トグルでON/OFFを切り替えできます（既定OFF）。
+- 補足（開発者向け）: 必要なら `dash.worldLevel.enabled` を localStorage から直接操作しても同じ設定を切り替えられます。
 
 ## Dash World/Level 回帰チェック（PR2）
 
