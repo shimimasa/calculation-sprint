@@ -21,17 +21,23 @@ const ENEMY_MAX_HP_BY_TYPE = Object.freeze({
   multi: 1,
   divide: 1,
 });
+const ENEMY_FOOT_OFFSETS = Object.freeze({
+  plus: 0,
+  minus: 0,
+  multi: 0,
+  divide: 0,
+});
 const ENEMY_STATES = Object.freeze([
   'approaching',
   'collision_resolved',
-  'defeated',
-  'despawning',
+  'defeated_hit',
+  'defeated_end',
 ]);
 const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
 const MIN_REACTION_DISTANCE_PX = 180;
-const MIN_TIME_TO_COLLISION_SEC = 2.2;
-const HIT_START_DELAY_MS = 150;
+const ENEMY_SPAWN_SCREEN_X_RATIO = 0.99;
+const ENEMY_SPAWN_SAFE_MARGIN_PX = 16;
 const HIT_DURATION_MS = 120;
 const DEAD_DURATION_MS = 300;
 const HIT_PULL_DURATION_MS = 80;
@@ -47,11 +53,49 @@ const SPEED_PER_SEC_PX_PER_SEC = 1.5;
 const SPAWN_INTERVAL_START_MS = 1500;
 const SPAWN_INTERVAL_MIN_MS = 650;
 const SPAWN_INTERVAL_DECAY_MS_PER_SEC = 18;
+const SPAWN_INTERVAL_JITTER_RATIO = 0.35;
+const SPAWN_INTERVAL_MIN_RATIO = 0.60;
+const SPAWN_INTERVAL_MAX_RATIO = 1.60;
+const SPAWN_INTERVAL_SHORT_STREAK_GUARD_MS = 50;
 
 export const ATTACK_WINDOW_MS = 250;
 export const PX_PER_METER = 100;
 
 const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'approaching');
+
+const randIntInclusive = (min, max) => {
+  const low = Math.ceil(Math.min(min, max));
+  const high = Math.floor(Math.max(min, max));
+  return Math.floor(Math.random() * (high - low + 1)) + low;
+};
+
+const resolveNextSpawnIntervalMs = ({ baseMs, prevIntervalMs }) => {
+  const safeBaseMs = Math.max(1, Math.floor(baseMs));
+  const jitterMs = Math.floor(safeBaseMs * SPAWN_INTERVAL_JITTER_RATIO);
+  const rawMs = safeBaseMs + randIntInclusive(-jitterMs, jitterMs);
+  const minMs = Math.floor(safeBaseMs * SPAWN_INTERVAL_MIN_RATIO);
+  const maxMs = Math.floor(safeBaseMs * SPAWN_INTERVAL_MAX_RATIO);
+  let nextMs = Math.max(minMs, Math.min(maxMs, rawMs));
+  if (Number.isFinite(prevIntervalMs) && prevIntervalMs < minMs + SPAWN_INTERVAL_SHORT_STREAK_GUARD_MS) {
+    nextMs = Math.max(nextMs, safeBaseMs);
+  }
+  return {
+    nextMs,
+    baseMs: safeBaseMs,
+    minMs,
+    maxMs,
+    jitterMs,
+  };
+};
+
+const isDefeatedState = (enemy) => enemy?.state === 'defeated_hit' || enemy?.state === 'defeated_end';
+
+const isInDefeatPipeline = (enemy) => (
+  Number.isFinite(enemy?.hitAtTs)
+  || enemy?.pendingVisualState === 'hit'
+  || enemy?.pendingVisualState === 'dead'
+  || enemy?.attackHandled === true
+);
 
 const getEnemyAssetPath = (type, state) => `assets/enemy/enemy_${type}_${state}.png`;
 
@@ -277,10 +321,11 @@ const updateEnemyHud = (enemy) => {
 
 const setEnemySprite = (enemy, visualState) => {
   if (!enemy?.el || enemy.visualState === visualState) {
-    return;
+    return false;
   }
   enemy.visualState = visualState;
   enemy.spriteEl.src = getEnemyAssetPath(enemy.type, visualState);
+  return true;
 };
 
 const applyEnemyStateClasses = (enemy) => {
@@ -288,7 +333,7 @@ const applyEnemyStateClasses = (enemy) => {
     return;
   }
   enemy.el.classList.toggle('is-collision-resolved', enemy.state === 'collision_resolved');
-  enemy.el.classList.toggle('is-defeated', enemy.state === 'defeated');
+  enemy.el.classList.toggle('is-defeated', isDefeatedState(enemy));
 };
 
 const getSpeedPxPerSec = ({ correctCount = 0, elapsedSec = 0 }) => -(
@@ -305,6 +350,8 @@ export const createDashEnemySystem = ({
   getEnemyPool = null,
   getCurrentMode = null,
   isDebugEnabled = null,
+  isEnemyDebugEnabled = null,
+  isCollisionTestModeEnabled = null,
   isCollisionDebugEnabled = null,
   onCollisionDebug = null,
 } = {}) => {
@@ -320,9 +367,142 @@ export const createDashEnemySystem = ({
     getEnemyPool,
     getCurrentMode,
     isDebugEnabled,
+    isEnemyDebugEnabled,
+    isCollisionTestModeEnabled,
     isCollisionDebugEnabled,
     onCollisionDebug,
     lastCollisionTestLogKey: '',
+    previousSpawnIntervalMs: null,
+    latestSpawnSchedule: null,
+    enemyDebugCounters: {
+      defeatStartCount: 0,
+      hitShownCount: 0,
+      endShownCount: 0,
+      removeAfterEndCount: 0,
+      offscreenRemoveCount: 0,
+      unexpectedRemoveCount: 0,
+    },
+    enemyDebugById: new Map(),
+    lastEnemyDebugSummaryAtMs: -Infinity,
+  };
+
+  system.isEnemyDebugActive = () => system.isEnemyDebugEnabled?.() === true;
+
+  system.getEnemyDebugEntry = (enemyId) => {
+    if (!enemyId) {
+      return null;
+    }
+    const existing = system.enemyDebugById.get(enemyId);
+    if (existing) {
+      return existing;
+    }
+    const created = {
+      enemyId,
+      sawDefeat: false,
+      sawHit: false,
+      sawEnd: false,
+      removed: false,
+      removeReason: null,
+    };
+    system.enemyDebugById.set(enemyId, created);
+    return created;
+  };
+
+  system.logEnemyDebug = (label, payload) => {
+    if (!system.isEnemyDebugActive()) {
+      return;
+    }
+    console.log(`[dash-debug][ENEMY:${label}]`, payload);
+  };
+
+  system.trackEnemySpriteShown = (enemy, visualState, nowMs) => {
+    if (!system.isEnemyDebugActive()) {
+      return;
+    }
+    const entry = system.getEnemyDebugEntry(enemy?.id);
+    if (entry) {
+      if (visualState === 'hit' && !entry.sawHit) {
+        entry.sawHit = true;
+        system.enemyDebugCounters.hitShownCount += 1;
+      }
+      if (visualState === 'dead' && !entry.sawEnd) {
+        entry.sawEnd = true;
+        system.enemyDebugCounters.endShownCount += 1;
+      }
+    }
+    system.logEnemyDebug('sprite', {
+      enemyId: enemy?.id ?? null,
+      spriteName: visualState,
+      nowMs: Math.round(nowMs),
+      state: enemy?.state ?? null,
+      hitAtTs: enemy?.hitAtTs ?? null,
+      stateUntilMs: enemy?.stateUntilMs ?? null,
+    });
+  };
+
+  system.removeEnemy = (enemy, removeReason, nowMs) => {
+    enemy.isAlive = false;
+    enemy.el?.remove();
+    if (!system.isEnemyDebugActive()) {
+      return;
+    }
+    const entry = system.getEnemyDebugEntry(enemy?.id);
+    const removedInDefeatedState = isDefeatedState(enemy);
+    const isOffscreenRemove = removeReason === 'offscreen';
+    const isCollisionTimeoutRemove = removeReason === 'collision_resolved_timeout';
+    const hasStateInconsistency = Number.isFinite(enemy?.hitAtTs) && !isDefeatedState(enemy);
+    if (entry) {
+      entry.removed = true;
+      entry.removeReason = removeReason;
+      if (entry.sawEnd && removeReason === 'defeated_end_timeout') {
+        system.enemyDebugCounters.removeAfterEndCount += 1;
+      }
+      if (isOffscreenRemove) {
+        system.enemyDebugCounters.offscreenRemoveCount += 1;
+      }
+      const isUnexpected = (
+        isCollisionTimeoutRemove
+        || (removedInDefeatedState && removeReason !== 'defeated_end_timeout')
+        || hasStateInconsistency
+      );
+      if (isUnexpected) {
+        system.enemyDebugCounters.unexpectedRemoveCount += 1;
+      }
+    }
+    system.logEnemyDebug('remove', {
+      enemyId: enemy?.id ?? null,
+      removeReason,
+      nowMs: Math.round(nowMs),
+      state: enemy?.state ?? null,
+      x: Number.isFinite(enemy?.x) ? Number(enemy.x.toFixed(2)) : null,
+    });
+  };
+
+  system.logEnemyDebugSummary = (nowMs = window.performance.now()) => {
+    if (!system.isEnemyDebugActive()) {
+      return;
+    }
+    if (nowMs - system.lastEnemyDebugSummaryAtMs < 200) {
+      return;
+    }
+    system.lastEnemyDebugSummaryAtMs = nowMs;
+    const unresolved = [];
+    system.enemyDebugById.forEach((entry) => {
+      if (entry.removed && ((entry.sawHit && entry.sawEnd) || entry.removeReason === 'offscreen')) {
+        return;
+      }
+      unresolved.push({
+        enemyId: entry.enemyId,
+        hitReached: entry.sawHit,
+        endReached: entry.sawEnd,
+        removed: entry.removed,
+        removeReason: entry.removeReason,
+      });
+    });
+    system.logEnemyDebug('summary', {
+      counters: { ...system.enemyDebugCounters },
+      unresolved,
+    });
   };
 
   system.setWorld = (nextWorld, nextContainer) => {
@@ -354,6 +534,14 @@ export const createDashEnemySystem = ({
     system.isDebugEnabled = typeof resolver === 'function' ? resolver : null;
   };
 
+  system.setEnemyDebugEnabledResolver = (resolver) => {
+    system.isEnemyDebugEnabled = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setCollisionTestModeEnabledResolver = (resolver) => {
+    system.isCollisionTestModeEnabled = typeof resolver === 'function' ? resolver : null;
+  };
+
   system.setCollisionDebugEnabledResolver = (resolver) => {
     system.isCollisionDebugEnabled = typeof resolver === 'function' ? resolver : null;
   };
@@ -366,6 +554,18 @@ export const createDashEnemySystem = ({
     system.spawnTimerMs = START_GRACE_MS;
     system.elapsedMs = 0;
     system.previousEnemyType = null;
+    system.previousSpawnIntervalMs = null;
+    system.latestSpawnSchedule = null;
+    system.enemyDebugCounters = {
+      defeatStartCount: 0,
+      hitShownCount: 0,
+      endShownCount: 0,
+      removeAfterEndCount: 0,
+      offscreenRemoveCount: 0,
+      unexpectedRemoveCount: 0,
+    };
+    system.enemyDebugById = new Map();
+    system.lastEnemyDebugSummaryAtMs = -Infinity;
   };
 
   system.destroy = () => {
@@ -379,11 +579,13 @@ export const createDashEnemySystem = ({
 
   system.spawnEnemy = ({
     nowMs,
-    groundY,
+    groundTopY,
+    cameraX = 0,
     speedPxPerSec,
     playerRect,
     minGapPx = MIN_SPAWN_GAP_PX,
     minReactionDistancePx = MIN_REACTION_DISTANCE_PX,
+    spawnSchedule = null,
   }) => {
     const worldEl = system.worldEl;
     const container = ensureEnemyContainer(worldEl, system.containerEl);
@@ -403,9 +605,17 @@ export const createDashEnemySystem = ({
     const state = 'approaching';
     const width = ENEMY_SIZE_PX;
     const height = ENEMY_SIZE_PX;
-    const baseOffset = width * 0.3;
-    const speedMagnitude = Math.abs(speedPxPerSec);
-    const spawnX = worldWidth + baseOffset + speedMagnitude * MIN_TIME_TO_COLLISION_SEC;
+    const collisionTestModeEnabled = system.isCollisionTestModeEnabled?.() === true;
+    const viewportW = worldWidth;
+    const safeCameraX = Number.isFinite(cameraX) ? cameraX : 0;
+    // Collision-test mode (debug only): spawn near player to force overlap without changing speed/timing.
+    const ratioSpawnX = safeCameraX + viewportW * ENEMY_SPAWN_SCREEN_X_RATIO;
+    const maxSpawnX = safeCameraX + viewportW - width - ENEMY_SPAWN_SAFE_MARGIN_PX;
+    const clampedRatioSpawnX = Math.min(ratioSpawnX, maxSpawnX);
+    const spawnX = collisionTestModeEnabled && playerRect
+      ? (playerRect.x + playerRect.w + 160)
+      : clampedRatioSpawnX;
+    const spawnClamped = !collisionTestModeEnabled && clampedRatioSpawnX < ratioSpawnX;
     const rightmostEnemyX = system.enemies.reduce((maxX, enemy) => (
       enemy?.isAlive ? Math.max(maxX, enemy.x + enemy.w) : maxX
     ), Number.NEGATIVE_INFINITY);
@@ -427,7 +637,7 @@ export const createDashEnemySystem = ({
       name: getEnemyDisplayName(type),
       state,
       x: spawnX,
-      y: Math.max(0, (groundY ?? 0) - height),
+      y: Math.max(0, ((groundTopY ?? 0) - height + (ENEMY_FOOT_OFFSETS[type] ?? 0))),
       w: width,
       h: height,
       vx: speedPxPerSec,
@@ -437,6 +647,8 @@ export const createDashEnemySystem = ({
       visualState: 'walk',
       pendingVisualState: null,
       collisionEnabled: true,
+      attackHandled: false,
+      collisionCooldownUntilMs: null,
       hp: maxHp,
       maxHp,
       el: null,
@@ -456,10 +668,25 @@ export const createDashEnemySystem = ({
     applyEnemyStateClasses(enemy);
     container.appendChild(enemy.el);
     system.enemies.push(enemy);
+    system.logEnemyDebug('spawn', {
+      enemyId: enemy.id,
+      spawnX: Number(enemy.x.toFixed(2)),
+      spawnY: Number(enemy.y.toFixed(2)),
+      cameraX: safeCameraX,
+      viewportW,
+      ratio: ENEMY_SPAWN_SCREEN_X_RATIO,
+      clamped: spawnClamped,
+      spawnIntervalMs: spawnSchedule?.nextMs ?? null,
+      baseMs: spawnSchedule?.baseMs ?? null,
+      minMs: spawnSchedule?.minMs ?? null,
+      maxMs: spawnSchedule?.maxMs ?? null,
+      jitterMs: spawnSchedule?.jitterMs ?? null,
+      groundTopY: Number.isFinite(groundTopY) ? Number(groundTopY.toFixed(2)) : null,
+    });
     return enemy;
   };
 
-  system.damageEnemy = (enemy, amount = 1, nowMs = window.performance.now()) => {
+  system.damageEnemy = (enemy, amount = 1, nowMs = window.performance.now(), meta = null) => {
     if (!enemy?.isAlive || enemy.state !== 'approaching') {
       return { defeated: false, hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 0 };
     }
@@ -467,20 +694,20 @@ export const createDashEnemySystem = ({
     enemy.hp = Math.max(0, enemy.hp - damage);
     updateEnemyHud(enemy);
     if (enemy.hp <= 0) {
-      system.setEnemyState(enemy, 'defeated', nowMs);
-      return { defeated: true, hp: enemy.hp, maxHp: enemy.maxHp };
+      const defeated = system.requestDefeatEnemy(enemy, nowMs, meta);
+      return { defeated, hp: enemy.hp, maxHp: enemy.maxHp };
     }
     return { defeated: false, hp: enemy.hp, maxHp: enemy.maxHp };
   };
 
-  system.defeatNearestEnemy = ({ playerRect, nowMs }) => {
+  system.defeatNearestEnemy = ({ playerRect, nowMs, callerTag = 'unknown' }) => {
     if (!playerRect) {
       return { defeated: false, target: null };
     }
     let nearestEnemy = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
     system.enemies.forEach((enemy) => {
-      if (!enemy?.isAlive || enemy.state !== 'approaching') {
+      if (!enemy?.isAlive || enemy.state !== 'approaching' || enemy.attackHandled) {
         return;
       }
       if (enemy.x + enemy.w < playerRect.x) {
@@ -495,7 +722,7 @@ export const createDashEnemySystem = ({
     if (!nearestEnemy) {
       return { defeated: false, target: null };
     }
-    const damageResult = system.damageEnemy(nearestEnemy, 1, nowMs);
+    const damageResult = system.damageEnemy(nearestEnemy, 1, nowMs, { callerTag });
     if (!damageResult.defeated) {
       return {
         defeated: false,
@@ -518,36 +745,85 @@ export const createDashEnemySystem = ({
     };
   };
 
-  system.setEnemyState = (enemy, nextState, nowMs) => {
+  system.requestDefeatEnemy = (enemy, nowMs, meta = null) => {
+    if (!enemy?.isAlive) {
+      return false;
+    }
+    if (isDefeatedState(enemy) || isInDefeatPipeline(enemy) || enemy.attackHandled) {
+      return false;
+    }
+    enemy.attackHandled = true;
+    system.setEnemyState(enemy, 'defeated_hit', nowMs, meta);
+    return true;
+  };
+
+  system.setEnemyState = (enemy, nextState, nowMs, meta = null) => {
+    const prevState = enemy.state;
     const state = clampState(nextState);
-    if (enemy.state === state) {
+    if (prevState === state) {
       return;
     }
     enemy.state = state;
-    if (state === 'defeated') {
+    if (state === 'defeated_hit') {
       enemy.collisionEnabled = false;
-      enemy.hitAtTs = nowMs + HIT_START_DELAY_MS;
-      enemy.stateUntilMs = enemy.hitAtTs + HIT_DURATION_MS;
+      enemy.attackHandled = true;
+      enemy.hitAtTs = nowMs;
+      enemy.stateUntilMs = nowMs + HIT_DURATION_MS;
       enemy.pendingVisualState = 'hit';
-    } else if (state === 'collision_resolved') {
+      enemy.collisionCooldownUntilMs = null;
+    } else if (state === 'defeated_end') {
       enemy.collisionEnabled = false;
-      enemy.hitAtTs = null;
-      enemy.pendingVisualState = null;
-      enemy.stateUntilMs = nowMs + COLLISION_RESOLVE_MS;
-      setEnemySprite(enemy, 'walk');
-    } else if (state === 'despawning') {
-      enemy.collisionEnabled = false;
+      enemy.attackHandled = true;
       enemy.hitAtTs = null;
       enemy.pendingVisualState = null;
       enemy.stateUntilMs = nowMs + DEAD_DURATION_MS;
-      setEnemySprite(enemy, 'dead');
-    } else {
-      enemy.collisionEnabled = true;
+      enemy.collisionCooldownUntilMs = null;
+      if (setEnemySprite(enemy, 'dead')) {
+        system.trackEnemySpriteShown(enemy, 'dead', nowMs);
+      }
+    } else if (state === 'collision_resolved') {
+      enemy.collisionEnabled = false;
+      enemy.attackHandled = false;
       enemy.hitAtTs = null;
       enemy.pendingVisualState = null;
       enemy.stateUntilMs = null;
-      setEnemySprite(enemy, 'walk');
+      enemy.collisionCooldownUntilMs = nowMs + COLLISION_RESOLVE_MS;
+      if (setEnemySprite(enemy, 'walk')) {
+        system.trackEnemySpriteShown(enemy, 'walk', nowMs);
+      }
+    } else {
+      enemy.collisionEnabled = true;
+      enemy.attackHandled = false;
+      enemy.hitAtTs = null;
+      enemy.pendingVisualState = null;
+      enemy.stateUntilMs = null;
+      enemy.collisionCooldownUntilMs = null;
+      if (setEnemySprite(enemy, 'walk')) {
+        system.trackEnemySpriteShown(enemy, 'walk', nowMs);
+      }
     }
+    if (state === 'defeated_hit') {
+      const entry = system.getEnemyDebugEntry(enemy.id);
+      if (entry && !entry.sawDefeat && system.isEnemyDebugActive()) {
+        entry.sawDefeat = true;
+        system.enemyDebugCounters.defeatStartCount += 1;
+      }
+    }
+    system.logEnemyDebug('state', {
+      enemyId: enemy.id,
+      transition: `${prevState}->${state}`,
+      nowMs: Math.round(nowMs),
+      callerTag: meta?.callerTag ?? 'unknown',
+      hitAtTs: enemy.hitAtTs,
+      stateUntilMs: enemy.stateUntilMs,
+      pendingVisualState: enemy.pendingVisualState,
+      collisionEnabled: enemy.collisionEnabled,
+      attackHandled: enemy.attackHandled,
+      x: Number.isFinite(enemy.x) ? Number(enemy.x.toFixed(2)) : null,
+      y: Number.isFinite(enemy.y) ? Number(enemy.y.toFixed(2)) : null,
+      w: enemy.w,
+      h: enemy.h,
+    });
     applyEnemyStateClasses(enemy);
   };
 
@@ -556,6 +832,7 @@ export const createDashEnemySystem = ({
     nowMs,
     groundY,
     worldGroundTopY = null,
+    cameraX = 0,
     playerRect,
     correctCount,
     attackActive,
@@ -592,23 +869,33 @@ export const createDashEnemySystem = ({
     });
 
     system.spawnTimerMs -= dtMs;
-    const spawnInterval = Math.max(
+    const baseSpawnIntervalMs = Math.max(
       SPAWN_INTERVAL_MIN_MS,
       SPAWN_INTERVAL_START_MS - elapsedSec * SPAWN_INTERVAL_DECAY_MS_PER_SEC,
     );
     while (system.spawnTimerMs <= 0) {
+      const spawnSchedule = resolveNextSpawnIntervalMs({
+        baseMs: baseSpawnIntervalMs,
+        prevIntervalMs: system.previousSpawnIntervalMs,
+      });
       const activeEnemies = system.enemies.filter((enemy) => enemy?.isAlive).length;
       if (activeEnemies >= MAX_ENEMIES) {
-        system.spawnTimerMs += spawnInterval;
+        system.spawnTimerMs += spawnSchedule.nextMs;
+        system.previousSpawnIntervalMs = spawnSchedule.nextMs;
+        system.latestSpawnSchedule = spawnSchedule;
         break;
       }
       system.spawnEnemy({
         nowMs,
-        groundY,
+        groundTopY: worldGroundTopY,
+        cameraX,
         speedPxPerSec,
         playerRect,
+        spawnSchedule,
       });
-      system.spawnTimerMs += spawnInterval;
+      system.spawnTimerMs += spawnSchedule.nextMs;
+      system.previousSpawnIntervalMs = spawnSchedule.nextMs;
+      system.latestSpawnSchedule = spawnSchedule;
     }
 
     let nearestDistancePx = Number.POSITIVE_INFINITY;
@@ -631,27 +918,30 @@ export const createDashEnemySystem = ({
         return false;
       }
       enemy.vx = speedPxPerSec;
-      if (enemy.state === 'defeated' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
-        system.setEnemyState(enemy, 'despawning', nowMs);
-      } else if (enemy.state === 'collision_resolved' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
-        enemy.isAlive = false;
-      } else if (enemy.state === 'despawning' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
-        enemy.isAlive = false;
+      if (enemy.state === 'defeated_hit' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+        system.setEnemyState(enemy, 'defeated_end', nowMs, { callerTag: 'update:defeatedHitTimeout' });
+      } else if (enemy.state === 'defeated_end' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+        system.removeEnemy(enemy, 'defeated_end_timeout', nowMs);
+      } else if (enemy.state === 'collision_resolved'
+        && Number.isFinite(enemy.collisionCooldownUntilMs)
+        && nowMs >= enemy.collisionCooldownUntilMs) {
+        system.setEnemyState(enemy, 'approaching', nowMs, { callerTag: 'collision:cooldown_end' });
       }
 
       if (!enemy.isAlive) {
-        enemy.el.remove();
         return false;
       }
 
-      if (enemy.state === 'defeated' && enemy.pendingVisualState && nowMs >= enemy.hitAtTs) {
-        setEnemySprite(enemy, enemy.pendingVisualState);
+      if (enemy.state === 'defeated_hit' && enemy.pendingVisualState && nowMs >= enemy.hitAtTs) {
+        if (setEnemySprite(enemy, enemy.pendingVisualState)) {
+          system.trackEnemySpriteShown(enemy, enemy.pendingVisualState, nowMs);
+        }
         enemy.pendingVisualState = null;
       }
 
       let hitPullPx = 0;
       let hitScale = 1;
-      if (enemy.state === 'defeated' && Number.isFinite(enemy.hitAtTs)) {
+      if (enemy.state === 'defeated_hit' && Number.isFinite(enemy.hitAtTs)) {
         const hitElapsedMs = nowMs - enemy.hitAtTs;
         if (hitElapsedMs >= 0 && hitElapsedMs < HIT_PULL_DURATION_MS) {
           const progress = hitElapsedMs / HIT_PULL_DURATION_MS;
@@ -679,7 +969,7 @@ export const createDashEnemySystem = ({
       enemy.el.style.transform = getEnemyTransform(enemy);
 
       if (enemy.x + enemy.w < 0) {
-        enemy.el.remove();
+        system.removeEnemy(enemy, 'offscreen', nowMs);
         return false;
       }
 
@@ -776,14 +1066,33 @@ export const createDashEnemySystem = ({
             defeatSequenceActive: Boolean(defeatSequenceActive),
           });
           if (attackActive) {
-            attackHandled = true;
-            system.setEnemyState(enemy, 'defeated', nowMs);
-            events.push({ type: 'defeated', enemyId: enemy.id });
+            const defeatedByOverlap = system.requestDefeatEnemy(enemy, nowMs, {
+              callerTag: 'update:attackActiveOverlap',
+            });
+            if (defeatedByOverlap) {
+              attackHandled = true;
+              events.push({ type: 'defeated', enemyId: enemy.id });
+            }
           } else {
+            if (isDefeatedState(enemy) || isInDefeatPipeline(enemy) || enemy.attackHandled) {
+              return true;
+            }
             collision = true;
-            system.setEnemyState(enemy, 'collision_resolved', nowMs);
+            system.setEnemyState(enemy, 'collision_resolved', nowMs, {
+              callerTag: 'update:collisionOverlap',
+              attackHandled: false,
+            });
             events.push({ type: 'collision', enemyId: enemy.id });
           }
+          system.logEnemyDebug('collisionFrame', {
+            enemyId: enemy.id,
+            nowMs: Math.round(nowMs),
+            groundY: Number.isFinite(groundY) ? Number(groundY.toFixed(2)) : null,
+            worldGroundTopY: Number.isFinite(worldGroundTopY) ? Number(worldGroundTopY.toFixed(2)) : null,
+            enemyY: Number.isFinite(enemy.y) ? Number(enemy.y.toFixed(2)) : null,
+            enemyRectY: Number.isFinite(enemyRectForHit.y) ? Number(enemyRectForHit.y.toFixed(2)) : null,
+            playerRectY: Number.isFinite(playerRect.y) ? Number(playerRect.y.toFixed(2)) : null,
+          });
         }
       }
 
@@ -795,6 +1104,7 @@ export const createDashEnemySystem = ({
     }
 
     const collisionDebugEnabled = system.isCollisionDebugEnabled?.() === true;
+    system.logEnemyDebugSummary(nowMs);
     return {
       nearestDistancePx,
       collision,
