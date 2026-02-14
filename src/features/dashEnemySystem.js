@@ -315,6 +315,7 @@ export const createDashEnemySystem = ({
   getCurrentMode = null,
   isDebugEnabled = null,
   isEnemyDebugEnabled = null,
+  isCollisionTestModeEnabled = null,
   isCollisionDebugEnabled = null,
   onCollisionDebug = null,
 } = {}) => {
@@ -331,6 +332,7 @@ export const createDashEnemySystem = ({
     getCurrentMode,
     isDebugEnabled,
     isEnemyDebugEnabled,
+    isCollisionTestModeEnabled,
     isCollisionDebugEnabled,
     onCollisionDebug,
     lastCollisionTestLogKey: '',
@@ -339,6 +341,7 @@ export const createDashEnemySystem = ({
       hitShownCount: 0,
       endShownCount: 0,
       removeAfterEndCount: 0,
+      offscreenRemoveCount: 0,
       unexpectedRemoveCount: 0,
     },
     enemyDebugById: new Map(),
@@ -406,12 +409,25 @@ export const createDashEnemySystem = ({
       return;
     }
     const entry = system.getEnemyDebugEntry(enemy?.id);
+    const removedInDefeatedState = isDefeatedState(enemy);
+    const isOffscreenRemove = removeReason === 'offscreen';
+    const isCollisionTimeoutRemove = removeReason === 'collision_resolved_timeout';
+    const hasStateInconsistency = Number.isFinite(enemy?.hitAtTs) && !isDefeatedState(enemy);
     if (entry) {
       entry.removed = true;
       entry.removeReason = removeReason;
-      if (entry.sawEnd) {
+      if (entry.sawEnd && removeReason === 'defeated_end_timeout') {
         system.enemyDebugCounters.removeAfterEndCount += 1;
-      } else {
+      }
+      if (isOffscreenRemove) {
+        system.enemyDebugCounters.offscreenRemoveCount += 1;
+      }
+      const isUnexpected = (
+        isCollisionTimeoutRemove
+        || (removedInDefeatedState && removeReason !== 'defeated_end_timeout')
+        || hasStateInconsistency
+      );
+      if (isUnexpected) {
         system.enemyDebugCounters.unexpectedRemoveCount += 1;
       }
     }
@@ -434,7 +450,7 @@ export const createDashEnemySystem = ({
     system.lastEnemyDebugSummaryAtMs = nowMs;
     const unresolved = [];
     system.enemyDebugById.forEach((entry) => {
-      if (entry.removed && entry.sawHit && entry.sawEnd) {
+      if (entry.removed && ((entry.sawHit && entry.sawEnd) || entry.removeReason === 'offscreen')) {
         return;
       }
       unresolved.push({
@@ -484,6 +500,10 @@ export const createDashEnemySystem = ({
     system.isEnemyDebugEnabled = typeof resolver === 'function' ? resolver : null;
   };
 
+  system.setCollisionTestModeEnabledResolver = (resolver) => {
+    system.isCollisionTestModeEnabled = typeof resolver === 'function' ? resolver : null;
+  };
+
   system.setCollisionDebugEnabledResolver = (resolver) => {
     system.isCollisionDebugEnabled = typeof resolver === 'function' ? resolver : null;
   };
@@ -501,6 +521,7 @@ export const createDashEnemySystem = ({
       hitShownCount: 0,
       endShownCount: 0,
       removeAfterEndCount: 0,
+      offscreenRemoveCount: 0,
       unexpectedRemoveCount: 0,
     };
     system.enemyDebugById = new Map();
@@ -544,7 +565,11 @@ export const createDashEnemySystem = ({
     const height = ENEMY_SIZE_PX;
     const baseOffset = width * 0.3;
     const speedMagnitude = Math.abs(speedPxPerSec);
-    const spawnX = worldWidth + baseOffset + speedMagnitude * MIN_TIME_TO_COLLISION_SEC;
+    const collisionTestModeEnabled = system.isCollisionTestModeEnabled?.() === true;
+    // Collision-test mode (debug only): spawn near player to force overlap without changing speed/timing.
+    const spawnX = collisionTestModeEnabled && playerRect
+      ? (playerRect.x + playerRect.w + 160)
+      : (worldWidth + baseOffset + speedMagnitude * MIN_TIME_TO_COLLISION_SEC);
     const rightmostEnemyX = system.enemies.reduce((maxX, enemy) => (
       enemy?.isAlive ? Math.max(maxX, enemy.x + enemy.w) : maxX
     ), Number.NEGATIVE_INFINITY);

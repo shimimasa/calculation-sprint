@@ -83,6 +83,8 @@ const COLLISION_DEBUG_LOG_INTERVAL_MS = 200;
 const DASH_DEBUG_ENEMY_QUERY_KEY = 'dashDebugEnemy';
 const DASH_DEBUG_ENEMY_STORAGE_KEY = 'dash.debug.enemy';
 const DASH_DEBUG_ENEMY_WINDOW_FLAG = '__DASH_DEBUG_ENEMY';
+const DASH_TEST_COLLISION_QUERY_KEY = 'dashTestCollision';
+const DASH_TEST_COLLISION_STORAGE_KEY = 'dash.test.collision';
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
 const DASH_DEBUG_ALWAYS_ON = false;
@@ -371,6 +373,18 @@ const dashGameScreen = {
       return true;
     }
     const storageValue = window.localStorage?.getItem(DASH_DEBUG_ENEMY_STORAGE_KEY);
+    return storageValue === '1';
+  },
+  isDashCollisionTestModeEnabled() {
+    if (!this.isDashEnemyDebugEnabled()) {
+      return false;
+    }
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryValue = searchParams.get(DASH_TEST_COLLISION_QUERY_KEY);
+    if (queryValue !== null) {
+      return queryValue === '1';
+    }
+    const storageValue = window.localStorage?.getItem(DASH_TEST_COLLISION_STORAGE_KEY);
     return storageValue === '1';
   },
   isCollisionDebugEnabled() {
@@ -2567,6 +2581,7 @@ const dashGameScreen = {
       getCurrentMode: () => gameState.dash.currentMode,
       isDebugEnabled: () => this.isDashRunnerDebugEnabled(),
       isEnemyDebugEnabled: () => this.isDashEnemyDebugEnabled(),
+      isCollisionTestModeEnabled: () => this.isDashCollisionTestModeEnabled(),
       isCollisionDebugEnabled: () => this.isCollisionDebugEnabled(),
       worldEl: domRefs.game.runWorld,
       containerEl: domRefs.game.runEnemies,
@@ -2805,6 +2820,11 @@ const dashGameScreen = {
       console.log('[dash-debug][ENEMY] enabled', {
         hint: 'Use ?dashDebugEnemy=1 or window.__DASH_DEBUG_ENEMY=true or localStorage.setItem("dash.debug.enemy","1")',
       });
+      if (this.isDashCollisionTestModeEnabled()) {
+        console.log('[dash-debug][ENEMY] collision-test-mode enabled', {
+          hint: 'Use ?dashTestCollision=1 or localStorage.setItem("dash.test.collision","1")',
+        });
+      }
     }
     this.startBgm();
     this.startLoop();
