@@ -46,6 +46,8 @@ const gameState = {
   },
   dash: {
     stageId: null,
+    worldKey: null,
+    levelId: null,
     modeId: null,
     currentRunId: null,
     currentMode: null,
