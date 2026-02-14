@@ -71,7 +71,12 @@
       <section id="dash-stage-select-screen" class="screen screen-stage-select" hidden>
         <header class="dash-stage-select-header">
           <h2 class="dash-stage-select-header__title">ダッシュステージをえらぼう</h2>
-          <p class="setting-note dash-stage-select-header__note">えらんだステージで出る問題と敵が変わるよ！</p>
+          <p id="dash-stage-select-mode-note" class="setting-note dash-stage-select-header__note">じかんをのばして どこまでいける？</p>
+          <div id="dash-mode-select-list" class="dash-mode-select-list" role="tablist" aria-label="ダッシュモード選択">
+            <button class="secondary-button" type="button" data-dash-mode-id="infinite">Infinite（とことん）</button>
+            <button class="secondary-button" type="button" data-dash-mode-id="goalRun">GoalRun（1000mチャレンジ）</button>
+            <button class="secondary-button" type="button" data-dash-mode-id="scoreAttack60">ScoreAttack60（60びょうスコア）</button>
+          </div>
         </header>
         <div id="dash-stage-select-list" class="stage-select-list" role="list" aria-label="ダッシュステージ一覧">
           <button class="secondary-button" type="button" data-dash-stage-id="plus">
@@ -256,6 +261,10 @@
           <div class="run-viewport" aria-hidden="true">
             <div class="run-host" aria-hidden="true"></div>
           </div>
+          <div id="dash-goal-overlay" class="dash-goal-overlay" aria-hidden="true">
+            <img id="dash-goal-overlay-image" class="dash-goal-overlay__image" alt="" />
+            <p id="dash-goal-overlay-text" class="dash-goal-overlay__text">GOAL!</p>
+          </div>
         </div>
         <div class="dash-bottom-hud" aria-label="ダッシュステータス">
           <div id="dash-game-time-wrap" class="dash-time dash-time-hud" aria-label="残り時間">
@@ -399,7 +408,12 @@
           <p class="screen__description">総合スコアは「走行距離 (m)」を採用しています。</p>
         </header>
         <div class="screen-main stage-card dash-stats-card">
-          <p class="dash-stats-total">総ハイスコア: <strong id="dash-stats-total-best">0.0</strong> m</p>
+          <p class="dash-stats-total">総合ベスト: <strong id="dash-stats-total-best">0.0</strong></p>
+          <div id="dash-stats-mode-filters" class="dash-stats-mode-filters" role="tablist" aria-label="モードフィルタ">
+            <button type="button" class="secondary-button" data-dash-stats-mode="infinite">Infinite</button>
+            <button type="button" class="secondary-button" data-dash-stats-mode="goalRun">GoalRun</button>
+            <button type="button" class="secondary-button" data-dash-stats-mode="scoreAttack60">ScoreAttack60</button>
+          </div>
           <div class="dash-stats-table-wrap">
             <h3>ステージ別ベスト</h3>
             <table class="dash-stats-table">

@@ -1213,6 +1213,71 @@
   width: 100%;
   pointer-events: none;
 }
+.calc-sprint .screen-dash .dash-goal-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  z-index: 3;
+}
+.calc-sprint .screen-dash .dash-goal-overlay__image {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(92%, 960px);
+  max-height: 92%;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+  filter: saturate(1.1) brightness(1.04);
+}
+.calc-sprint .screen-dash .dash-goal-overlay__text {
+  position: relative;
+  margin: 0;
+  padding: 0.16em 0.5em;
+  font-size: clamp(42px, 13vw, 100px);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #fffef8;
+  text-shadow: 0 6px 22px rgba(28, 20, 8, 0.5);
+}
+.calc-sprint .screen-dash .dash-goal-overlay.is-goal-clear-active {
+  animation: dash-goal-overlay-fade 1000ms ease-out forwards;
+}
+.calc-sprint .screen-dash .dash-goal-overlay.is-goal-clear-active .dash-goal-overlay__text {
+  animation: dash-goal-text-pop 1000ms ease-out forwards;
+}
+.calc-sprint .screen-dash.is-goal-shake .dash-run-zone {
+  animation: dash-goal-shake 320ms ease-out 0s 2;
+}
+@keyframes dash-goal-overlay-fade {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes dash-goal-text-pop {
+  0% { transform: scale(0.74); opacity: 0; }
+  22% { transform: scale(1.08); opacity: 1; }
+  70% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(0.96); opacity: 0; }
+}
+@keyframes dash-goal-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .calc-sprint .screen-dash .dash-goal-overlay.is-goal-clear-active,
+  .calc-sprint .screen-dash .dash-goal-overlay.is-goal-clear-active .dash-goal-overlay__text {
+    animation-duration: 1ms;
+  }
+  .calc-sprint .screen-dash.is-goal-shake .dash-run-zone {
+    animation: none;
+  }
+}
 .calc-sprint .screen-dash > .screen-header,
 .calc-sprint .screen-dash > .screen-main,
 .calc-sprint .screen-dash > .screen-footer {
@@ -4431,4 +4496,32 @@ body > .dash-overlay-root .dash-runner-debug-outline {
 .calc-sprint .dash-result-mode-summary__detail {
   margin: 2px 0;
   font-size: 0.82rem;
+}
+
+.calc-sprint .dash-mode-select-list,
+.calc-sprint .dash-stats-mode-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.calc-sprint .dash-mode-select-list .secondary-button,
+.calc-sprint .dash-stats-mode-filters .secondary-button {
+  min-height: 44px;
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.calc-sprint .dash-mode-select-list .secondary-button.is-current,
+.calc-sprint .dash-stats-mode-filters .secondary-button.is-current {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+@media (max-width: 640px) {
+  .calc-sprint .dash-mode-select-list,
+  .calc-sprint .dash-stats-mode-filters {
+    grid-template-columns: 1fr;
+  }
 }

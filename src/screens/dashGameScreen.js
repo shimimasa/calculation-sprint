@@ -88,6 +88,10 @@ const DEBUG_KEYPAD = false;
 const RUNNER_DEFAULT_SPRITE_PATH = 'assets/runner/runner.png';
 const HIT_SHAKE_CLASS = 'is-shake';
 const HIT_FLASH_CLASS = 'is-hitflash';
+const GOAL_OVERLAY_IMAGE_PATH = 'assets/bg-goal.png';
+const GOAL_CLEAR_FX_CLASS = 'is-goal-clear-active';
+const GOAL_CLEAR_SHAKE_CLASS = 'is-goal-shake';
+const GOAL_CLEAR_DEFAULT_DURATION_MS = 1000;
 const DASH_DIFFICULTY_TIME_LIMIT_MULTIPLIER = Object.freeze({
   easy: 1.2,
   normal: 1,
@@ -264,18 +268,57 @@ const dashGameScreen = {
       distanceM: gameState.dash.distanceM,
       timeLeftMs: this.timeLeftMs,
       modeRuntime: this.modeRuntime,
+      score: Number(this.modeRuntime?.totalScore) || 0,
+      combo: Number(this.modeRuntime?.combo) || 0,
+      maxCombo: Number(this.modeRuntime?.maxCombo) || 0,
     };
   },
   applyModeHud(modeHud) {
     const distanceCard = domRefs.dashGame.distance?.closest('.dash-stat-card');
-    const distanceLabelEl = distanceCard?.querySelector('.dash-stat-label');
-    const distanceUnitEl = distanceCard?.querySelector('.dash-stat-unit');
-    if (distanceLabelEl) {
-      distanceLabelEl.textContent = modeHud?.distanceLabel ?? '走ったきょり';
-    }
-    if (distanceUnitEl) {
-      distanceUnitEl.textContent = modeHud?.distanceUnit ?? 'm';
-    }
+    const speedCard = domRefs.dashGame.speed?.closest('.dash-stat-card');
+    const enemyCard = domRefs.dashGame.enemyCount?.closest('.dash-stat-card');
+    const streakCard = domRefs.dashGame.streak?.closest('.dash-stat-card');
+
+    const setCard = (card, valueEl, fallback, override) => {
+      if (!card || !valueEl) {
+        return;
+      }
+      const labelEl = card.querySelector('.dash-stat-label');
+      const unitEl = card.querySelector('.dash-stat-unit');
+      if (labelEl) {
+        labelEl.textContent = override?.label ?? fallback.label;
+      }
+      if (unitEl) {
+        unitEl.textContent = override?.unit ?? fallback.unit;
+      }
+      if (typeof override?.value === 'string') {
+        valueEl.textContent = override.value;
+      }
+    };
+
+    setCard(distanceCard, domRefs.dashGame.distance, {
+      label: '走ったきょり',
+      unit: 'm',
+    }, {
+      label: modeHud?.distanceLabel,
+      unit: modeHud?.distanceUnit,
+      value: modeHud?.distanceText,
+    });
+
+    setCard(speedCard, domRefs.dashGame.speed, {
+      label: 'はやさ',
+      unit: 'm/s',
+    }, modeHud?.statOverrides?.speed);
+
+    setCard(enemyCard, domRefs.dashGame.enemyCount, {
+      label: 'たおした敵の数',
+      unit: '体',
+    }, modeHud?.statOverrides?.enemyCount);
+
+    setCard(streakCard, domRefs.dashGame.streak, {
+      label: 'せいかいコンボ',
+      unit: '回',
+    }, modeHud?.statOverrides?.streak);
 
     if (!this.goalProgressWrapEl && distanceCard) {
       const wrap = document.createElement('div');
@@ -1792,6 +1835,33 @@ const dashGameScreen = {
       this.streakCueTimeout = null;
     }
   },
+  clearGoalClearEffect() {
+    if (this.goalClearTimeout) {
+      window.clearTimeout(this.goalClearTimeout);
+      this.goalClearTimeout = null;
+    }
+    this.goalClearPlaying = false;
+    domRefs.dashGame.screen?.classList.remove(GOAL_CLEAR_SHAKE_CLASS);
+    domRefs.dashGame.goalOverlay?.classList.remove(GOAL_CLEAR_FX_CLASS);
+  },
+  triggerGoalClearEffect(durationMs = GOAL_CLEAR_DEFAULT_DURATION_MS) {
+    if (this.goalClearPlaying) {
+      return;
+    }
+    const overlay = domRefs.dashGame.goalOverlay;
+    if (!overlay) {
+      return;
+    }
+    this.goalClearPlaying = true;
+    const clampedDurationMs = Math.max(800, Math.min(Number(durationMs) || GOAL_CLEAR_DEFAULT_DURATION_MS, 1200));
+    overlay.classList.remove(GOAL_CLEAR_FX_CLASS);
+    void overlay.offsetWidth;
+    overlay.classList.add(GOAL_CLEAR_FX_CLASS);
+    domRefs.dashGame.screen?.classList.add(GOAL_CLEAR_SHAKE_CLASS);
+    this.goalClearTimeout = window.setTimeout(() => {
+      this.clearGoalClearEffect();
+    }, clampedDurationMs);
+  },
   updateHud() {
     const modeHud = this.modeStrategy?.getHudState?.(this.getModeContext()) ?? null;
     if (domRefs.dashGame.distance) {
@@ -1807,10 +1877,10 @@ const dashGameScreen = {
       this.updateNextAreaIndicator(gameState.dash.distanceM);
     }
     if (domRefs.dashGame.speed) {
-      domRefs.dashGame.speed.textContent = this.playerSpeed.toFixed(1);
+      domRefs.dashGame.speed.textContent = modeHud?.statOverrides?.speed?.value ?? this.playerSpeed.toFixed(1);
     }
     if (domRefs.dashGame.enemyCount) {
-      domRefs.dashGame.enemyCount.textContent = String(gameState.dash.defeatedCount || 0);
+      domRefs.dashGame.enemyCount.textContent = modeHud?.statOverrides?.enemyCount?.value ?? String(gameState.dash.defeatedCount || 0);
     }
     if (domRefs.dashGame.timeRemaining) {
       const timeSeconds = Math.max(0, Math.ceil(this.timeLeftMs / 1000));
@@ -1838,7 +1908,7 @@ const dashGameScreen = {
       domRefs.dashGame.timeNote.textContent = isLowTime ? '残りわずか' : '';
     }
     if (domRefs.dashGame.streak) {
-      domRefs.dashGame.streak.textContent = String(gameState.dash.streak);
+      domRefs.dashGame.streak.textContent = modeHud?.statOverrides?.streak?.value ?? String(gameState.dash.streak);
     }
     const maxGap = Math.max(0.001, collisionThreshold * 2);
     const clampedGap = Math.max(0, Math.min(this.enemyGapM, maxGap));
@@ -2013,6 +2083,7 @@ const dashGameScreen = {
         gameState.dash.streak = 0;
       }
       this.attackUntilMs = window.performance.now() + ATTACK_WINDOW_MS;
+      this.modeStrategy?.onAnswer?.({ isCorrect: true, modeRuntime: this.modeRuntime });
       this.setFeedback('○', 'correct');
     } else {
       audioManager.playSfx('sfx_wrong');
@@ -2020,6 +2091,7 @@ const dashGameScreen = {
       gameState.dash.streak = 0;
       this.enemySpeed = enemyBaseSpeed;
       this.timeLeftMs -= timePenaltyOnWrong;
+      this.modeStrategy?.onAnswer?.({ isCorrect: false, modeRuntime: this.modeRuntime });
       this.setFeedback('×', 'wrong');
     }
     if (this.tryEndByMode()) {
@@ -2143,6 +2215,7 @@ const dashGameScreen = {
           audioManager.playSfx('sfx_damage');
           this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
           this.collisionHits += 1;
+          this.modeStrategy?.onCollision?.({ modeRuntime: this.modeRuntime });
           this.logCollisionRunnerDebugDump({
             nowMs,
             timeLeftBeforeMs,
@@ -2346,6 +2419,9 @@ const dashGameScreen = {
     if (endFx?.sfxId) {
       audioManager.playSfx(endFx.sfxId);
     }
+    if (endFx?.visualEffect === 'goal-clear') {
+      this.triggerGoalClearEffect(endFx?.visualDurationMs);
+    }
     const buildContext = {
       runId: gameState.dash.currentRunId,
       distanceM: gameState.dash.distanceM,
@@ -2393,7 +2469,16 @@ const dashGameScreen = {
     this.slowUntilMs = 0;
     this.runnerHitUntilMs = 0;
     this.runnerInvincibleUntilMs = 0;
-    this.timeLeftMs = this.getInitialTimeLimitMs();
+    this.resolveModeStrategy();
+    this.modeRuntime = this.modeStrategy?.initRun?.() ?? null;
+    if (domRefs.dashGame.goalOverlayImage) {
+      domRefs.dashGame.goalOverlayImage.src = resolveAssetUrl(GOAL_OVERLAY_IMAGE_PATH);
+    }
+    this.clearGoalClearEffect();
+    const strategyTimeLimitMs = this.modeStrategy?.getInitialTimeLimitMs?.({ modeRuntime: this.modeRuntime });
+    this.timeLeftMs = Number.isFinite(strategyTimeLimitMs) && strategyTimeLimitMs > 0
+      ? strategyTimeLimitMs
+      : this.getInitialTimeLimitMs();
     this.initialTimeLimitMs = this.timeLeftMs;
     this.lastTickTs = window.performance.now();
     this.currentQuestion = null;
@@ -2738,6 +2823,7 @@ const dashGameScreen = {
     this.handleKeypadClick = null;
     this.handleKeypadCapture = null;
     this.clearStreakCue();
+    this.clearGoalClearEffect();
     if (domRefs.game.runner && this.handleRunnerSpriteLoad) {
       domRefs.game.runner.removeEventListener('load', this.handleRunnerSpriteLoad);
     }

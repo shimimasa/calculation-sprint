@@ -33,11 +33,17 @@ const domRefs = {
   dashStageSelect: {
     list: byId('dash-stage-select-list'),
     buttons: qsa('#dash-stage-select-list [data-dash-stage-id]'),
+    modeList: byId('dash-mode-select-list'),
+    modeButtons: qsa('#dash-mode-select-list [data-dash-mode-id]'),
+    modeNote: byId('dash-stage-select-mode-note'),
     backButton: byId('dash-stage-select-back-button'),
   },
   dashGame: {
     screen: byId('dash-game-screen'),
     runHost: qs('#dash-game-screen .run-host'),
+    goalOverlay: byId('dash-goal-overlay'),
+    goalOverlayImage: byId('dash-goal-overlay-image'),
+    goalOverlayText: byId('dash-goal-overlay-text'),
     backButton: byId('dash-game-back-button'),
     distance: byId('dash-game-distance'),
     timeRemaining: byId('dash-game-time'),
@@ -86,6 +92,8 @@ const domRefs = {
   },
   dashStats: {
     totalBest: byId('dash-stats-total-best'),
+    modeFilters: byId('dash-stats-mode-filters'),
+    modeFilterButtons: qsa('#dash-stats-mode-filters [data-dash-stats-mode]'),
     stageBestBody: byId('dash-stats-stage-best-body'),
     historyBody: byId('dash-stats-history-body'),
     backButton: byId('dash-stats-back-button'),

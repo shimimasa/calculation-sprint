@@ -22,12 +22,14 @@ const SFX_URLS = {
   sfx_wrong: 'assets/audio/sfx/wrong.mp3',
   sfx_decide: 'assets/audio/sfx/click.mp3',
   sfx_cancel: 'assets/audio/sfx/click.mp3',
+  sfx_confirm: 'assets/audio/sfx/click.mp3',
   sfx_stage_clear: 'assets/audio/sfx/correct.mp3',
   sfx_stage_unlock: 'assets/audio/sfx/correct.mp3',
   sfx_levelup: 'assets/audio/sfx/correct.mp3',
   sfx_countdown: 'assets/audio/sfx/wrong.mp3',
   sfx_attack: 'assets/audio/sfx/attack.mp3',
   sfx_damage: 'assets/audio/sfx/damage.mp3',
+  sfx_goal: 'assets/audio/sfx/goal.mp3',
 };
 
 const SILENT_WAV_DATA_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';

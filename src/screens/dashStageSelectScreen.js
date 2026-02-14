@@ -12,6 +12,7 @@ import {
   getDashStageOrFallback,
   toDashStageId,
 } from '../features/dashStages.js';
+import { DEFAULT_DASH_MODE, normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
 
 const STAGE_VISUAL_MAP = {
   plus: { cssClass: 'stage-plus', symbol: '＋' },
@@ -20,6 +21,12 @@ const STAGE_VISUAL_MAP = {
   divide: { cssClass: 'stage-divide', symbol: '÷' },
   mix: { cssClass: 'stage-mix', symbol: '🎲' },
 };
+
+const MODE_NOTE_MAP = Object.freeze({
+  infinite: 'じかんをのばして どこまでいける？',
+  goalRun: '1000mまで いっきにダッシュ！',
+  scoreAttack60: '60びょうで スコアをかせげ！',
+});
 
 const enhanceStageButton = (button) => {
   const stageId = toDashStageId(button.dataset.dashStageId);
@@ -60,18 +67,51 @@ const updateSelectionState = (button, isSelected) => {
   }
 };
 
+const updateModeSelectionState = (button, isSelected) => {
+  button.classList.toggle('is-current', isSelected);
+  button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+};
+
 const dashStageSelectScreen = {
   enter() {
     uiRenderer.showScreen('dash-stage-select');
     this.events = createEventRegistry('dash-stage-select');
 
     const selectedStage = toDashStageId(gameState.dash?.stageId);
+    const selectedModeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
+    gameState.dash.modeId = selectedModeId;
+
     domRefs.dashStageSelect.buttons.forEach((button) => {
       enhanceStageButton(button);
       const stageId = toDashStageId(button.dataset.dashStageId);
       const isSelected = stageId === selectedStage;
       updateSelectionState(button, isSelected);
     });
+
+    domRefs.dashStageSelect.modeButtons.forEach((button) => {
+      const modeId = normalizeDashModeId(button.dataset.dashModeId);
+      updateModeSelectionState(button, modeId === selectedModeId);
+    });
+    if (domRefs.dashStageSelect.modeNote) {
+      domRefs.dashStageSelect.modeNote.textContent = MODE_NOTE_MAP[selectedModeId] ?? MODE_NOTE_MAP.infinite;
+    }
+
+    this.handleSelectMode = (event) => {
+      const button = event.target.closest('[data-dash-mode-id]');
+      if (!button) {
+        return;
+      }
+      const modeId = normalizeDashModeId(button.dataset.dashModeId);
+      gameState.dash.modeId = modeId;
+      domRefs.dashStageSelect.modeButtons.forEach((candidate) => {
+        const candidateMode = normalizeDashModeId(candidate.dataset.dashModeId);
+        updateModeSelectionState(candidate, candidateMode === modeId);
+      });
+      if (domRefs.dashStageSelect.modeNote) {
+        domRefs.dashStageSelect.modeNote.textContent = MODE_NOTE_MAP[modeId] ?? MODE_NOTE_MAP.infinite;
+      }
+      audioManager.playSfx('sfx_click');
+    };
 
     this.handleSelectStage = (event) => {
       const button = event.target.closest('[data-dash-stage-id]');
@@ -87,6 +127,7 @@ const dashStageSelectScreen = {
       audioManager.unlock();
       audioManager.playSfx('sfx_confirm');
       gameState.dash.stageId = stage.id;
+      gameState.dash.modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
       gameState.dash.currentMode = null;
       preloadStageCoreImages(stage.id, { mode: 'dash' });
       screenManager.changeScreen('dash-game');
@@ -98,6 +139,7 @@ const dashStageSelectScreen = {
       screenManager.changeScreen('title');
     };
 
+    this.events.on(domRefs.dashStageSelect.modeList, 'click', this.handleSelectMode);
     this.events.on(domRefs.dashStageSelect.list, 'click', this.handleSelectStage);
     this.events.on(domRefs.dashStageSelect.backButton, 'click', this.handleBack);
   },
