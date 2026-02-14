@@ -35,7 +35,7 @@ const ENEMY_STATES = Object.freeze([
 const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
 const MIN_REACTION_DISTANCE_PX = 180;
-const ENEMY_SPAWN_SCREEN_X_RATIO = 0.84;
+const ENEMY_SPAWN_SCREEN_X_RATIO = 0.99;
 const ENEMY_SPAWN_SAFE_MARGIN_PX = 16;
 const HIT_DURATION_MS = 120;
 const DEAD_DURATION_MS = 300;
@@ -52,11 +52,40 @@ const SPEED_PER_SEC_PX_PER_SEC = 1.5;
 const SPAWN_INTERVAL_START_MS = 1500;
 const SPAWN_INTERVAL_MIN_MS = 650;
 const SPAWN_INTERVAL_DECAY_MS_PER_SEC = 18;
+const SPAWN_INTERVAL_JITTER_RATIO = 0.35;
+const SPAWN_INTERVAL_MIN_RATIO = 0.60;
+const SPAWN_INTERVAL_MAX_RATIO = 1.60;
+const SPAWN_INTERVAL_SHORT_STREAK_GUARD_MS = 50;
 
 export const ATTACK_WINDOW_MS = 250;
 export const PX_PER_METER = 100;
 
 const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'approaching');
+
+const randIntInclusive = (min, max) => {
+  const low = Math.ceil(Math.min(min, max));
+  const high = Math.floor(Math.max(min, max));
+  return Math.floor(Math.random() * (high - low + 1)) + low;
+};
+
+const resolveNextSpawnIntervalMs = ({ baseMs, prevIntervalMs }) => {
+  const safeBaseMs = Math.max(1, Math.floor(baseMs));
+  const jitterMs = Math.floor(safeBaseMs * SPAWN_INTERVAL_JITTER_RATIO);
+  const rawMs = safeBaseMs + randIntInclusive(-jitterMs, jitterMs);
+  const minMs = Math.floor(safeBaseMs * SPAWN_INTERVAL_MIN_RATIO);
+  const maxMs = Math.floor(safeBaseMs * SPAWN_INTERVAL_MAX_RATIO);
+  let nextMs = Math.max(minMs, Math.min(maxMs, rawMs));
+  if (Number.isFinite(prevIntervalMs) && prevIntervalMs < minMs + SPAWN_INTERVAL_SHORT_STREAK_GUARD_MS) {
+    nextMs = Math.max(nextMs, safeBaseMs);
+  }
+  return {
+    nextMs,
+    baseMs: safeBaseMs,
+    minMs,
+    maxMs,
+    jitterMs,
+  };
+};
 
 const isDefeatedState = (enemy) => enemy?.state === 'defeated_hit' || enemy?.state === 'defeated_end';
 
@@ -343,6 +372,8 @@ export const createDashEnemySystem = ({
     isCollisionDebugEnabled,
     onCollisionDebug,
     lastCollisionTestLogKey: '',
+    previousSpawnIntervalMs: null,
+    latestSpawnSchedule: null,
     enemyDebugCounters: {
       defeatStartCount: 0,
       hitShownCount: 0,
@@ -523,6 +554,8 @@ export const createDashEnemySystem = ({
     system.spawnTimerMs = START_GRACE_MS;
     system.elapsedMs = 0;
     system.previousEnemyType = null;
+    system.previousSpawnIntervalMs = null;
+    system.latestSpawnSchedule = null;
     system.enemyDebugCounters = {
       defeatStartCount: 0,
       hitShownCount: 0,
@@ -647,6 +680,11 @@ export const createDashEnemySystem = ({
       viewportW,
       ratio: ENEMY_SPAWN_SCREEN_X_RATIO,
       clamped: spawnClamped,
+      spawnIntervalMs: spawnSchedule?.nextMs ?? null,
+      baseMs: spawnSchedule?.baseMs ?? null,
+      minMs: spawnSchedule?.minMs ?? null,
+      maxMs: spawnSchedule?.maxMs ?? null,
+      jitterMs: spawnSchedule?.jitterMs ?? null,
       groundTopY: Number.isFinite(groundTopY) ? Number(groundTopY.toFixed(2)) : null,
     });
     return enemy;
@@ -865,14 +903,20 @@ export const createDashEnemySystem = ({
     });
 
     system.spawnTimerMs -= dtMs;
-    const spawnInterval = Math.max(
+    const baseSpawnIntervalMs = Math.max(
       SPAWN_INTERVAL_MIN_MS,
       SPAWN_INTERVAL_START_MS - elapsedSec * SPAWN_INTERVAL_DECAY_MS_PER_SEC,
     );
     while (system.spawnTimerMs <= 0) {
+      const spawnSchedule = resolveNextSpawnIntervalMs({
+        baseMs: baseSpawnIntervalMs,
+        prevIntervalMs: system.previousSpawnIntervalMs,
+      });
       const activeEnemies = system.enemies.filter((enemy) => enemy?.isAlive).length;
       if (activeEnemies >= MAX_ENEMIES) {
-        system.spawnTimerMs += spawnInterval;
+        system.spawnTimerMs += spawnSchedule.nextMs;
+        system.previousSpawnIntervalMs = spawnSchedule.nextMs;
+        system.latestSpawnSchedule = spawnSchedule;
         break;
       }
       system.spawnEnemy({
@@ -881,8 +925,11 @@ export const createDashEnemySystem = ({
         cameraX,
         speedPxPerSec,
         playerRect,
+        spawnSchedule,
       });
-      system.spawnTimerMs += spawnInterval;
+      system.spawnTimerMs += spawnSchedule.nextMs;
+      system.previousSpawnIntervalMs = spawnSchedule.nextMs;
+      system.latestSpawnSchedule = spawnSchedule;
     }
 
     let nearestDistancePx = Number.POSITIVE_INFINITY;
