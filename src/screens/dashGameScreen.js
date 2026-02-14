@@ -80,6 +80,9 @@ const DASH_DEBUG_WINDOW_FLAG = '__DASH_DEBUG_RUNNER';
 const COLLISION_DEBUG_QUERY_KEY = 'debugCollision';
 const COLLISION_DEBUG_STORAGE_KEY = 'dash.debugCollision';
 const COLLISION_DEBUG_LOG_INTERVAL_MS = 200;
+const DASH_DEBUG_ENEMY_QUERY_KEY = 'dashDebugEnemy';
+const DASH_DEBUG_ENEMY_STORAGE_KEY = 'dash.debug.enemy';
+const DASH_DEBUG_ENEMY_WINDOW_FLAG = '__DASH_DEBUG_ENEMY';
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
 const DASH_DEBUG_ALWAYS_ON = false;
@@ -356,6 +359,19 @@ const dashGameScreen = {
     const queryValue = searchParams.get(DASH_DEBUG_QUERY_KEY) ?? searchParams.get(DASH_DEBUG_LEGACY_QUERY_KEY);
     const storageValue = window.localStorage?.getItem(DASH_DEBUG_STORAGE_KEY);
     return flagFromWindow || queryValue === '1' || storageValue === '1';
+  },
+  isDashEnemyDebugEnabled() {
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryValue = searchParams.get(DASH_DEBUG_ENEMY_QUERY_KEY);
+    if (queryValue !== null) {
+      return queryValue === '1';
+    }
+    const flagFromWindow = window?.[DASH_DEBUG_ENEMY_WINDOW_FLAG] === true;
+    if (flagFromWindow) {
+      return true;
+    }
+    const storageValue = window.localStorage?.getItem(DASH_DEBUG_ENEMY_STORAGE_KEY);
+    return storageValue === '1';
   },
   isCollisionDebugEnabled() {
     const searchParams = new URLSearchParams(window.location.search);
@@ -2042,6 +2058,7 @@ const dashGameScreen = {
       const defeatResult = this.enemySystem?.defeatNearestEnemy({
         playerRect,
         nowMs,
+        callerTag: 'submitAnswer:defeatNearestEnemy',
       });
       if (defeatResult?.defeated) {
         const target = defeatResult.target;
@@ -2399,6 +2416,7 @@ const dashGameScreen = {
     if (this.hasEnded) {
       return;
     }
+    this.enemySystem?.logEnemyDebugSummary?.(window.performance.now());
     if (this.isDashRunnerDebugEnabled()) {
       console.log(
         `[dash-debug][SESSION:end] reason=${endReason}, timeLeft=${Math.max(0, Math.round(this.timeLeftMs))}, collided=${Boolean(this.lastCollisionPenaltyAtMs > 0)}, stack=trace`,
@@ -2548,6 +2566,7 @@ const dashGameScreen = {
       stageId: this.dashStageId,
       getCurrentMode: () => gameState.dash.currentMode,
       isDebugEnabled: () => this.isDashRunnerDebugEnabled(),
+      isEnemyDebugEnabled: () => this.isDashEnemyDebugEnabled(),
       isCollisionDebugEnabled: () => this.isCollisionDebugEnabled(),
       worldEl: domRefs.game.runWorld,
       containerEl: domRefs.game.runEnemies,
@@ -2780,6 +2799,11 @@ const dashGameScreen = {
       this.setupRunnerMutationDebugObserver();
       console.log('[dash-debug] enabled', {
         hint: 'Use ?dashDebug=1 or localStorage.setItem("dashDebugRunner","1")',
+      });
+    }
+    if (this.isDashEnemyDebugEnabled()) {
+      console.log('[dash-debug][ENEMY] enabled', {
+        hint: 'Use ?dashDebugEnemy=1 or window.__DASH_DEBUG_ENEMY=true or localStorage.setItem("dash.debug.enemy","1")',
       });
     }
     this.startBgm();
