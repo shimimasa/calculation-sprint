@@ -24,14 +24,13 @@ const ENEMY_MAX_HP_BY_TYPE = Object.freeze({
 const ENEMY_STATES = Object.freeze([
   'approaching',
   'collision_resolved',
-  'defeated',
-  'despawning',
+  'defeated_hit',
+  'defeated_end',
 ]);
 const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
 const MIN_REACTION_DISTANCE_PX = 180;
 const MIN_TIME_TO_COLLISION_SEC = 2.2;
-const HIT_START_DELAY_MS = 150;
 const HIT_DURATION_MS = 120;
 const DEAD_DURATION_MS = 300;
 const HIT_PULL_DURATION_MS = 80;
@@ -52,6 +51,15 @@ export const ATTACK_WINDOW_MS = 250;
 export const PX_PER_METER = 100;
 
 const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'approaching');
+
+const isDefeatedState = (enemy) => enemy?.state === 'defeated_hit' || enemy?.state === 'defeated_end';
+
+const isInDefeatPipeline = (enemy) => (
+  Number.isFinite(enemy?.hitAtTs)
+  || enemy?.pendingVisualState === 'hit'
+  || enemy?.pendingVisualState === 'dead'
+  || enemy?.attackHandled === true
+);
 
 const getEnemyAssetPath = (type, state) => `assets/enemy/enemy_${type}_${state}.png`;
 
@@ -289,7 +297,7 @@ const applyEnemyStateClasses = (enemy) => {
     return;
   }
   enemy.el.classList.toggle('is-collision-resolved', enemy.state === 'collision_resolved');
-  enemy.el.classList.toggle('is-defeated', enemy.state === 'defeated');
+  enemy.el.classList.toggle('is-defeated', isDefeatedState(enemy));
 };
 
 const getSpeedPxPerSec = ({ correctCount = 0, elapsedSec = 0 }) => -(
@@ -568,6 +576,8 @@ export const createDashEnemySystem = ({
       visualState: 'walk',
       pendingVisualState: null,
       collisionEnabled: true,
+      attackHandled: false,
+      collisionCooldownUntilMs: null,
       hp: maxHp,
       maxHp,
       el: null,
@@ -598,8 +608,8 @@ export const createDashEnemySystem = ({
     enemy.hp = Math.max(0, enemy.hp - damage);
     updateEnemyHud(enemy);
     if (enemy.hp <= 0) {
-      system.setEnemyState(enemy, 'defeated', nowMs, meta);
-      return { defeated: true, hp: enemy.hp, maxHp: enemy.maxHp };
+      const defeated = system.requestDefeatEnemy(enemy, nowMs, meta);
+      return { defeated, hp: enemy.hp, maxHp: enemy.maxHp };
     }
     return { defeated: false, hp: enemy.hp, maxHp: enemy.maxHp };
   };
@@ -611,7 +621,7 @@ export const createDashEnemySystem = ({
     let nearestEnemy = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
     system.enemies.forEach((enemy) => {
-      if (!enemy?.isAlive || enemy.state !== 'approaching') {
+      if (!enemy?.isAlive || enemy.state !== 'approaching' || enemy.attackHandled) {
         return;
       }
       if (enemy.x + enemy.w < playerRect.x) {
@@ -649,6 +659,18 @@ export const createDashEnemySystem = ({
     };
   };
 
+  system.requestDefeatEnemy = (enemy, nowMs, meta = null) => {
+    if (!enemy?.isAlive) {
+      return false;
+    }
+    if (isDefeatedState(enemy) || isInDefeatPipeline(enemy) || enemy.attackHandled) {
+      return false;
+    }
+    enemy.attackHandled = true;
+    system.setEnemyState(enemy, 'defeated_hit', nowMs, meta);
+    return true;
+  };
+
   system.setEnemyState = (enemy, nextState, nowMs, meta = null) => {
     const prevState = enemy.state;
     const state = clampState(nextState);
@@ -656,37 +678,45 @@ export const createDashEnemySystem = ({
       return;
     }
     enemy.state = state;
-    if (state === 'defeated') {
+    if (state === 'defeated_hit') {
       enemy.collisionEnabled = false;
-      enemy.hitAtTs = nowMs + HIT_START_DELAY_MS;
-      enemy.stateUntilMs = enemy.hitAtTs + HIT_DURATION_MS;
+      enemy.attackHandled = true;
+      enemy.hitAtTs = nowMs;
+      enemy.stateUntilMs = nowMs + HIT_DURATION_MS;
       enemy.pendingVisualState = 'hit';
-    } else if (state === 'collision_resolved') {
+      enemy.collisionCooldownUntilMs = null;
+    } else if (state === 'defeated_end') {
       enemy.collisionEnabled = false;
-      enemy.hitAtTs = null;
-      enemy.pendingVisualState = null;
-      enemy.stateUntilMs = nowMs + COLLISION_RESOLVE_MS;
-      if (setEnemySprite(enemy, 'walk')) {
-        system.trackEnemySpriteShown(enemy, 'walk', nowMs);
-      }
-    } else if (state === 'despawning') {
-      enemy.collisionEnabled = false;
+      enemy.attackHandled = true;
       enemy.hitAtTs = null;
       enemy.pendingVisualState = null;
       enemy.stateUntilMs = nowMs + DEAD_DURATION_MS;
+      enemy.collisionCooldownUntilMs = null;
       if (setEnemySprite(enemy, 'dead')) {
         system.trackEnemySpriteShown(enemy, 'dead', nowMs);
       }
-    } else {
-      enemy.collisionEnabled = true;
+    } else if (state === 'collision_resolved') {
+      enemy.collisionEnabled = false;
+      enemy.attackHandled = false;
       enemy.hitAtTs = null;
       enemy.pendingVisualState = null;
       enemy.stateUntilMs = null;
+      enemy.collisionCooldownUntilMs = nowMs + COLLISION_RESOLVE_MS;
+      if (setEnemySprite(enemy, 'walk')) {
+        system.trackEnemySpriteShown(enemy, 'walk', nowMs);
+      }
+    } else {
+      enemy.collisionEnabled = true;
+      enemy.attackHandled = false;
+      enemy.hitAtTs = null;
+      enemy.pendingVisualState = null;
+      enemy.stateUntilMs = null;
+      enemy.collisionCooldownUntilMs = null;
       if (setEnemySprite(enemy, 'walk')) {
         system.trackEnemySpriteShown(enemy, 'walk', nowMs);
       }
     }
-    if (state === 'defeated') {
+    if (state === 'defeated_hit') {
       const entry = system.getEnemyDebugEntry(enemy.id);
       if (entry && !entry.sawDefeat && system.isEnemyDebugActive()) {
         entry.sawDefeat = true;
@@ -702,7 +732,7 @@ export const createDashEnemySystem = ({
       stateUntilMs: enemy.stateUntilMs,
       pendingVisualState: enemy.pendingVisualState,
       collisionEnabled: enemy.collisionEnabled,
-      attackHandled: meta?.attackHandled ?? null,
+      attackHandled: enemy.attackHandled,
       x: Number.isFinite(enemy.x) ? Number(enemy.x.toFixed(2)) : null,
       y: Number.isFinite(enemy.y) ? Number(enemy.y.toFixed(2)) : null,
       w: enemy.w,
@@ -791,19 +821,21 @@ export const createDashEnemySystem = ({
         return false;
       }
       enemy.vx = speedPxPerSec;
-      if (enemy.state === 'defeated' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
-        system.setEnemyState(enemy, 'despawning', nowMs, { callerTag: 'update:defeatedTimeout' });
-      } else if (enemy.state === 'collision_resolved' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
-        system.removeEnemy(enemy, 'collision_resolved_timeout', nowMs);
-      } else if (enemy.state === 'despawning' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+      if (enemy.state === 'defeated_hit' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+        system.setEnemyState(enemy, 'defeated_end', nowMs, { callerTag: 'update:defeatedHitTimeout' });
+      } else if (enemy.state === 'defeated_end' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
         system.removeEnemy(enemy, 'defeated_end_timeout', nowMs);
+      } else if (enemy.state === 'collision_resolved'
+        && Number.isFinite(enemy.collisionCooldownUntilMs)
+        && nowMs >= enemy.collisionCooldownUntilMs) {
+        system.setEnemyState(enemy, 'approaching', nowMs, { callerTag: 'collision:cooldown_end' });
       }
 
       if (!enemy.isAlive) {
         return false;
       }
 
-      if (enemy.state === 'defeated' && enemy.pendingVisualState && nowMs >= enemy.hitAtTs) {
+      if (enemy.state === 'defeated_hit' && enemy.pendingVisualState && nowMs >= enemy.hitAtTs) {
         if (setEnemySprite(enemy, enemy.pendingVisualState)) {
           system.trackEnemySpriteShown(enemy, enemy.pendingVisualState, nowMs);
         }
@@ -812,7 +844,7 @@ export const createDashEnemySystem = ({
 
       let hitPullPx = 0;
       let hitScale = 1;
-      if (enemy.state === 'defeated' && Number.isFinite(enemy.hitAtTs)) {
+      if (enemy.state === 'defeated_hit' && Number.isFinite(enemy.hitAtTs)) {
         const hitElapsedMs = nowMs - enemy.hitAtTs;
         if (hitElapsedMs >= 0 && hitElapsedMs < HIT_PULL_DURATION_MS) {
           const progress = hitElapsedMs / HIT_PULL_DURATION_MS;
@@ -937,13 +969,17 @@ export const createDashEnemySystem = ({
             defeatSequenceActive: Boolean(defeatSequenceActive),
           });
           if (attackActive) {
-            attackHandled = true;
-            system.setEnemyState(enemy, 'defeated', nowMs, {
+            const defeatedByOverlap = system.requestDefeatEnemy(enemy, nowMs, {
               callerTag: 'update:attackActiveOverlap',
-              attackHandled: true,
             });
-            events.push({ type: 'defeated', enemyId: enemy.id });
+            if (defeatedByOverlap) {
+              attackHandled = true;
+              events.push({ type: 'defeated', enemyId: enemy.id });
+            }
           } else {
+            if (isDefeatedState(enemy) || isInDefeatPipeline(enemy) || enemy.attackHandled) {
+              return true;
+            }
             collision = true;
             system.setEnemyState(enemy, 'collision_resolved', nowMs, {
               callerTag: 'update:collisionOverlap',
