@@ -1,4 +1,9 @@
 import { normalizeDashStageId } from './dashStages.js';
+import {
+  applyEnemySpriteWithFallback,
+  getEnemyHpByTier,
+  normalizeEnemyTier,
+} from './enemyAssetResolver.js';
 
 const DEFAULT_ENEMY_TYPE = 'plus';
 const DASH_STAGE_TO_ENEMY_TYPE = Object.freeze({
@@ -8,18 +13,11 @@ const DASH_STAGE_TO_ENEMY_TYPE = Object.freeze({
   divide: 'divide',
 });
 const ENEMY_TYPES = Object.freeze(['plus', 'minus', 'multi', 'divide']);
-const ENEMY_DEFAULT_MAX_HP = 1;
 const ENEMY_LABEL_BY_TYPE = Object.freeze({
   plus: 'プラス',
   minus: 'マイナス',
   multi: 'かけ算',
   divide: 'わり算',
-});
-const ENEMY_MAX_HP_BY_TYPE = Object.freeze({
-  plus: 1,
-  minus: 1,
-  multi: 1,
-  divide: 1,
 });
 const ENEMY_FOOT_OFFSETS = Object.freeze({
   plus: 0,
@@ -29,6 +27,7 @@ const ENEMY_FOOT_OFFSETS = Object.freeze({
 });
 const ENEMY_STATES = Object.freeze([
   'approaching',
+  'hit',
   'collision_resolved',
   'defeated_hit',
   'defeated_end',
@@ -96,8 +95,6 @@ const isInDefeatPipeline = (enemy) => (
   || enemy?.pendingVisualState === 'dead'
   || enemy?.attackHandled === true
 );
-
-const getEnemyAssetPath = (type, state) => `assets/enemy/enemy_${type}_${state}.png`;
 
 const normalizeEnemyType = (enemyType) => (
   ENEMY_TYPES.includes(enemyType) ? enemyType : null
@@ -257,14 +254,6 @@ const ensureEnemyContainer = (worldEl, containerEl) => {
 };
 
 const getEnemyDisplayName = (type) => ENEMY_LABEL_BY_TYPE[type] ?? 'モンスター';
-const getEnemyMaxHp = (type) => {
-  const configuredMaxHp = ENEMY_MAX_HP_BY_TYPE[type];
-  if (Number.isFinite(configuredMaxHp) && configuredMaxHp > 0) {
-    return configuredMaxHp;
-  }
-  return ENEMY_DEFAULT_MAX_HP;
-};
-
 const buildEnemyLabel = (enemy) => {
   const labelEl = document.createElement('div');
   labelEl.className = 'enemy-label';
@@ -288,15 +277,20 @@ const createEnemyElement = (enemy) => {
   const wrap = document.createElement('div');
   wrap.className = 'enemy-wrap';
   wrap.dataset.enemyName = enemy.name;
-  wrap.dataset.hp = String(enemy.hp);
-  wrap.dataset.hpMax = String(enemy.maxHp);
+  wrap.dataset.hp = String(enemy.hpCurrent);
+  wrap.dataset.hpMax = String(enemy.hpMax);
+  wrap.dataset.tier = enemy.tier;
 
   const img = document.createElement('img');
   img.className = 'enemy-sprite';
   img.alt = '';
   img.decoding = 'async';
   img.loading = 'eager';
-  img.src = getEnemyAssetPath(enemy.type, enemy.visualState ?? 'walk');
+  applyEnemySpriteWithFallback(img, {
+    stageKey: enemy.type,
+    tier: enemy.tier,
+    state: enemy.visualState ?? 'walk',
+  });
   img.draggable = false;
 
   const { labelEl, hpFillEl } = buildEnemyLabel(enemy);
@@ -313,9 +307,9 @@ const updateEnemyHud = (enemy) => {
   if (!enemy?.el) {
     return;
   }
-  const hpRatio = enemy.maxHp > 0 ? Math.max(0, Math.min(1, enemy.hp / enemy.maxHp)) : 0;
-  enemy.el.dataset.hp = String(enemy.hp);
-  enemy.el.dataset.hpMax = String(enemy.maxHp);
+  const hpRatio = enemy.hpMax > 0 ? Math.max(0, Math.min(1, enemy.hpCurrent / enemy.hpMax)) : 0;
+  enemy.el.dataset.hp = String(enemy.hpCurrent);
+  enemy.el.dataset.hpMax = String(enemy.hpMax);
   enemy.hpFillEl?.style.setProperty('transform', `scaleX(${hpRatio.toFixed(3)})`);
 };
 
@@ -324,7 +318,11 @@ const setEnemySprite = (enemy, visualState) => {
     return false;
   }
   enemy.visualState = visualState;
-  enemy.spriteEl.src = getEnemyAssetPath(enemy.type, visualState);
+  applyEnemySpriteWithFallback(enemy.spriteEl, {
+    stageKey: enemy.type,
+    tier: enemy.tier,
+    state: visualState,
+  });
   return true;
 };
 
@@ -348,6 +346,7 @@ export const createDashEnemySystem = ({
   stageId = null,
   getEnemyType = null,
   getEnemyPool = null,
+  getEnemyTier = null,
   getCurrentMode = null,
   isDebugEnabled = null,
   isEnemyDebugEnabled = null,
@@ -365,6 +364,7 @@ export const createDashEnemySystem = ({
     stageId,
     getEnemyType,
     getEnemyPool,
+    getEnemyTier,
     getCurrentMode,
     isDebugEnabled,
     isEnemyDebugEnabled,
@@ -585,7 +585,7 @@ export const createDashEnemySystem = ({
     playerRect,
     minGapPx = MIN_SPAWN_GAP_PX,
     minReactionDistancePx = MIN_REACTION_DISTANCE_PX,
-    spawnSchedule = null,
+    tier: tierInput = null,
   }) => {
     const worldEl = system.worldEl;
     const container = ensureEnemyContainer(worldEl, system.containerEl);
@@ -630,7 +630,8 @@ export const createDashEnemySystem = ({
         return null;
       }
     }
-    const maxHp = getEnemyMaxHp(type);
+    const tier = normalizeEnemyTier(tierInput ?? system.getEnemyTier?.() ?? 'normal');
+    const hpMax = getEnemyHpByTier(tier);
     const enemy = {
       id: `enemy-${system.idCounter += 1}`,
       type,
@@ -649,8 +650,11 @@ export const createDashEnemySystem = ({
       collisionEnabled: true,
       attackHandled: false,
       collisionCooldownUntilMs: null,
-      hp: maxHp,
-      maxHp,
+      tier,
+      hpCurrent: hpMax,
+      hpMax,
+      hp: hpMax,
+      maxHp: hpMax,
       el: null,
       spriteEl: null,
       hpFillEl: null,
@@ -688,16 +692,36 @@ export const createDashEnemySystem = ({
 
   system.damageEnemy = (enemy, amount = 1, nowMs = window.performance.now(), meta = null) => {
     if (!enemy?.isAlive || enemy.state !== 'approaching') {
-      return { defeated: false, hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 0 };
+      return {
+        defeated: false,
+        hpCurrent: enemy?.hpCurrent ?? enemy?.hp ?? 0,
+        hpMax: enemy?.hpMax ?? enemy?.maxHp ?? 0,
+        hp: enemy?.hpCurrent ?? enemy?.hp ?? 0,
+        maxHp: enemy?.hpMax ?? enemy?.maxHp ?? 0,
+      };
     }
     const damage = Number.isFinite(amount) ? Math.max(0, amount) : 0;
-    enemy.hp = Math.max(0, enemy.hp - damage);
+    enemy.hpCurrent = Math.max(0, enemy.hpCurrent - damage);
+    enemy.hp = enemy.hpCurrent;
     updateEnemyHud(enemy);
-    if (enemy.hp <= 0) {
+    if (enemy.hpCurrent <= 0) {
       const defeated = system.requestDefeatEnemy(enemy, nowMs, meta);
-      return { defeated, hp: enemy.hp, maxHp: enemy.maxHp };
+      return {
+        defeated,
+        hpCurrent: enemy.hpCurrent,
+        hpMax: enemy.hpMax,
+        hp: enemy.hpCurrent,
+        maxHp: enemy.hpMax,
+      };
     }
-    return { defeated: false, hp: enemy.hp, maxHp: enemy.maxHp };
+    system.setEnemyState(enemy, 'hit', nowMs, meta);
+    return {
+      defeated: false,
+      hpCurrent: enemy.hpCurrent,
+      hpMax: enemy.hpMax,
+      hp: enemy.hpCurrent,
+      maxHp: enemy.hpMax,
+    };
   };
 
   system.defeatNearestEnemy = ({ playerRect, nowMs, callerTag = 'unknown' }) => {
@@ -764,7 +788,17 @@ export const createDashEnemySystem = ({
       return;
     }
     enemy.state = state;
-    if (state === 'defeated_hit') {
+    if (state === 'hit') {
+      enemy.collisionEnabled = false;
+      enemy.attackHandled = false;
+      enemy.hitAtTs = nowMs;
+      enemy.stateUntilMs = nowMs + HIT_DURATION_MS;
+      enemy.pendingVisualState = null;
+      enemy.collisionCooldownUntilMs = null;
+      if (setEnemySprite(enemy, 'hit')) {
+        system.trackEnemySpriteShown(enemy, 'hit', nowMs);
+      }
+    } else if (state === 'defeated_hit') {
       enemy.collisionEnabled = false;
       enemy.attackHandled = true;
       enemy.hitAtTs = nowMs;
@@ -918,7 +952,9 @@ export const createDashEnemySystem = ({
         return false;
       }
       enemy.vx = speedPxPerSec;
-      if (enemy.state === 'defeated_hit' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+      if (enemy.state === 'hit' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+        system.setEnemyState(enemy, 'approaching', nowMs, { callerTag: 'update:hitTimeout' });
+      } else if (enemy.state === 'defeated_hit' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
         system.setEnemyState(enemy, 'defeated_end', nowMs, { callerTag: 'update:defeatedHitTimeout' });
       } else if (enemy.state === 'defeated_end' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
         system.removeEnemy(enemy, 'defeated_end_timeout', nowMs);

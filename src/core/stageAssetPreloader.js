@@ -2,6 +2,7 @@ import domRefs from '../ui/domRefs.js';
 import { findStageById } from '../features/stages.js';
 import { toDashRunBgThemeId, normalizeRunBgThemeId } from '../features/backgroundThemes.js';
 import { toDashStageId } from '../features/dashStages.js';
+import { enemyAssetResolver } from '../features/enemyAssetResolver.js';
 import { perfLog } from './perf.js';
 
 const imagePromiseByUrl = new Map();
@@ -55,7 +56,7 @@ const getStageThemeId = (stageId) => {
 const getDashEnemyRepresentativeUrl = (stageId) => {
   const normalizedStageId = toDashStageId(stageId);
   const enemyType = DASH_STAGE_TO_ENEMY_TYPE[normalizedStageId] ?? 'plus';
-  return `assets/enemy/enemy_${enemyType}_walk.png`;
+  return enemyAssetResolver({ stageKey: enemyType, tier: 'normal', state: 'walk' });
 };
 
 export const preloadImage = (url, { decode = true } = {}) => {
