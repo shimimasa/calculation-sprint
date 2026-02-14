@@ -51,7 +51,6 @@ const normalizeSession = (session) => ({
   retired: Boolean(session?.retired ?? session?.endReason !== 'timeup'),
   endedAt: typeof session?.endedAt === 'string' ? session.endedAt : new Date().toISOString(),
   cleared: Boolean(session?.cleared),
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
   goalDistanceM: normalizeDashModeId(session?.mode ?? DEFAULT_DASH_MODE) === 'goalRun'
     ? (Number.isFinite(session?.goalDistanceM) ? session.goalDistanceM : 1000)
     : (Number.isFinite(session?.goalDistanceM) ? session.goalDistanceM : null),
@@ -61,12 +60,6 @@ const normalizeSession = (session) => ({
   totalScore: Number.isFinite(session?.totalScore) ? session.totalScore : (Number.isFinite(session?.score) ? session.score : 0),
   combo: Number.isFinite(session?.combo) ? session.combo : 0,
   maxCombo: Number.isFinite(session?.maxCombo) ? session.maxCombo : 0,
-=======
-  goalDistanceM: Number.isFinite(session?.goalDistanceM) ? session.goalDistanceM : null,
-  clearTimeMs: Number.isFinite(session?.clearTimeMs) ? session.clearTimeMs : null,
-  rank: typeof session?.rank === 'string' ? session.rank : null,
-  hits: Number.isFinite(session?.hits) ? session.hits : 0,
->>>>>>> 他モード削除
   schemaVersion: DASH_STATS_SCHEMA_VERSION,
 });
 
@@ -94,25 +87,19 @@ const createEmptyModeAggregate = () => {
     clearCountByStage[stageId] = 0;
     playCountByStage[stageId] = 0;
   });
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
   const bestScoreByStage = {};
   DASH_STAGE_IDS.forEach((stageId) => {
     bestScoreByStage[stageId] = 0;
   });
-=======
->>>>>>> 他モード削除
   return {
     goalRun: {
       bestTimeByStage,
       clearCountByStage,
       playCountByStage,
     },
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
     scoreAttack60: {
       bestScoreByStage,
     },
-=======
->>>>>>> 他モード削除
   };
 };
 
@@ -138,7 +125,6 @@ const computeAggregate = (history) => {
         }
       }
     }
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
 
     if (session.mode === 'scoreAttack60') {
       const score = Number.isFinite(session.score) ? session.score : 0;
@@ -147,8 +133,6 @@ const computeAggregate = (history) => {
         score,
       );
     }
-=======
->>>>>>> 他モード削除
   });
   return {
     ...aggregate,

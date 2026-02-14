@@ -99,7 +99,6 @@ const ensureModeSummaryArea = () => {
   return summary;
 };
 
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
 
 const getScoreAttackRecordState = (result, stats) => {
   if (result?.mode !== 'scoreAttack60' || !stats) {
@@ -113,9 +112,6 @@ const getScoreAttackRecordState = (result, stats) => {
     previousBest,
   };
 };
-
-=======
->>>>>>> 他モード削除
 const dashResultScreen = {
   enter() {
     uiRenderer.showScreen('dash-result');
@@ -162,10 +158,7 @@ const dashResultScreen = {
 
       const modeSummary = ensureModeSummaryArea();
       const isGoalRun = result.mode === 'goalRun';
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
       const isScoreAttack60 = result.mode === 'scoreAttack60';
-=======
->>>>>>> 他モード削除
       if (modeSummary) {
         if (isGoalRun) {
           const cleared = result.cleared === true;
@@ -177,15 +170,12 @@ const dashResultScreen = {
             : `到達距離: ${reachedDistance}m`;
           modeSummary.hidden = false;
           modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Goal Run</p><p class="dash-result-mode-summary__status" data-cleared="${cleared ? '1' : '0'}">${clearOrFail}</p><p class="dash-result-mode-summary__detail">${clearTimeLabel}</p><p class="dash-result-mode-summary__detail">被弾: ${Number(result.hits) || 0} / 最大コンボ: ${Number(result.maxStreak) || 0} / ランク: ${rank}</p>`;
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
         } else if (isScoreAttack60) {
           const recordState = getScoreAttackRecordState(result, options.previousStats);
           const score = Number(result.score ?? result.totalScore ?? 0);
           const newBadge = recordState.isNewRecord ? '<span class="badge dash-badge-new">NEW RECORD</span>' : '';
           modeSummary.hidden = false;
           modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Score Attack 60</p><p class="dash-result-mode-summary__status" data-cleared="1">Total Score: ${score}${newBadge}</p><p class="dash-result-mode-summary__detail">Max Combo: ${Number(result.maxCombo) || 0} / Correct: ${Number(result.correctCount) || 0} / Wrong: ${Number(result.wrongCount) || 0}</p><p class="dash-result-mode-summary__detail">Hits: ${Number(result.hits) || 0}</p>`;
-=======
->>>>>>> 他モード削除
         } else {
           modeSummary.hidden = true;
           modeSummary.textContent = '';

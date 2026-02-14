@@ -41,6 +41,9 @@ const domRefs = {
   dashGame: {
     screen: byId('dash-game-screen'),
     runHost: qs('#dash-game-screen .run-host'),
+    goalOverlay: byId('dash-goal-overlay'),
+    goalOverlayImage: byId('dash-goal-overlay-image'),
+    goalOverlayText: byId('dash-goal-overlay-text'),
     backButton: byId('dash-game-back-button'),
     distance: byId('dash-game-distance'),
     timeRemaining: byId('dash-game-time'),

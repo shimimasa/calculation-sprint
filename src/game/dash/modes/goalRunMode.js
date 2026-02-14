@@ -53,8 +53,10 @@ const goalRunModeStrategy = {
     if (endReason === 'goal') {
       return {
         cueText: 'GOAL!',
-        sfxId: 'sfx_confirm',
-        delayMs: 650,
+        sfxId: 'sfx_goal',
+        delayMs: 1000,
+        visualEffect: 'goal-clear',
+        visualDurationMs: 1000,
       };
     }
     return null;

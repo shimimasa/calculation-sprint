@@ -88,6 +88,10 @@ const DEBUG_KEYPAD = false;
 const RUNNER_DEFAULT_SPRITE_PATH = 'assets/runner/runner.png';
 const HIT_SHAKE_CLASS = 'is-shake';
 const HIT_FLASH_CLASS = 'is-hitflash';
+const GOAL_OVERLAY_IMAGE_PATH = 'assets/bg-goal.png';
+const GOAL_CLEAR_FX_CLASS = 'is-goal-clear-active';
+const GOAL_CLEAR_SHAKE_CLASS = 'is-goal-shake';
+const GOAL_CLEAR_DEFAULT_DURATION_MS = 1000;
 const DASH_DIFFICULTY_TIME_LIMIT_MULTIPLIER = Object.freeze({
   easy: 1.2,
   normal: 1,
@@ -264,17 +268,13 @@ const dashGameScreen = {
       distanceM: gameState.dash.distanceM,
       timeLeftMs: this.timeLeftMs,
       modeRuntime: this.modeRuntime,
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
       score: Number(this.modeRuntime?.totalScore) || 0,
       combo: Number(this.modeRuntime?.combo) || 0,
       maxCombo: Number(this.modeRuntime?.maxCombo) || 0,
-=======
->>>>>>> 他モード削除
     };
   },
   applyModeHud(modeHud) {
     const distanceCard = domRefs.dashGame.distance?.closest('.dash-stat-card');
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
     const speedCard = domRefs.dashGame.speed?.closest('.dash-stat-card');
     const enemyCard = domRefs.dashGame.enemyCount?.closest('.dash-stat-card');
     const streakCard = domRefs.dashGame.streak?.closest('.dash-stat-card');
@@ -319,16 +319,6 @@ const dashGameScreen = {
       label: 'せいかいコンボ',
       unit: '回',
     }, modeHud?.statOverrides?.streak);
-=======
-    const distanceLabelEl = distanceCard?.querySelector('.dash-stat-label');
-    const distanceUnitEl = distanceCard?.querySelector('.dash-stat-unit');
-    if (distanceLabelEl) {
-      distanceLabelEl.textContent = modeHud?.distanceLabel ?? '走ったきょり';
-    }
-    if (distanceUnitEl) {
-      distanceUnitEl.textContent = modeHud?.distanceUnit ?? 'm';
-    }
->>>>>>> 他モード削除
 
     if (!this.goalProgressWrapEl && distanceCard) {
       const wrap = document.createElement('div');
@@ -1845,6 +1835,33 @@ const dashGameScreen = {
       this.streakCueTimeout = null;
     }
   },
+  clearGoalClearEffect() {
+    if (this.goalClearTimeout) {
+      window.clearTimeout(this.goalClearTimeout);
+      this.goalClearTimeout = null;
+    }
+    this.goalClearPlaying = false;
+    domRefs.dashGame.screen?.classList.remove(GOAL_CLEAR_SHAKE_CLASS);
+    domRefs.dashGame.goalOverlay?.classList.remove(GOAL_CLEAR_FX_CLASS);
+  },
+  triggerGoalClearEffect(durationMs = GOAL_CLEAR_DEFAULT_DURATION_MS) {
+    if (this.goalClearPlaying) {
+      return;
+    }
+    const overlay = domRefs.dashGame.goalOverlay;
+    if (!overlay) {
+      return;
+    }
+    this.goalClearPlaying = true;
+    const clampedDurationMs = Math.max(800, Math.min(Number(durationMs) || GOAL_CLEAR_DEFAULT_DURATION_MS, 1200));
+    overlay.classList.remove(GOAL_CLEAR_FX_CLASS);
+    void overlay.offsetWidth;
+    overlay.classList.add(GOAL_CLEAR_FX_CLASS);
+    domRefs.dashGame.screen?.classList.add(GOAL_CLEAR_SHAKE_CLASS);
+    this.goalClearTimeout = window.setTimeout(() => {
+      this.clearGoalClearEffect();
+    }, clampedDurationMs);
+  },
   updateHud() {
     const modeHud = this.modeStrategy?.getHudState?.(this.getModeContext()) ?? null;
     if (domRefs.dashGame.distance) {
@@ -2198,10 +2215,7 @@ const dashGameScreen = {
           audioManager.playSfx('sfx_damage');
           this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
           this.collisionHits += 1;
-<<<<<<< codex/summarize-plan-goal.md-for-pr1-bxf68q
           this.modeStrategy?.onCollision?.({ modeRuntime: this.modeRuntime });
-=======
->>>>>>> 他モード削除
           this.logCollisionRunnerDebugDump({
             nowMs,
             timeLeftBeforeMs,
@@ -2405,6 +2419,9 @@ const dashGameScreen = {
     if (endFx?.sfxId) {
       audioManager.playSfx(endFx.sfxId);
     }
+    if (endFx?.visualEffect === 'goal-clear') {
+      this.triggerGoalClearEffect(endFx?.visualDurationMs);
+    }
     const buildContext = {
       runId: gameState.dash.currentRunId,
       distanceM: gameState.dash.distanceM,
@@ -2454,6 +2471,10 @@ const dashGameScreen = {
     this.runnerInvincibleUntilMs = 0;
     this.resolveModeStrategy();
     this.modeRuntime = this.modeStrategy?.initRun?.() ?? null;
+    if (domRefs.dashGame.goalOverlayImage) {
+      domRefs.dashGame.goalOverlayImage.src = resolveAssetUrl(GOAL_OVERLAY_IMAGE_PATH);
+    }
+    this.clearGoalClearEffect();
     const strategyTimeLimitMs = this.modeStrategy?.getInitialTimeLimitMs?.({ modeRuntime: this.modeRuntime });
     this.timeLeftMs = Number.isFinite(strategyTimeLimitMs) && strategyTimeLimitMs > 0
       ? strategyTimeLimitMs
@@ -2802,6 +2823,7 @@ const dashGameScreen = {
     this.handleKeypadClick = null;
     this.handleKeypadCapture = null;
     this.clearStreakCue();
+    this.clearGoalClearEffect();
     if (domRefs.game.runner && this.handleRunnerSpriteLoad) {
       domRefs.game.runner.removeEventListener('load', this.handleRunnerSpriteLoad);
     }
