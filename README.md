@@ -38,3 +38,21 @@
 2. 敵を3体倒す（正解で敵を倒す）。
 3. プレイ中HUDの「たおした敵の数」が 1 → 2 → 3 と増えることを確認する。
 4. Dash終了後、結果画面の「たおした敵の数」が HUD の最終値と一致することを確認する。
+
+## Dash敵アセット命名ルール（Phase1.5）
+
+Dash敵画像は次の順で探索されます（`stageKey`, `tier`, `state` を使用）。
+
+1. 新形式（優先）  
+   `assets/enemy/{stageKey}/{tier}/enemy_{stageKey}_{tier}_{state}.png`
+2. 旧形式（互換フォールバック）  
+   `assets/enemy/enemy_{stageKey}_{state}.png`
+3. 最終フォールバック（安全値）  
+   `assets/enemy/enemy_plus_walk.png`
+
+- `tier`: `normal | big | boss`
+- `state`: `walk | hit | dead`
+- HPは tier 固定:
+  - `normal=1`
+  - `big=2`
+  - `boss=3`
