@@ -2183,10 +2183,15 @@ const dashGameScreen = {
       this.maxStreak = Math.max(this.maxStreak, gameState.dash.streak);
       this.playerSpeed += speedIncrementPerCorrect;
       this.enemySpeed = enemyBaseSpeed + enemySpeedIncrementPerStreak * gameState.dash.streak;
-      this.timeLeftMs += timeBonusOnCorrect;
+      const isScoreAttack60 = this.currentDashModeId === DASH_MODE_TYPES.scoreAttack60;
+      if (!isScoreAttack60) {
+        this.timeLeftMs += timeBonusOnCorrect;
+      }
       if (defeatResult?.defeated) {
         gameState.dash.defeatedCount += 1;
-        this.timeLeftMs += timeBonusOnDefeat;
+        if (!isScoreAttack60) {
+          this.timeLeftMs += timeBonusOnDefeat;
+        }
       }
       if (gameState.dash.streak === streakAttack) {
         this.enemyGapM += collisionThreshold;
