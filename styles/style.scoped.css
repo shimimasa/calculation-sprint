@@ -795,6 +795,34 @@
   display: inline-flex;
 }
 
+.calc-sprint #dash-stage-select-screen .dash-world-expand {
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--stage-color) 28%, transparent);
+  display: grid;
+  gap: 8px;
+}
+.calc-sprint #dash-stage-select-screen .dash-world-expand__title {
+  margin: 0;
+  font-size: 13px;
+  color: var(--dash-select-muted);
+}
+.calc-sprint #dash-stage-select-screen .dash-world-expand__levels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
+}
+.calc-sprint #dash-stage-select-screen .dash-world-expand__actions {
+  display: grid;
+  gap: 8px;
+}
+.calc-sprint #dash-stage-select-screen .dash-world-expand .dash-level-button,
+.calc-sprint #dash-stage-select-screen .dash-world-expand .dash-world-expand__start,
+.calc-sprint #dash-stage-select-screen .dash-world-expand .dash-world-expand__cancel {
+  min-height: 44px;
+}
+
 .calc-sprint #dash-stage-select-screen .dash-level-select-panel {
   width: min(100%, 520px);
   margin: 10px auto 0;
