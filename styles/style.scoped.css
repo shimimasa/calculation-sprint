@@ -43,6 +43,13 @@
 
   --ground-art-height: 240px;
   --ground-surface-inset: 90px;
+
+  --sel-border-w: 2px;
+  --sel-border: color-mix(in srgb, var(--color-primary) 72%, #1f2f5a);
+  --sel-ring: 0 0 0 3px color-mix(in srgb, var(--color-primary) 22%, transparent);
+  --sel-shadow: 0 10px 20px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  --sel-bg: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  --sel-font-w: 800;
 }
 .calc-sprint * {
   box-sizing: border-box;
@@ -683,8 +690,19 @@
 .calc-sprint #dash-stage-select-screen .setting-note {
   margin: 0;
   max-width: 40ch;
+  font-size: 14px;
   color: var(--dash-select-muted);
-  line-height: 1.55;
+  line-height: 1.6;
+}
+.calc-sprint #dash-stage-select-screen .dash-selection-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.calc-sprint #dash-stage-select-screen .dash-selection-badge {
+  font-size: 13px;
+  line-height: 1.35;
 }
 @media (max-width: 640px) {
   .calc-sprint #dash-stage-select-screen .dash-stage-select-header {
@@ -759,34 +777,86 @@
   color: var(--dash-select-text);
 }
 .calc-sprint #dash-stage-select-screen .dash-stage-card__description {
-  font-size: var(--font-caption);
+  font-size: 14px;
   color: var(--dash-select-muted);
-  line-height: 1.35;
+  line-height: 1.45;
 }
 .calc-sprint #dash-stage-select-screen .dash-stage-card__selected {
   position: absolute;
   right: 10px;
   top: 10px;
   display: none;
-  padding: 2px 8px;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
   border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: var(--sel-font-w);
+  letter-spacing: 0.01em;
   color: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--stage-color) 60%, #1f2f5a);
   background: color-mix(in srgb, var(--stage-color) 68%, #243455);
 }
-.calc-sprint #dash-stage-select-screen .dash-stage-card.is-current {
-  border-color: color-mix(in srgb, var(--stage-color) 68%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--stage-color) 24%, transparent), 0 10px 20px color-mix(in srgb, var(--stage-color) 18%, transparent);
+.calc-sprint #dash-stage-select-screen .dash-stage-card__selected::before {
+  content: "✓";
+  font-size: 11px;
+  line-height: 1;
 }
-.calc-sprint #dash-stage-select-screen .dash-stage-card.is-current .dash-stage-card__selected {
+.calc-sprint #dash-stage-select-screen .dash-stage-card:is(.is-current, .is-selected) {
+  border: var(--sel-border-w) solid color-mix(in srgb, var(--stage-color) 65%, var(--sel-border));
+  box-shadow: var(--sel-ring), var(--sel-shadow);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card:is(.is-current, .is-selected) .dash-stage-card__title {
+  font-weight: var(--sel-font-w);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card:is(.is-current, .is-selected) .dash-stage-card__badge {
+  transform: translateY(-50%) scale(1.06);
+  border-width: 2px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--stage-color) 28%, transparent);
+}
+.calc-sprint #dash-stage-select-screen .dash-stage-card:is(.is-current, .is-selected) .dash-stage-card__selected {
   display: inline-flex;
 }
 .calc-sprint #dash-stage-select-screen .stage-select-actions {
   width: 100%;
+  display: grid;
+  gap: 10px;
 }
-.calc-sprint #dash-stage-select-screen .stage-select-actions .secondary-button {
-  width: 100%;
+.calc-sprint #dash-stage-select-screen .stage-select-actions .secondary-button,
+.calc-sprint #dash-stage-select-screen .dash-mode-select-list .secondary-button,
+.calc-sprint #dash-stage-select-screen .dash-level-button,
+.calc-sprint #dash-stage-select-screen [data-role="dash-start"],
+.calc-sprint #dash-stage-select-screen [data-role="dash-close"] {
+  min-height: 44px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.calc-sprint #dash-stage-select-screen #dash-stage-select-close-button,
+.calc-sprint #dash-stage-select-screen [data-role="dash-close"],
+.calc-sprint #dash-stage-select-screen .dash-close-button {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-text) 78%, var(--color-text-sub));
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.calc-sprint #dash-stage-select-screen .dash-level-select-title,
+.calc-sprint #dash-stage-select-screen [data-role="dash-level-title"] {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.calc-sprint #dash-stage-select-screen .dash-stage-card__levels,
+.calc-sprint #dash-stage-select-screen .dash-level-select-list,
+.calc-sprint #dash-stage-select-screen .dash-stage-card__actions,
+.calc-sprint #dash-stage-select-screen .dash-stage-card__footer,
+.calc-sprint #dash-stage-select-screen [data-role="dash-level-actions"] {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
 }
 @media (max-width: 640px) {
   .calc-sprint #dash-stage-select-screen .dash-stage-card {
@@ -795,6 +865,15 @@
   }
   .calc-sprint #dash-stage-select-screen .dash-stage-card__title {
     font-size: 17px;
+  }
+  .calc-sprint #dash-stage-select-screen .setting-note {
+    font-size: 13px;
+  }
+  .calc-sprint #dash-stage-select-screen .dash-stage-card__description {
+    font-size: 13px;
+  }
+  .calc-sprint #dash-stage-select-screen .stage-select-actions {
+    gap: 8px;
   }
 }
 .calc-sprint .stage-select-icon {
@@ -4507,16 +4586,66 @@ body > .dash-overlay-root .dash-runner-debug-outline {
 }
 
 .calc-sprint .dash-mode-select-list .secondary-button,
-.calc-sprint .dash-stats-mode-filters .secondary-button {
+.calc-sprint .dash-stats-mode-filters .secondary-button,
+.calc-sprint .dash-level-button {
   min-height: 44px;
   font-size: 0.86rem;
   text-align: center;
+  border: 1px solid transparent;
+  position: relative;
 }
 
-.calc-sprint .dash-mode-select-list .secondary-button.is-current,
-.calc-sprint .dash-stats-mode-filters .secondary-button.is-current {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 24%, transparent);
+.calc-sprint .dash-mode-select-list .secondary-button:is(.is-current, .is-selected),
+.calc-sprint .dash-stats-mode-filters .secondary-button:is(.is-current, .is-selected),
+.calc-sprint .dash-level-button:is(.is-current, .is-selected) {
+  border: var(--sel-border-w) solid var(--sel-border);
+  background: linear-gradient(180deg, var(--sel-bg), color-mix(in srgb, var(--color-surface) 90%, var(--sel-bg)));
+  box-shadow: var(--sel-ring), var(--sel-shadow);
+  font-weight: var(--sel-font-w);
+}
+
+.calc-sprint .dash-mode-select-list .secondary-button:is(.is-current, .is-selected)::before,
+.calc-sprint .dash-level-button:is(.is-current, .is-selected)::before {
+  content: "✓";
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.calc-sprint .dash-level-button:active {
+  transform: translateY(1px);
+}
+
+.calc-sprint #dash-stage-select-start-button.is-cta,
+.calc-sprint [data-role="dash-start"].is-cta {
+  border: var(--sel-border-w) solid var(--sel-border);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 24%, var(--color-surface)), color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-soft)));
+  box-shadow: var(--sel-ring), 0 12px 24px color-mix(in srgb, var(--color-primary) 22%, transparent);
+  font-weight: var(--sel-font-w);
+}
+
+.calc-sprint #dash-stage-select-start-button.is-cta::after,
+.calc-sprint [data-role="dash-start"].is-cta::after {
+  content: "→";
+  margin-left: 0.45em;
+}
+
+.calc-sprint .dash-world-level-toggle,
+.calc-sprint [data-role="dash-world-level-toggle"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.calc-sprint .dash-world-level-toggle input,
+.calc-sprint [data-role="dash-world-level-toggle"] input {
+  width: 20px;
+  height: 20px;
 }
 
 @media (max-width: 640px) {

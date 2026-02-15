@@ -6,9 +6,11 @@ import audioManager from '../core/audioManager.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 import { perfLog } from '../core/perf.js';
 import { preloadStageCoreImages } from '../core/stageAssetPreloader.js';
+import dashSettingsStore from '../core/dashSettingsStore.js';
 import {
   DASH_STAGE_IDS,
   findDashStageById,
+  getDashStageLabelJa,
   getDashStageOrFallback,
   toDashStageId,
 } from '../features/dashStages.js';
@@ -27,6 +29,14 @@ const MODE_NOTE_MAP = Object.freeze({
   goalRun: '1000mまで いっきにダッシュ！',
   scoreAttack60: '60びょうで スコアをかせげ！',
 });
+
+const MODE_BADGE_LABEL_MAP = Object.freeze({
+  infinite: 'Infinite',
+  goalRun: 'GoalRun',
+  scoreAttack60: 'ScoreAttack60',
+});
+
+const SELECTED_CLASS_NAME = 'is-selected';
 
 const enhanceStageButton = (button) => {
   const stageId = toDashStageId(button.dataset.dashStageId);
@@ -57,9 +67,14 @@ const enhanceStageButton = (button) => {
   }
 };
 
-const updateSelectionState = (button, isSelected) => {
+const updateButtonSelectionState = (button, isSelected) => {
   button.classList.toggle('is-current', isSelected);
+  button.classList.toggle(SELECTED_CLASS_NAME, isSelected);
   button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+};
+
+const updateSelectionState = (button, isSelected) => {
+  updateButtonSelectionState(button, isSelected);
   if (isSelected) {
     button.setAttribute('aria-current', 'true');
   } else {
@@ -68,8 +83,56 @@ const updateSelectionState = (button, isSelected) => {
 };
 
 const updateModeSelectionState = (button, isSelected) => {
-  button.classList.toggle('is-current', isSelected);
-  button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+  updateButtonSelectionState(button, isSelected);
+};
+
+const syncDashStartButtonState = () => {
+  const startButtons = document.querySelectorAll('[data-role="dash-start"]');
+  startButtons.forEach((button) => {
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+    button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
+  });
+};
+
+const getWorldLevelEnabled = () => {
+  if (typeof dashSettingsStore.getWorldLevelEnabled === 'function') {
+    return dashSettingsStore.getWorldLevelEnabled();
+  }
+  return dashSettingsStore.get()?.worldLevelEnabled === true;
+};
+
+const getSelectedLevelLabel = () => {
+  const selectedLevel = gameState.dash?.levelId ?? gameState.dash?.level;
+  if (selectedLevel === undefined || selectedLevel === null || selectedLevel === '') {
+    return null;
+  }
+  return String(selectedLevel);
+};
+
+const updateSelectionBadges = () => {
+  const modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
+  const stageId = toDashStageId(gameState.dash?.stageId);
+  const showLevel = getWorldLevelEnabled();
+  const levelLabel = getSelectedLevelLabel();
+
+  if (domRefs.dashStageSelect.modeBadge) {
+    const modeLabel = MODE_BADGE_LABEL_MAP[modeId] ?? MODE_BADGE_LABEL_MAP.infinite;
+    domRefs.dashStageSelect.modeBadge.textContent = `モード: ${modeLabel}`;
+  }
+
+  if (domRefs.dashStageSelect.stageBadge) {
+    domRefs.dashStageSelect.stageBadge.textContent = `ステージ: ${getDashStageLabelJa(stageId)}`;
+  }
+
+  if (domRefs.dashStageSelect.levelBadge) {
+    const shouldShowLevel = showLevel && Boolean(levelLabel);
+    domRefs.dashStageSelect.levelBadge.hidden = !shouldShowLevel;
+    if (shouldShowLevel) {
+      domRefs.dashStageSelect.levelBadge.textContent = `Lv: ${levelLabel}`;
+    }
+  }
 };
 
 const dashStageSelectScreen = {
@@ -92,6 +155,8 @@ const dashStageSelectScreen = {
       const modeId = normalizeDashModeId(button.dataset.dashModeId);
       updateModeSelectionState(button, modeId === selectedModeId);
     });
+    syncDashStartButtonState();
+    updateSelectionBadges();
     if (domRefs.dashStageSelect.modeNote) {
       domRefs.dashStageSelect.modeNote.textContent = MODE_NOTE_MAP[selectedModeId] ?? MODE_NOTE_MAP.infinite;
     }
@@ -107,6 +172,8 @@ const dashStageSelectScreen = {
         const candidateMode = normalizeDashModeId(candidate.dataset.dashModeId);
         updateModeSelectionState(candidate, candidateMode === modeId);
       });
+      syncDashStartButtonState();
+      updateSelectionBadges();
       if (domRefs.dashStageSelect.modeNote) {
         domRefs.dashStageSelect.modeNote.textContent = MODE_NOTE_MAP[modeId] ?? MODE_NOTE_MAP.infinite;
       }
@@ -127,6 +194,11 @@ const dashStageSelectScreen = {
       audioManager.unlock();
       audioManager.playSfx('sfx_confirm');
       gameState.dash.stageId = stage.id;
+      domRefs.dashStageSelect.buttons.forEach((candidate) => {
+        const candidateStageId = toDashStageId(candidate.dataset.dashStageId);
+        updateSelectionState(candidate, candidateStageId === stage.id);
+      });
+      updateSelectionBadges();
       gameState.dash.modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
       gameState.dash.currentMode = null;
       preloadStageCoreImages(stage.id, { mode: 'dash' });
