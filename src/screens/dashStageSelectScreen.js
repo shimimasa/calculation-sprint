@@ -6,7 +6,6 @@ import audioManager from '../core/audioManager.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 import { perfLog } from '../core/perf.js';
 import { preloadStageCoreImages } from '../core/stageAssetPreloader.js';
-import dashSettingsStore from '../core/dashSettingsStore.js';
 import {
   DASH_STAGE_IDS,
   findDashStageById,
@@ -38,27 +37,13 @@ const MODE_BADGE_LABEL_MAP = Object.freeze({
 
 const SELECTED_CLASS_NAME = 'is-selected';
 const DASH_LEVEL_OPTIONS = Object.freeze([1, 2, 3, 4, 5]);
+const DASH_LEVEL_ACTION_SELECTOR = [
+  '[data-role="dash-level"]',
+  '[data-role="dash-start"]',
+  '[data-role="dash-close"]',
+  '.dash-level-button',
+].join(',');
 
-const resolveDashStageClickAction = ({ worldLevelEnabled, hasLevelUi }) => {
-  if (worldLevelEnabled !== true) {
-    return {
-      action: 'start',
-      reason: 'worldLevelEnabled=false',
-    };
-  }
-
-  if (!hasLevelUi) {
-    return {
-      action: 'start',
-      reason: 'level-ui-missing-fallback-start',
-    };
-  }
-
-  return {
-    action: 'expand',
-    reason: 'worldLevelEnabled=true',
-  };
-};
 
 const isDashDebugEnabled = () => {
   if (window.__DASH_DEBUG === true) {
@@ -93,6 +78,28 @@ const logDashStageClickDecision = ({
     decidedAction,
     reason,
   });
+};
+
+
+const describeClickNode = (node) => {
+  if (!(node instanceof Element)) {
+    return null;
+  }
+
+  return {
+    tagName: node.tagName.toLowerCase(),
+    role: node.getAttribute('data-role') ?? null,
+    dashStageId: node.getAttribute('data-dash-stage-id') ?? null,
+    levelId: node.getAttribute('data-level-id') ?? null,
+    className: node.className ?? '',
+  };
+};
+
+const logDashLevelAction = (payload) => {
+  if (!isDashDebugEnabled()) {
+    return;
+  }
+  console.log('[dash-stage-select.level-action]', payload);
 };
 
 const enhanceStageButton = (button) => {
@@ -154,8 +161,6 @@ const syncDashStartButtonState = () => {
   });
 };
 
-const getWorldLevelEnabled = () => dashSettingsStore.getWorldLevelEnabled();
-
 const getSelectedLevelLabel = () => {
   const selectedLevel = gameState.dash?.levelId ?? gameState.dash?.level;
   if (selectedLevel === undefined || selectedLevel === null || selectedLevel === '') {
@@ -178,7 +183,6 @@ const normalizeLevelId = (levelId) => {
 const updateSelectionBadges = () => {
   const modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
   const stageId = toDashStageId(gameState.dash?.stageId);
-  const showLevel = getWorldLevelEnabled();
   const levelLabel = getSelectedLevelLabel();
 
   if (domRefs.dashStageSelect.modeBadge) {
@@ -191,7 +195,7 @@ const updateSelectionBadges = () => {
   }
 
   if (domRefs.dashStageSelect.levelBadge) {
-    const shouldShowLevel = showLevel && Boolean(levelLabel);
+    const shouldShowLevel = Boolean(levelLabel);
     domRefs.dashStageSelect.levelBadge.hidden = !shouldShowLevel;
     if (shouldShowLevel) {
       domRefs.dashStageSelect.levelBadge.textContent = `Lv: ${levelLabel}`;
@@ -203,7 +207,6 @@ const dashStageSelectScreen = {
   enter() {
     uiRenderer.showScreen('dash-stage-select');
     this.events = createEventRegistry('dash-stage-select');
-    this.worldLevelEnabled = getWorldLevelEnabled();
     this.expandedStageId = null;
 
     const selectedStage = toDashStageId(gameState.dash?.stageId);
@@ -248,9 +251,9 @@ const dashStageSelectScreen = {
     };
 
     this.handleSelectStage = (event) => {
-      const levelActionButton = event.target.closest('[data-role]');
+      const levelActionButton = event.target.closest(DASH_LEVEL_ACTION_SELECTOR);
       if (levelActionButton) {
-        this.handleLevelAction(levelActionButton);
+        this.handleLevelAction(levelActionButton, event);
         return;
       }
 
@@ -273,30 +276,18 @@ const dashStageSelectScreen = {
       });
       updateSelectionBadges();
 
-      const clickAction = resolveDashStageClickAction({
-        worldLevelEnabled: this.worldLevelEnabled,
-        clickStageId: stage.id,
-        hasLevelUi: Boolean(this.getLevelHost(stage.id)),
-      });
-
       logDashStageClickDecision({
-        worldLevelEnabled: this.worldLevelEnabled,
+        worldLevelEnabled: true,
         modeId: gameState.dash.modeId,
         clickedStageId: stage.id,
         selectedWorld: gameState.dash.stageId,
         selectedLevel: gameState.dash.levelId ?? gameState.dash.level ?? null,
-        decidedAction: clickAction.action,
-        reason: clickAction.reason,
+        decidedAction: 'expand',
+        reason: 'always-expand-level-selection',
       });
 
-      if (clickAction.action === 'expand') {
-        audioManager.playSfx('sfx_click');
-        this.expandWorld(stage.id);
-        return;
-      }
-
-      audioManager.playSfx('sfx_confirm');
-      this.startDash(stage.id);
+      audioManager.playSfx('sfx_click');
+      this.expandWorld(stage.id);
     };
 
     this.handleBack = () => {
@@ -309,24 +300,51 @@ const dashStageSelectScreen = {
     this.events.on(domRefs.dashStageSelect.list, 'click', this.handleSelectStage);
     this.events.on(domRefs.dashStageSelect.backButton, 'click', this.handleBack);
   },
-  handleLevelAction(actionButton) {
+  handleLevelAction(actionButton, event) {
     const stageId = toDashStageId(
       actionButton.dataset.dashStageId
       ?? actionButton.closest('[data-dash-world-card]')?.dataset.dashWorldCard,
     );
+    const role = actionButton.dataset.role;
 
-    if (actionButton.dataset.role === 'dash-level') {
-      this.selectLevel(actionButton.dataset.levelId, stageId);
+    if (role === 'dash-level' || role === 'dash-start' || role === 'dash-close') {
+      event?.stopPropagation();
+    }
+
+    if (role === 'dash-level') {
+      const levelBefore = normalizeLevelId(gameState.dash?.levelId ?? gameState.dash?.level);
+      const levelAfter = normalizeLevelId(actionButton.dataset.levelId);
+      logDashLevelAction({
+        action: 'level',
+        stageId,
+        levelId: levelAfter,
+        selectedLevel: `${levelBefore}->${levelAfter}`,
+        target: describeClickNode(event?.target),
+        currentTarget: describeClickNode(event?.currentTarget),
+      });
+      this.selectLevel(levelAfter, stageId);
       audioManager.playSfx('sfx_click');
       return;
     }
 
-    if (actionButton.dataset.role === 'dash-start') {
+    if (role === 'dash-start') {
+      const levelId = normalizeLevelId(gameState.dash?.levelId ?? gameState.dash?.level);
+      logDashLevelAction({
+        action: 'start',
+        worldKey: stageId,
+        levelId,
+        modeId: normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE),
+      });
       this.startDashWithSelection(stageId);
       return;
     }
 
-    if (actionButton.dataset.role === 'dash-close') {
+    if (role === 'dash-close') {
+      logDashLevelAction({
+        action: 'close',
+        stageId,
+        collapse: true,
+      });
       this.closeExpandedWorld(stageId);
       audioManager.playSfx('sfx_cancel');
     }
@@ -336,10 +354,6 @@ const dashStageSelectScreen = {
   },
   expandWorld(stageId) {
     const normalizedStageId = toDashStageId(stageId);
-    if (!this.worldLevelEnabled) {
-      return;
-    }
-
     if (this.expandedStageId && this.expandedStageId !== normalizedStageId) {
       this.closeExpandedWorld(this.expandedStageId);
     }
@@ -371,7 +385,7 @@ const dashStageSelectScreen = {
         `)
     .join('')}
       </div>
-      <div class="dash-stage-card__actions" data-role="dash-level-actions">
+      <div class="dash-stage-card__actions">
         <button class="secondary-button is-cta" type="button" data-role="dash-start" data-dash-stage-id="${normalizedStageId}">このレベルでスタート</button>
         <button class="secondary-button dash-close-button" type="button" data-role="dash-close" data-dash-stage-id="${normalizedStageId}">閉じる</button>
       </div>
