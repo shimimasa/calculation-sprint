@@ -38,6 +38,12 @@ const MODE_BADGE_LABEL_MAP = Object.freeze({
 
 const SELECTED_CLASS_NAME = 'is-selected';
 const DASH_LEVEL_OPTIONS = Object.freeze([1, 2, 3, 4, 5]);
+const DASH_LEVEL_ACTION_SELECTOR = [
+  '[data-role="dash-level"]',
+  '[data-role="dash-start"]',
+  '[data-role="dash-close"]',
+  '.dash-level-button',
+].join(',');
 
 const resolveDashStageClickAction = ({ worldLevelEnabled, hasLevelUi }) => {
   if (worldLevelEnabled !== true) {
@@ -248,7 +254,7 @@ const dashStageSelectScreen = {
     };
 
     this.handleSelectStage = (event) => {
-      const levelActionButton = event.target.closest('[data-role]');
+      const levelActionButton = event.target.closest(DASH_LEVEL_ACTION_SELECTOR);
       if (levelActionButton) {
         this.handleLevelAction(levelActionButton);
         return;
@@ -371,7 +377,7 @@ const dashStageSelectScreen = {
         `)
     .join('')}
       </div>
-      <div class="dash-stage-card__actions" data-role="dash-level-actions">
+      <div class="dash-stage-card__actions">
         <button class="secondary-button is-cta" type="button" data-role="dash-start" data-dash-stage-id="${normalizedStageId}">このレベルでスタート</button>
         <button class="secondary-button dash-close-button" type="button" data-role="dash-close" data-dash-stage-id="${normalizedStageId}">閉じる</button>
       </div>
