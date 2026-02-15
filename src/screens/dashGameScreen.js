@@ -32,13 +32,14 @@ import { getStageCorePreloadPromise } from '../core/stageAssetPreloader.js';
 import { isStageFrameWaitEnabled, perfLog } from '../core/perf.js';
 import { resolveAssetUrl } from '../core/assetUrl.js';
 import { getDashModeStrategy } from '../game/dash/modes/dashModes.js';
-import { normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
+import { DASH_MODE_TYPES, normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
 const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 const LOW_TIME_THRESHOLD_MS = 8000;
+const GOAL_RUN_FALLBACK_DISTANCE_M = 1000;
 const DAMAGE_INVINCIBLE_MS = 800;
 const HIT_SHAKE_MS = 160;
 const HIT_FLASH_MS = 160;
@@ -252,6 +253,7 @@ const isDashStartDebugLogEnabled = () => {
     return false;
   }
 };
+const clamp01 = (value) => Math.max(0, Math.min(Number(value) || 0, 1));
 
 const dashGameScreen = {
   answerBuffer: '',
@@ -1904,6 +1906,7 @@ const dashGameScreen = {
   },
   updateHud() {
     const modeHud = this.modeStrategy?.getHudState?.(this.getModeContext()) ?? null;
+    const modeContext = this.getModeContext();
     if (domRefs.dashGame.distance) {
       domRefs.dashGame.distance.textContent = modeHud?.distanceText ?? gameState.dash.distanceM.toFixed(1);
     }
@@ -1922,31 +1925,49 @@ const dashGameScreen = {
     if (domRefs.dashGame.enemyCount) {
       domRefs.dashGame.enemyCount.textContent = modeHud?.statOverrides?.enemyCount?.value ?? String(gameState.dash.defeatedCount || 0);
     }
-    if (domRefs.dashGame.timeRemaining) {
-      const timeSeconds = Math.max(0, Math.ceil(this.timeLeftMs / 1000));
-      domRefs.dashGame.timeRemaining.textContent = String(timeSeconds);
-    }
-    const isLowTime = this.timeLeftMs <= LOW_TIME_THRESHOLD_MS;
-    const timeRatio = (() => {
-      const denom = Math.max(1, Number(this.initialTimeLimitMs) || DEFAULT_TIME_LIMIT_MS);
-      return Math.max(0, Math.min(this.timeLeftMs / denom, 1));
-    })();
+    const barModel = this.buildBarModel(modeContext, modeHud);
+    const widthPercentText = `${(barModel.ratio * 100).toFixed(1)}%`;
+    const nextBarModel = {
+      modeId: barModel.modeId,
+      state: barModel.state,
+      valueText: barModel.valueText,
+      unitText: barModel.unitText,
+      noteText: barModel.noteText,
+      widthPercentText,
+    };
+    const prevBarModel = this.lastBarModel;
+    const hasBarChanges = !prevBarModel
+      || prevBarModel.modeId !== nextBarModel.modeId
+      || prevBarModel.state !== nextBarModel.state
+      || prevBarModel.valueText !== nextBarModel.valueText
+      || prevBarModel.unitText !== nextBarModel.unitText
+      || prevBarModel.noteText !== nextBarModel.noteText
+      || prevBarModel.widthPercentText !== nextBarModel.widthPercentText;
     const timeWrap = domRefs.dashGame.timeWrap;
-    if (timeWrap) {
-      let nextState = 'safe';
-      if (timeRatio <= 0.3) {
-        nextState = 'danger';
-      } else if (timeRatio <= 0.6) {
-        nextState = 'caution';
+    if (timeWrap && hasBarChanges) {
+      if (timeWrap.dataset.mode !== barModel.modeId) {
+        timeWrap.dataset.mode = barModel.modeId;
       }
-      timeWrap.dataset.state = isLowTime ? 'danger' : nextState;
+      if (timeWrap.dataset.state !== barModel.state) {
+        timeWrap.dataset.state = barModel.state;
+      }
     }
-    if (domRefs.dashGame.timeBar) {
-      domRefs.dashGame.timeBar.style.width = `${(timeRatio * 100).toFixed(1)}%`;
+    if (domRefs.dashGame.timeBar && (!prevBarModel || prevBarModel.widthPercentText !== nextBarModel.widthPercentText)) {
+      domRefs.dashGame.timeBar.style.width = widthPercentText;
     }
-    if (domRefs.dashGame.timeNote) {
-      domRefs.dashGame.timeNote.textContent = isLowTime ? '残りわずか' : '';
+    if (domRefs.dashGame.timeRemaining && (!prevBarModel || prevBarModel.valueText !== nextBarModel.valueText)) {
+      domRefs.dashGame.timeRemaining.textContent = barModel.valueText;
     }
+    if (!this.timeUnitEl && timeWrap) {
+      this.timeUnitEl = timeWrap.querySelector('.dash-time-unit');
+    }
+    if (this.timeUnitEl && (!prevBarModel || prevBarModel.unitText !== nextBarModel.unitText)) {
+      this.timeUnitEl.textContent = barModel.unitText;
+    }
+    if (domRefs.dashGame.timeNote && (!prevBarModel || prevBarModel.noteText !== nextBarModel.noteText)) {
+      domRefs.dashGame.timeNote.textContent = barModel.noteText;
+    }
+    this.lastBarModel = nextBarModel;
     if (domRefs.dashGame.streak) {
       domRefs.dashGame.streak.textContent = modeHud?.statOverrides?.streak?.value ?? String(gameState.dash.streak);
     }
@@ -1976,6 +1997,48 @@ const dashGameScreen = {
     if (domRefs.dashGame.enemyText) {
       domRefs.dashGame.enemyText.textContent = `${proximityLabel} (${proximityPercent}%)`;
     }
+  },
+  buildBarModel(modeContext, modeHud) {
+    void modeHud;
+    const modeId = this.currentDashModeId;
+    const safeTimeLeftMs = Math.max(0, Number(modeContext?.timeLeftMs) || 0);
+
+    if (modeId === DASH_MODE_TYPES.goalRun) {
+      const distanceM = Number(modeContext?.distanceM);
+      const safeDistanceM = Number.isFinite(distanceM) ? Math.max(0, distanceM) : 0;
+      // SSoT: goalRunMode.initRun() sets goalDistanceM (default 1000m). Keep fallback aligned with that mode contract.
+      const goalDistanceM = Math.max(1, Number(modeContext?.modeRuntime?.goalDistanceM) || GOAL_RUN_FALLBACK_DISTANCE_M);
+      const remainingDistanceM = Math.max(0, Math.ceil(goalDistanceM - safeDistanceM));
+      return {
+        modeId,
+        ratio: clamp01(safeDistanceM / goalDistanceM),
+        valueText: String(remainingDistanceM),
+        unitText: 'm',
+        noteText: `${safeDistanceM.toFixed(1)}m / ${goalDistanceM.toFixed(0)}m`,
+        state: 'safe',
+      };
+    }
+
+    const timeLimitMs = modeId === DASH_MODE_TYPES.scoreAttack60
+      ? 60000
+      : Math.max(1, Number(this.initialTimeLimitMs) || DEFAULT_TIME_LIMIT_MS);
+    const ratio = clamp01(safeTimeLeftMs / timeLimitMs);
+    const isLowTime = safeTimeLeftMs <= LOW_TIME_THRESHOLD_MS;
+    let state = 'safe';
+    if (ratio <= 0.3) {
+      state = 'danger';
+    } else if (ratio <= 0.6) {
+      state = 'caution';
+    }
+
+    return {
+      modeId,
+      ratio,
+      valueText: String(Math.max(0, Math.ceil(safeTimeLeftMs / 1000))),
+      unitText: '秒',
+      noteText: isLowTime ? '残りわずか' : '',
+      state: isLowTime ? 'danger' : state,
+    };
   },
   getAreaForDistance(distanceM) {
     if (distanceM >= AREA_4_START_M) {
@@ -2556,6 +2619,8 @@ const dashGameScreen = {
     this.currentArea = null;
     this.lastNextAreaText = null;
     this.lastNextAreaHidden = null;
+    this.lastBarModel = null;
+    this.timeUnitEl = null;
     this.runLayerOriginalParent = this.runLayerOriginalParent ?? null;
     this.runLayerOriginalNextSibling = this.runLayerOriginalNextSibling ?? null;
     this.skyOffsetPx = 0;
@@ -3009,6 +3074,8 @@ const dashGameScreen = {
       this.goalProgressFillEl = null;
       this.goalProgressTextEl = null;
     }
+    this.lastBarModel = null;
+    this.timeUnitEl = null;
   },
 };
 
