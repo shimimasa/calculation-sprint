@@ -451,8 +451,6 @@ const dashStageSelectScreen = {
   },
   startDash(stageId) {
     const normalizedStageId = toDashStageId(stageId);
-    gameState.dash.stageId = normalizedStageId;
-    gameState.dash.modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
     gameState.dash.currentMode = null;
     preloadStageCoreImages(normalizedStageId, { mode: 'dash' });
     screenManager.changeScreen('dash-game');
@@ -460,7 +458,11 @@ const dashStageSelectScreen = {
   startDashWithSelection(stageId = this.expandedStageId) {
     const normalizedStageId = toDashStageId(stageId);
     const selectedLevelId = normalizeLevelId(normalizedStageId, gameState.dash?.levelId ?? gameState.dash?.level);
+    const selectedModeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
+    gameState.dash.stageId = normalizedStageId;
+    gameState.dash.worldKey = normalizedStageId;
     gameState.dash.levelId = selectedLevelId;
+    gameState.dash.modeId = selectedModeId;
     audioManager.unlock();
     audioManager.playSfx('sfx_confirm');
     this.startDash(normalizedStageId);
