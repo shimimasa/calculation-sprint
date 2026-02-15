@@ -1,5 +1,6 @@
 import { randomInt } from '../core/utils.js';
 import { normalizeDashStageId, toQuestionMode } from './dashStages.js';
+import { getDashDifficultyEntry } from './dashDifficultyTable.js';
 
 const operators = {
   add: { symbol: '+', calc: (a, b) => a + b },
@@ -22,59 +23,6 @@ const normalizeLevelId = (levelId) => {
   return Number.isInteger(numericLevel) && numericLevel > 0 ? numericLevel : 1;
 };
 
-const DASH_LEVEL_OPERAND_RULES = Object.freeze({
-  plus: Object.freeze({
-    1: Object.freeze({ add: Object.freeze({ aMin: 1, aMax: 9, bMin: 1, bMax: 9, carry: 'avoid' }) }),
-    2: Object.freeze({ add: Object.freeze({ aMin: 10, aMax: 99, bMin: 1, bMax: 9, carry: 'any' }) }),
-    3: Object.freeze({ add: Object.freeze({ aMin: 10, aMax: 99, bMin: 10, bMax: 99, carry: 'any' }) }),
-    4: Object.freeze({ add: Object.freeze({ aMin: 10, aMax: 99, bMin: 10, bMax: 99, carry: 'prefer' }) }),
-    5: Object.freeze({ add: Object.freeze({ aMin: 100, aMax: 999, bMin: 10, bMax: 99, carry: 'any' }) }),
-  }),
-  minus: Object.freeze({
-    1: Object.freeze({ sub: Object.freeze({ aMin: 1, aMax: 9, bMin: 1, bMax: 9, borrow: 'avoid' }) }),
-    2: Object.freeze({ sub: Object.freeze({ aMin: 10, aMax: 99, bMin: 1, bMax: 9, borrow: 'any' }) }),
-    3: Object.freeze({ sub: Object.freeze({ aMin: 10, aMax: 99, bMin: 10, bMax: 99, borrow: 'avoid' }) }),
-    4: Object.freeze({ sub: Object.freeze({ aMin: 10, aMax: 99, bMin: 10, bMax: 99, borrow: 'prefer' }) }),
-    5: Object.freeze({ sub: Object.freeze({ aMin: 100, aMax: 999, bMin: 10, bMax: 99, borrow: 'prefer' }) }),
-  }),
-  multi: Object.freeze({
-    1: Object.freeze({ mul: Object.freeze({ aMin: 1, aMax: 5, bMin: 1, bMax: 5 }) }),
-    2: Object.freeze({ mul: Object.freeze({ aMin: 2, aMax: 9, bMin: 1, bMax: 5 }) }),
-    3: Object.freeze({ mul: Object.freeze({ aMin: 2, aMax: 9, bMin: 2, bMax: 9 }) }),
-    4: Object.freeze({ mul: Object.freeze({ aMin: 4, aMax: 12, bMin: 2, bMax: 9 }) }),
-    5: Object.freeze({ mul: Object.freeze({ aMin: 6, aMax: 15, bMin: 3, bMax: 12 }) }),
-  }),
-  divide: Object.freeze({
-    1: Object.freeze({ div: Object.freeze({ divisorMin: 2, divisorMax: 5, quotientMin: 1, quotientMax: 5 }) }),
-    2: Object.freeze({ div: Object.freeze({ divisorMin: 2, divisorMax: 9, quotientMin: 2, quotientMax: 9 }) }),
-    3: Object.freeze({ div: Object.freeze({ divisorMin: 3, divisorMax: 12, quotientMin: 2, quotientMax: 12 }) }),
-    4: Object.freeze({ div: Object.freeze({ divisorMin: 4, divisorMax: 12, quotientMin: 4, quotientMax: 15 }) }),
-    5: Object.freeze({ div: Object.freeze({ divisorMin: 5, divisorMax: 15, quotientMin: 5, quotientMax: 20 }) }),
-  }),
-  mix: Object.freeze({
-    1: Object.freeze({
-      allowedModes: Object.freeze(['add', 'sub']),
-      add: Object.freeze({ aMin: 1, aMax: 9, bMin: 1, bMax: 9, carry: 'avoid' }),
-      sub: Object.freeze({ aMin: 1, aMax: 9, bMin: 1, bMax: 9, borrow: 'avoid' }),
-    }),
-    2: Object.freeze({
-      allowedModes: Object.freeze(['add', 'sub', 'mul', 'div']),
-      add: Object.freeze({ aMin: 10, aMax: 99, bMin: 1, bMax: 99, carry: 'any' }),
-      sub: Object.freeze({ aMin: 10, aMax: 99, bMin: 1, bMax: 99, borrow: 'any' }),
-      mul: Object.freeze({ aMin: 2, aMax: 9, bMin: 2, bMax: 9 }),
-      div: Object.freeze({ divisorMin: 2, divisorMax: 9, quotientMin: 2, quotientMax: 12 }),
-    }),
-  }),
-});
-
-const getDashLevelRule = (stageId, levelId) => {
-  const stageRules = DASH_LEVEL_OPERAND_RULES[stageId];
-  if (!stageRules) {
-    return null;
-  }
-  return stageRules[levelId] ?? stageRules[1] ?? null;
-};
-
 const pickRandomMode = (candidates = modes) => {
   if (!Array.isArray(candidates) || candidates.length === 0) {
     return 'add';
@@ -86,7 +34,8 @@ const pickRandomMode = (candidates = modes) => {
 const resolveMode = (settings) => {
   const stageId = normalizeDashStageId(settings.stageId);
   const levelId = normalizeLevelId(settings.levelId);
-  const dashLevelRule = stageId ? getDashLevelRule(stageId, levelId) : null;
+  const dashDifficulty = stageId ? getDashDifficultyEntry(stageId, levelId) : null;
+  const dashParams = dashDifficulty?.params ?? null;
   const reviewModes = Array.isArray(settings.reviewModes)
     ? settings.reviewModes.filter((mode) => modes.includes(mode))
     : [];
@@ -110,15 +59,16 @@ const resolveMode = (settings) => {
   if (stageId) {
     const stageMode = toQuestionMode(stageId);
     if (stageMode === 'mix') {
-      const dashMixModes = Array.isArray(dashLevelRule?.allowedModes)
-        ? dashLevelRule.allowedModes.filter((mode) => modes.includes(mode))
+      const dashMixModes = Array.isArray(dashParams?.operatorSet)
+        ? dashParams.operatorSet.filter((mode) => modes.includes(mode))
         : [];
       return {
         mode: pickRandomMode(dashMixModes.length > 0 ? dashMixModes : modes),
         stageId,
         levelId,
         useDashStagePolicy: true,
-        dashLevelRule,
+        dashDifficulty,
+        dashParams,
       };
     }
 
@@ -127,7 +77,8 @@ const resolveMode = (settings) => {
       stageId,
       levelId,
       useDashStagePolicy: true,
-      dashLevelRule,
+      dashDifficulty,
+      dashParams,
     };
   }
 
@@ -266,6 +217,12 @@ const generateOperandsByRule = (mode, rule) => {
       if (rule.carry === 'avoid' && carry) {
         continue;
       }
+      if (rule.carry === 'some' && carry && Math.random() >= 0.25) {
+        continue;
+      }
+      if (rule.carry === 'mixed' && carry && Math.random() >= 0.5) {
+        continue;
+      }
       if (rule.carry === 'prefer' && !carry) {
         continue;
       }
@@ -285,10 +242,16 @@ const generateOperandsByRule = (mode, rule) => {
       if (rule.borrow === 'avoid' && borrow) {
         continue;
       }
+      if (rule.borrow === 'some' && borrow && Math.random() >= 0.25) {
+        continue;
+      }
+      if (rule.borrow === 'mixed' && borrow && Math.random() >= 0.5) {
+        continue;
+      }
       if (rule.borrow === 'prefer' && !borrow) {
         continue;
       }
-      if (a - b <= 0) {
+      if (a - b < 0 || (!rule.allowZero && a - b === 0)) {
         continue;
       }
       return { a, b };
@@ -297,6 +260,12 @@ const generateOperandsByRule = (mode, rule) => {
   }
 
   if (mode === 'mul') {
+    if (Array.isArray(rule.factorsA) && Array.isArray(rule.factorsB)) {
+      return {
+        a: rule.factorsA[randomInt(0, rule.factorsA.length - 1)],
+        b: rule.factorsB[randomInt(0, rule.factorsB.length - 1)],
+      };
+    }
     return {
       a: randomInt(rule.aMin, rule.aMax),
       b: randomInt(rule.bMin, rule.bMax),
@@ -304,9 +273,19 @@ const generateOperandsByRule = (mode, rule) => {
   }
 
   if (mode === 'div') {
-    const divisor = randomInt(rule.divisorMin, rule.divisorMax);
+    const divisor = Array.isArray(rule.divisors) && rule.divisors.length > 0
+      ? rule.divisors[randomInt(0, rule.divisors.length - 1)]
+      : randomInt(rule.divisorMin, rule.divisorMax);
     const quotient = randomInt(rule.quotientMin, rule.quotientMax);
-    return { a: divisor * quotient, b: divisor };
+    const baseDividend = divisor * quotient;
+    const remainderRate = Number(rule.remainderRate) || 0;
+    if (remainderRate > 0 && Math.random() < remainderRate) {
+      const remainderMin = Number(rule.remainderMin) || 1;
+      const remainderMax = Number(rule.remainderMax) || 2;
+      const remainder = randomInt(remainderMin, Math.min(remainderMax, divisor - 1));
+      return { a: baseDividend + remainder, b: divisor };
+    }
+    return { a: baseDividend, b: divisor };
   }
 
   return null;
@@ -319,7 +298,8 @@ const questionGenerator = {
       stageId,
       levelId,
       useDashStagePolicy,
-      dashLevelRule,
+      dashDifficulty,
+      dashParams,
     } = resolveMode(settings);
     const operator = operators[mode];
     if (!operator) {
@@ -329,7 +309,9 @@ const questionGenerator = {
     let a = randomInt(min, max);
     let b = randomInt(min, max);
 
-    const dashRuleForMode = useDashStagePolicy ? dashLevelRule?.[mode] : null;
+    const dashRuleForMode = useDashStagePolicy
+      ? (dashParams?.[mode] ?? (dashParams?.mode === mode ? dashParams : null))
+      : null;
     const stageLevelOperands = generateOperandsByRule(mode, dashRuleForMode);
     if (stageLevelOperands) {
       ({ a, b } = stageLevelOperands);
@@ -394,8 +376,10 @@ const questionGenerator = {
             stageId,
             levelId,
             operatorSet: stageId === 'mix'
-              ? (dashLevelRule?.allowedModes ?? modes)
+              ? (dashParams?.operatorSet ?? modes)
               : [mode],
+            labelShort: dashDifficulty?.labelShort ?? null,
+            labelLong: dashDifficulty?.labelLong ?? null,
             operandRule: dashRuleForMode ?? null,
           }
           : null,

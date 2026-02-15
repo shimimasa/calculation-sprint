@@ -14,6 +14,7 @@ import {
   getDashStageOrFallback,
   toDashStageId,
 } from '../features/dashStages.js';
+import { getDashDifficultyLabelShort } from '../features/dashDifficultyTable.js';
 import { DEFAULT_DASH_MODE, normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
 
 const STAGE_VISUAL_MAP = {
@@ -393,7 +394,8 @@ const dashStageSelectScreen = {
             data-level-id="${levelId}"
             aria-pressed="${levelId === selectedLevelId ? 'true' : 'false'}"
           >
-            LEVEL ${levelId}
+            <span class="dash-level-button__level">LEVEL ${levelId}</span>
+            <span class="dash-level-button__hint">${getDashDifficultyLabelShort(normalizedStageId, levelId)}</span>
           </button>
         `)
     .join('')}

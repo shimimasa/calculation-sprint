@@ -4640,6 +4640,20 @@ body > .dash-overlay-root .dash-runner-debug-outline {
   transform: translateY(1px);
 }
 
+.calc-sprint .dash-level-button__level {
+  display: block;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.calc-sprint .dash-level-button__hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  white-space: normal;
+}
+
 .calc-sprint #dash-stage-select-start-button.is-cta,
 .calc-sprint [data-role="dash-start"].is-cta {
   border: var(--sel-border-w) solid var(--sel-border);

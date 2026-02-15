@@ -2052,11 +2052,14 @@ const dashGameScreen = {
     });
     if (isDashStartDebugLogEnabled() && !this.hasLoggedQuestionDifficultyDebug) {
       this.hasLoggedQuestionDifficultyDebug = true;
+      const difficulty = this.currentQuestion?.meta?.difficulty ?? null;
       console.log('[dash-game.question-difficulty]', {
         stageId: this.dashStageId,
         levelId: this.dashLevelId,
         modeId: this.currentDashModeId,
-        difficulty: this.currentQuestion?.meta?.difficulty ?? null,
+        labelShort: difficulty?.labelShort ?? null,
+        params: difficulty?.operandRule ?? null,
+        operatorSet: difficulty?.operatorSet ?? null,
       });
     }
     gameState.dash.currentMode = this.currentQuestion?.meta?.mode ?? null;
