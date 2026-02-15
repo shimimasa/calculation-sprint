@@ -17,7 +17,7 @@ const infiniteModeStrategy = {
   },
   checkEnd({ timeLeftMs }) {
     if (Number.isFinite(timeLeftMs) && timeLeftMs <= 0) {
-      return { ended: true, endReason: 'timeup' };
+      return { ended: true, endReason: 'timeout' };
     }
     return { ended: false, endReason: null };
   },
@@ -33,7 +33,7 @@ const infiniteModeStrategy = {
       timeLeftMs: Math.max(0, timeLeftMs),
       stageId: toDashStageId(stageId),
       endReason,
-      retired: endReason !== 'timeup',
+      retired: endReason === 'retired',
     };
   },
 };

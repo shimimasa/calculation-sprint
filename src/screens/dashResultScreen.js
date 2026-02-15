@@ -112,17 +112,35 @@ const getScoreAttackRecordState = (result, stats) => {
     previousBest,
   };
 };
+
+const normalizeDashResultEndReason = (result) => {
+  const reason = typeof result?.endReason === 'string' ? result.endReason : null;
+  if (reason === 'retired' || reason === 'goal' || reason === 'timeout') {
+    return reason;
+  }
+  if (reason === 'manual') {
+    return 'retired';
+  }
+  if (reason === 'timeup' || reason === 'collision') {
+    return 'timeout';
+  }
+  if (result?.cleared === true) {
+    return 'goal';
+  }
+  if (result?.retired === true) {
+    return 'retired';
+  }
+  return 'timeout';
+};
 const dashResultScreen = {
   enter() {
     uiRenderer.showScreen('dash-result');
     this.events = createEventRegistry('dash-result');
     const renderResult = (result, options = {}) => {
       const endReasonTextMap = {
-        collision: 'モンスターにぶつかりました',
-        timeup: '時間が0になりました',
+        retired: 'ここでいったん終了',
         goal: 'ゴールに到達しました',
-        manual: 'ここでいったん終了',
-        unknown: '終了理由：不明',
+        timeout: '時間が0になりました',
       };
       const totalAnswered = (result.correctCount || 0) + (result.wrongCount || 0);
       const accuracy = totalAnswered > 0
@@ -150,9 +168,9 @@ const dashResultScreen = {
         const stageLabel = getDashStageLabelJa(normalizedStageId);
         domRefs.dashResult.stage.textContent = `ステージ：${stageLabel}`;
       }
+      const normalizedReason = normalizeDashResultEndReason(result);
       if (domRefs.dashResult.reason) {
-        const normalizedReason = typeof result.endReason === 'string' ? result.endReason : 'unknown';
-        domRefs.dashResult.reason.textContent = `終了メモ：${endReasonTextMap[normalizedReason] ?? endReasonTextMap.unknown}`;
+        domRefs.dashResult.reason.textContent = `終了メモ：${endReasonTextMap[normalizedReason]}`;
         domRefs.dashResult.reason.hidden = false;
       }
 
@@ -161,7 +179,7 @@ const dashResultScreen = {
       const isScoreAttack60 = result.mode === 'scoreAttack60';
       if (modeSummary) {
         if (isGoalRun) {
-          const cleared = result.cleared === true;
+          const cleared = normalizedReason === 'goal';
           const clearOrFail = cleared ? 'CLEAR' : 'FAILED';
           const rank = String(result.rank || 'C');
           const reachedDistance = Number.isFinite(result.distanceM) ? result.distanceM.toFixed(1) : '0.0';

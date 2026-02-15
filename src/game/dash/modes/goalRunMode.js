@@ -44,7 +44,7 @@ const goalRunModeStrategy = {
       return { ended: true, endReason: 'goal', cleared: true };
     }
     if (Number.isFinite(timeLeftMs) && timeLeftMs <= 0) {
-      return { ended: true, endReason: 'timeup', cleared: false };
+      return { ended: true, endReason: 'timeout', cleared: false };
     }
     return { ended: false, endReason: null, cleared: false };
   },
@@ -93,7 +93,7 @@ const goalRunModeStrategy = {
       timeLeftMs: safeTimeLeft,
       stageId: toDashStageId(stageId),
       endReason,
-      retired: false,
+      retired: endReason === 'retired',
       cleared,
       goalDistanceM,
       clearTimeMs: cleared ? elapsedMs : null,

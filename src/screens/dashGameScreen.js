@@ -251,6 +251,13 @@ const isDashStartDebugLogEnabled = () => {
 };
 const clamp01 = (value) => Math.max(0, Math.min(Number(value) || 0, 1));
 
+const normalizeDashEndReason = (endReason) => {
+  if (endReason === 'goal') return 'goal';
+  if (endReason === 'retired' || endReason === 'manual') return 'retired';
+  if (endReason === 'timeout' || endReason === 'timeup' || endReason === 'collision') return 'timeout';
+  return 'timeout';
+};
+
 const dashGameScreen = {
   answerBuffer: '',
   isSyncingAnswer: false,
@@ -272,7 +279,7 @@ const dashGameScreen = {
     const modeContext = this.getModeContext();
     const decision = this.modeStrategy?.checkEnd?.(modeContext);
     if (decision?.ended) {
-      this.endSession(decision.endReason ?? 'unknown', decision);
+      this.endSession(decision.endReason ?? 'timeout', decision);
       return true;
     }
     return false;
@@ -2510,7 +2517,7 @@ const dashGameScreen = {
     console.log('[BGM] dash stop');
     audioManager.stopBgm();
   },
-  endSession(endReason = 'unknown', modeEndDecision = null) {
+  endSession(endReason = 'timeout', modeEndDecision = null) {
     if (this.hasEnded) {
       return;
     }
@@ -2521,11 +2528,12 @@ const dashGameScreen = {
       );
       console.trace('[dash-debug][SESSION:end]');
     }
+    const normalizedEndReason = normalizeDashEndReason(endReason);
     this.hasEnded = true;
     this.stopBgm();
     this.stopLoop();
     const endFx = this.modeStrategy?.onBeforeEnd?.({
-      endReason,
+      endReason: normalizedEndReason,
       modeRuntime: this.modeRuntime,
       modeEndDecision,
     }) ?? null;
@@ -2547,7 +2555,7 @@ const dashGameScreen = {
       maxStreak: this.maxStreak,
       timeLeftMs: this.timeLeftMs,
       stageId: gameState.dash?.stageId,
-      endReason,
+      endReason: normalizedEndReason,
       initialTimeLimitMs: this.initialTimeLimitMs,
       modeRuntime: this.modeRuntime,
       hits: this.collisionHits,
@@ -2557,7 +2565,7 @@ const dashGameScreen = {
       mode: this.currentDashModeId,
       timeLeftMs: Math.max(0, this.timeLeftMs),
       stageId: toDashStageId(gameState.dash?.stageId),
-      retired: endReason !== 'timeup',
+      retired: normalizedEndReason === 'retired',
     };
     const delayMs = Math.max(0, Number(endFx?.delayMs) || 0);
     if (delayMs > 0) {
@@ -2712,7 +2720,7 @@ const dashGameScreen = {
         return;
       }
       audioManager.playSfx('sfx_cancel');
-      this.endSession('manual');
+      this.endSession('retired');
     };
     this.events.on(domRefs.dashGame.backButton, 'click', this.handleBack);
 
