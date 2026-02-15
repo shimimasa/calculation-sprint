@@ -138,9 +138,9 @@ const dashResultScreen = {
     this.events = createEventRegistry('dash-result');
     const renderResult = (result, options = {}) => {
       const endReasonTextMap = {
-        retired: 'ここでいったん終了',
-        goal: 'ゴールに到達しました',
-        timeout: '時間が0になりました',
+        retired: 'ちゅうだん',
+        goal: 'ゴール！',
+        timeout: 'じかんぎれ',
       };
       const totalAnswered = (result.correctCount || 0) + (result.wrongCount || 0);
       const accuracy = totalAnswered > 0
@@ -187,13 +187,13 @@ const dashResultScreen = {
             ? `クリアタイム: ${formatGoalRunClearTime(result.clearTimeMs)}`
             : `到達距離: ${reachedDistance}m`;
           modeSummary.hidden = false;
-          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Goal Run</p><p class="dash-result-mode-summary__status" data-cleared="${cleared ? '1' : '0'}">${clearOrFail}</p><p class="dash-result-mode-summary__detail">${clearTimeLabel}</p><p class="dash-result-mode-summary__detail">被弾: ${Number(result.hits) || 0} / 最大コンボ: ${Number(result.maxStreak) || 0} / ランク: ${rank}</p>`;
+          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Goal Run</p><p class="dash-result-mode-summary__status" data-cleared="${cleared ? '1' : '0'}">${clearOrFail}</p><p class="dash-result-mode-summary__detail">${clearTimeLabel}</p><p class="dash-result-mode-summary__detail">せいかい: ${Number(result.correctCount) || 0} / ミス: ${Number(result.wrongCount) || 0} / ぶつかった: ${Number(result.hits) || 0}</p><p class="dash-result-mode-summary__detail">せいかいりつ: ${accuracy.toFixed(1)}% / ランク: ${rank}</p>`;
         } else if (isScoreAttack60) {
           const recordState = getScoreAttackRecordState(result, options.previousStats);
           const score = Number(result.score ?? result.totalScore ?? 0);
           const newBadge = recordState.isNewRecord ? '<span class="badge dash-badge-new">NEW RECORD</span>' : '';
           modeSummary.hidden = false;
-          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Score Attack 60</p><p class="dash-result-mode-summary__status" data-cleared="1">Total Score: ${score}${newBadge}</p><p class="dash-result-mode-summary__detail">Max Combo: ${Number(result.maxCombo) || 0} / Correct: ${Number(result.correctCount) || 0} / Wrong: ${Number(result.wrongCount) || 0}</p><p class="dash-result-mode-summary__detail">Hits: ${Number(result.hits) || 0}</p><p class="dash-result-mode-summary__detail">ミスやぶつかりで じかんがへるよ。60びょうで どれだけスコアをかせげるか！</p>`;
+          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Score Attack 60</p><p class="dash-result-mode-summary__status" data-cleared="1">スコア: ${score}${newBadge}</p><p class="dash-result-mode-summary__detail">せいかい: ${Number(result.correctCount) || 0} / ミス: ${Number(result.wrongCount) || 0} / ぶつかった: ${Number(result.hits) || 0}</p><p class="dash-result-mode-summary__detail">せいかいりつ: ${accuracy.toFixed(1)}% / さいだいコンボ: ${Number(result.maxCombo) || 0}</p><p class="dash-result-mode-summary__detail">ミスやぶつかりで じかんがへるよ。60びょうで どれだけスコアをかせげるか！</p>`;
         } else {
           modeSummary.hidden = true;
           modeSummary.textContent = '';
