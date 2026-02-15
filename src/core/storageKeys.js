@@ -23,12 +23,15 @@ export const makeKey = (storeName, profileId = DEFAULT_PROFILE_ID, version = DEF
 
 export const STORE_NAMES = Object.freeze({
   dashSession: 'dash.session',
+  dashSettings: 'dash.settings',
+  dashStats: 'dash.stats',
   daily: 'daily',
   todayRankDistance: 'rank.distance.today',
   stageProgress: 'stageProgress',
 });
 
 export const LEGACY_MIGRATION_KEYS = Object.freeze({
+  dashSettingsMuted: `${STORAGE_META_SCOPE}::migration::${STORE_NAMES.dashSettings}.muted.${DEFAULT_SCHEMA_VERSION}`,
   daily: `${STORAGE_META_SCOPE}::migration::${STORE_NAMES.daily}.${DEFAULT_SCHEMA_VERSION}`,
   todayRankDistance: `${STORAGE_META_SCOPE}::migration::${STORE_NAMES.todayRankDistance}.${DEFAULT_SCHEMA_VERSION}`,
   stageProgress: `${STORAGE_META_SCOPE}::migration::${STORE_NAMES.stageProgress}.${DEFAULT_SCHEMA_VERSION}`,

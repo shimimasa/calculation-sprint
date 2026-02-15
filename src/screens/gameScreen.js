@@ -7,9 +7,13 @@ import questionGenerator from '../features/questionGenerator.js';
 import buildReviewSummary from '../core/reviewSummary.js';
 import stageProgressStore from '../core/stageProgressStore.js';
 import { applyStageSettings, findStageById } from '../features/stages.js';
+import { normalizeRunBgThemeId } from '../features/backgroundThemes.js';
 import audioManager from '../core/audioManager.js';
 import inputActions from '../core/inputActions.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
+import { waitForImageDecode } from '../core/imageDecode.js';
+import { getStageCorePreloadPromise } from '../core/stageAssetPreloader.js';
+import { isStageFrameWaitEnabled, perfLog } from '../core/perf.js';
 
 const RUNNER_X_MIN_RATIO = 0.08;
 const RUNNER_X_MAX_RATIO = 0.3;
@@ -37,6 +41,18 @@ const DEFAULT_CLOUD_WIDTH = 220;
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
 const COUNTDOWN_SFX_THRESHOLDS = Object.freeze([10, 5, 3, 2, 1]);
+const MODE_TO_BGM_ID = Object.freeze({
+  add: 'bgm_add',
+  plus: 'bgm_add',
+  sub: 'bgm_sub',
+  minus: 'bgm_sub',
+  mul: 'bgm_mul',
+  multi: 'bgm_mul',
+  div: 'bgm_div',
+  divide: 'bgm_div',
+  mix: 'bgm_mix',
+  dash: 'bgm_dash',
+});
 const isReviewModeActive = (state) => Boolean(state?.isReviewMode);
 const EFFECT_BY_LEVEL = {
   0: { glow: 0.8, line: 0.9, boost: 0.95 },
@@ -95,24 +111,22 @@ const extractCssUrl = (value) => {
   const match = value.match(/url\((['"]?)(.*?)\1\)/);
   return match ? match[2] : '';
 };
-const waitForImageDecode = (img) => {
-  if (img.decode) {
-    return img.decode().catch(() => new Promise((resolve) => {
-      img.onload = resolve;
-      img.onerror = resolve;
-    }));
-  }
-  return new Promise((resolve) => {
-    img.onload = resolve;
-    img.onerror = resolve;
-  });
-};
 const loadCloudBaseWidth = async (src) => {
   const img = new Image();
   img.decoding = 'async';
   img.src = src;
   await waitForImageDecode(img);
   return img.naturalWidth || DEFAULT_CLOUD_WIDTH;
+};
+const resolveStageBgmId = (stage) => {
+  if (!stage) {
+    return null;
+  }
+  if (stage.theme?.bgmId) {
+    return stage.theme.bgmId;
+  }
+  const normalizedMode = String(stage.settings?.mode ?? '').trim().toLowerCase();
+  return MODE_TO_BGM_ID[normalizedMode] ?? null;
 };
 const getGroundSurfaceInsetPx = () => {
   const inset = parseFloat(
@@ -185,7 +199,7 @@ const gameScreen = {
         delete dataset.worldId;
       }
       if (shouldApplyTheme) {
-        element.setAttribute('data-bg-theme', stage.theme?.bgThemeId ?? 'default');
+        element.setAttribute('data-bg-theme', normalizeRunBgThemeId(stage.theme?.bgThemeId));
         element.setAttribute('data-bgm-id', stage.theme?.bgmId ?? '');
       } else {
         element.removeAttribute('data-bg-theme');
@@ -511,7 +525,7 @@ const gameScreen = {
     }
     this.applyStageThemeHooks();
     if (gameState.playMode === 'stage' && gameState.selectedStage) {
-      const stageBgmId = gameState.selectedStage.theme?.bgmId
+      const stageBgmId = resolveStageBgmId(gameState.selectedStage)
         ?? domRefs.screens.game?.dataset?.bgmId
         ?? null;
       audioManager.setBgm(stageBgmId);
@@ -557,7 +571,20 @@ const gameScreen = {
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false;
     this.applyWorldTuning();
-    this.initRunBackgrounds();
+    const stagePreloadPromise = getStageCorePreloadPromise(gameState.selectedStageId, { mode: 'stage' });
+    const scheduleInitRunBackgrounds = async () => {
+      if (isStageFrameWaitEnabled() && stagePreloadPromise) {
+        await Promise.race([
+          stagePreloadPromise,
+          new Promise((resolve) => window.setTimeout(resolve, 50)),
+        ]);
+      }
+      this.initRunBackgrounds();
+      perfLog('screen.first-frame', { screen: 'game', stageId: gameState.selectedStageId ?? null });
+    };
+    window.requestAnimationFrame(() => {
+      scheduleInitRunBackgrounds();
+    });
 
     if (domRefs.game.keypad) {
       domRefs.game.keypad.hidden = true;

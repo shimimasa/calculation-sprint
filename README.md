@@ -30,3 +30,25 @@
 ## ADR
 
 - [spec/adr](./spec/adr/)
+
+
+## Dash撃破数の確認手順（手動）
+
+1. タイトルから Dash Run を開始する。
+2. 敵を3体倒す（正解で敵を倒す）。
+3. プレイ中HUDの「たおした敵の数」が 1 → 2 → 3 と増えることを確認する。
+4. Dash終了後、結果画面の「たおした敵の数」が HUD の最終値と一致することを確認する。
+
+## Dash World/Level 回帰チェック
+
+- Worldカードクリックでは即開始せず、展開のみ行う。
+- 展開後に Level を選択し「このレベルでスタート」で開始する。
+- モード切替（Infinite/GoalRun/ScoreAttack60）後も上記挙動を維持する。
+- mixステージでも上記挙動を維持する。
+
+## Dash World/Level デバッグログ
+
+- `?dashDebug=1`（または `window.__DASH_DEBUG === true`）時のみ、Dashステージ選択のクリック経路ログを `console.log` 出力する。
+- `Worldカード=expandのみ` の判断ログに加え、`LEVEL` / `このレベルでスタート` / `閉じる` の専用ログが出る。
+- 通常URL（`?dashDebug` なし）ではこれらのログは出ない。
+

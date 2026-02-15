@@ -1,10 +1,43 @@
-const ENEMY_TYPE = 'plus';
-const ENEMY_STATES = ['walk', 'hit', 'dead'];
+import { normalizeDashStageId } from './dashStages.js';
+
+const DEFAULT_ENEMY_TYPE = 'plus';
+const DASH_STAGE_TO_ENEMY_TYPE = Object.freeze({
+  plus: 'plus',
+  minus: 'minus',
+  multi: 'multi',
+  divide: 'divide',
+});
+const ENEMY_TYPES = Object.freeze(['plus', 'minus', 'multi', 'divide']);
+const ENEMY_DEFAULT_MAX_HP = 1;
+const ENEMY_LABEL_BY_TYPE = Object.freeze({
+  plus: 'プラス',
+  minus: 'マイナス',
+  multi: 'かけ算',
+  divide: 'わり算',
+});
+const ENEMY_MAX_HP_BY_TYPE = Object.freeze({
+  plus: 1,
+  minus: 1,
+  multi: 1,
+  divide: 1,
+});
+const ENEMY_FOOT_OFFSETS = Object.freeze({
+  plus: 0,
+  minus: 0,
+  multi: 0,
+  divide: 0,
+});
+const ENEMY_STATES = Object.freeze([
+  'approaching',
+  'collision_resolved',
+  'defeated_hit',
+  'defeated_end',
+]);
 const ENEMY_SIZE_PX = 72;
 const MIN_SPAWN_GAP_PX = 96;
 const MIN_REACTION_DISTANCE_PX = 180;
-const MIN_TIME_TO_COLLISION_SEC = 2.2;
-const HIT_START_DELAY_MS = 150;
+const ENEMY_SPAWN_SCREEN_X_RATIO = 0.99;
+const ENEMY_SPAWN_SAFE_MARGIN_PX = 16;
 const HIT_DURATION_MS = 120;
 const DEAD_DURATION_MS = 300;
 const HIT_PULL_DURATION_MS = 80;
@@ -13,8 +46,7 @@ const HIT_FLASH_MS = 40;
 const HIT_FLASH_SCALE = 1.03;
 const MAX_ENEMIES = 2;
 const START_GRACE_MS = 2500;
-const COLLISION_KNOCKBACK_PX = 120;
-const COLLISION_INVULN_MS = 700;
+const COLLISION_RESOLVE_MS = 160;
 const BASE_SPEED_PX_PER_SEC = 220;
 const SPEED_PER_CORRECT_PX_PER_SEC = 2.0;
 const SPEED_PER_SEC_PX_PER_SEC = 1.5;
@@ -25,16 +57,151 @@ const SPAWN_INTERVAL_DECAY_MS_PER_SEC = 18;
 export const ATTACK_WINDOW_MS = 250;
 export const PX_PER_METER = 100;
 
-const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'walk');
+const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'approaching');
+
+const isDefeatedState = (enemy) => enemy?.state === 'defeated_hit' || enemy?.state === 'defeated_end';
+
+const isInDefeatPipeline = (enemy) => (
+  Number.isFinite(enemy?.hitAtTs)
+  || enemy?.pendingVisualState === 'hit'
+  || enemy?.pendingVisualState === 'dead'
+  || enemy?.attackHandled === true
+);
 
 const getEnemyAssetPath = (type, state) => `assets/enemy/enemy_${type}_${state}.png`;
 
-const intersects = (a, b) => (
-  a.x < b.x + b.w
-  && a.x + a.w > b.x
-  && a.y < b.y + b.h
-  && a.y + a.h > b.y
+const normalizeEnemyType = (enemyType) => (
+  ENEMY_TYPES.includes(enemyType) ? enemyType : null
 );
+
+const normalizeEnemyPool = (enemyPool) => {
+  if (!Array.isArray(enemyPool)) {
+    return [];
+  }
+  return enemyPool
+    .map((enemyType) => normalizeEnemyType(enemyType))
+    .filter((enemyType, index, list) => enemyType && list.indexOf(enemyType) === index);
+};
+
+const resolveEnemyTypeForStage = ({
+  stageId,
+  getEnemyType,
+  getEnemyPool,
+}) => {
+  const resolvedByGetter = normalizeEnemyType(getEnemyType?.());
+  if (resolvedByGetter) {
+    return resolvedByGetter;
+  }
+
+  const normalizedStageId = normalizeDashStageId(stageId);
+  if (normalizedStageId && normalizedStageId !== 'mix') {
+    return DASH_STAGE_TO_ENEMY_TYPE[normalizedStageId] ?? DEFAULT_ENEMY_TYPE;
+  }
+
+  const enemyPool = normalizeEnemyPool(getEnemyPool?.());
+  if (!normalizedStageId) {
+    if (enemyPool.length === 0) {
+      return DEFAULT_ENEMY_TYPE;
+    }
+    const poolIndex = Math.floor(Math.random() * enemyPool.length);
+    return enemyPool[poolIndex] ?? DEFAULT_ENEMY_TYPE;
+  }
+
+  const pool = enemyPool.length > 0 ? enemyPool : ENEMY_TYPES;
+  const poolIndex = Math.floor(Math.random() * pool.length);
+  return pool[poolIndex] ?? DEFAULT_ENEMY_TYPE;
+};
+
+const toFiniteOrNull = (value) => (Number.isFinite(value) ? value : null);
+
+const normalizeRect = (rect) => {
+  if (!rect || typeof rect !== 'object') {
+    return null;
+  }
+
+  const x = toFiniteOrNull(rect.x);
+  const y = toFiniteOrNull(rect.y);
+  const wCandidate = toFiniteOrNull(rect.w ?? rect.width);
+  const hCandidate = toFiniteOrNull(rect.h ?? rect.height);
+  const leftCandidate = toFiniteOrNull(rect.left);
+  const topCandidate = toFiniteOrNull(rect.top);
+  const rightCandidate = toFiniteOrNull(rect.right);
+  const bottomCandidate = toFiniteOrNull(rect.bottom);
+
+  let left = leftCandidate;
+  let top = topCandidate;
+  let right = rightCandidate;
+  let bottom = bottomCandidate;
+
+  if (left === null && x !== null) {
+    left = x;
+  }
+  if (top === null && y !== null) {
+    top = y;
+  }
+
+  if (right === null && left !== null && wCandidate !== null) {
+    right = left + wCandidate;
+  }
+  if (bottom === null && top !== null && hCandidate !== null) {
+    bottom = top + hCandidate;
+  }
+
+  if (left === null && right !== null && wCandidate !== null) {
+    left = right - wCandidate;
+  }
+  if (top === null && bottom !== null && hCandidate !== null) {
+    top = bottom - hCandidate;
+  }
+
+  if ([left, top, right, bottom].some((value) => value === null)) {
+    return null;
+  }
+
+  if (right < left) {
+    [left, right] = [right, left];
+  }
+  if (bottom < top) {
+    [top, bottom] = [bottom, top];
+  }
+
+  const width = Math.abs(right - left);
+  const height = Math.abs(bottom - top);
+
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width,
+    height,
+    x: left,
+    y: top,
+    w: width,
+    h: height,
+  };
+};
+
+const intersectsNormalized = (aRect, bRect) => {
+  const a = normalizeRect(aRect);
+  const b = normalizeRect(bRect);
+  if (!a || !b) {
+    return false;
+  }
+  return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+};
+
+const intersectsRawXYWH = (a, b) => {
+  if (!a || !b) {
+    return false;
+  }
+  return (
+    a.x < b.x + b.w
+    && a.x + a.w > b.x
+    && a.y < b.y + b.h
+    && a.y + a.h > b.y
+  );
+};
 
 const getEnemyTransform = (enemy) => (
   `translate3d(${Math.round(enemy.x)}px, ${Math.round(enemy.y)}px, 0)`
@@ -60,23 +227,84 @@ const ensureEnemyContainer = (worldEl, containerEl) => {
   return created;
 };
 
-const createEnemyElement = (type, state) => {
+const getEnemyDisplayName = (type) => ENEMY_LABEL_BY_TYPE[type] ?? 'モンスター';
+const getEnemyMaxHp = (type) => {
+  const configuredMaxHp = ENEMY_MAX_HP_BY_TYPE[type];
+  if (Number.isFinite(configuredMaxHp) && configuredMaxHp > 0) {
+    return configuredMaxHp;
+  }
+  return ENEMY_DEFAULT_MAX_HP;
+};
+
+const buildEnemyLabel = (enemy) => {
+  const labelEl = document.createElement('div');
+  labelEl.className = 'enemy-label';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'enemy-name';
+  nameEl.textContent = enemy.name;
+
+  const hpEl = document.createElement('div');
+  hpEl.className = 'enemy-hp';
+
+  const hpFillEl = document.createElement('div');
+  hpFillEl.className = 'enemy-hp__fill';
+  hpEl.appendChild(hpFillEl);
+
+  labelEl.append(nameEl, hpEl);
+  return { labelEl, hpFillEl };
+};
+
+const createEnemyElement = (enemy) => {
+  const wrap = document.createElement('div');
+  wrap.className = 'enemy-wrap';
+  wrap.dataset.enemyName = enemy.name;
+  wrap.dataset.hp = String(enemy.hp);
+  wrap.dataset.hpMax = String(enemy.maxHp);
+
   const img = document.createElement('img');
   img.className = 'enemy-sprite';
   img.alt = '';
   img.decoding = 'async';
   img.loading = 'eager';
-  img.src = getEnemyAssetPath(type, state);
+  img.src = getEnemyAssetPath(enemy.type, enemy.visualState ?? 'walk');
   img.draggable = false;
-  return img;
+
+  const { labelEl, hpFillEl } = buildEnemyLabel(enemy);
+  wrap.append(img, labelEl);
+
+  return {
+    wrap,
+    sprite: img,
+    hpFill: hpFillEl,
+  };
 };
 
-const setEnemySprite = (enemy, state) => {
-  if (!enemy?.el || enemy.visualState === state) {
+const updateEnemyHud = (enemy) => {
+  if (!enemy?.el) {
     return;
   }
-  enemy.visualState = state;
-  enemy.el.src = getEnemyAssetPath(enemy.type, state);
+  const hpRatio = enemy.maxHp > 0 ? Math.max(0, Math.min(1, enemy.hp / enemy.maxHp)) : 0;
+  enemy.el.dataset.hp = String(enemy.hp);
+  enemy.el.dataset.hpMax = String(enemy.maxHp);
+  enemy.hpFillEl?.style.setProperty('transform', `scaleX(${hpRatio.toFixed(3)})`);
+};
+
+const setEnemySprite = (enemy, visualState) => {
+  if (!enemy?.el || enemy.visualState === visualState) {
+    return false;
+  }
+  enemy.visualState = visualState;
+  enemy.spriteEl.src = getEnemyAssetPath(enemy.type, visualState);
+  return true;
+};
+
+const applyEnemyStateClasses = (enemy) => {
+  if (!enemy?.el) {
+    return;
+  }
+  enemy.el.classList.toggle('is-collision-resolved', enemy.state === 'collision_resolved');
+  enemy.el.classList.toggle('is-defeated', isDefeatedState(enemy));
 };
 
 const getSpeedPxPerSec = ({ correctCount = 0, elapsedSec = 0 }) => -(
@@ -85,7 +313,19 @@ const getSpeedPxPerSec = ({ correctCount = 0, elapsedSec = 0 }) => -(
   + elapsedSec * SPEED_PER_SEC_PX_PER_SEC
 );
 
-export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
+export const createDashEnemySystem = ({
+  worldEl,
+  containerEl,
+  stageId = null,
+  getEnemyType = null,
+  getEnemyPool = null,
+  getCurrentMode = null,
+  isDebugEnabled = null,
+  isEnemyDebugEnabled = null,
+  isCollisionTestModeEnabled = null,
+  isCollisionDebugEnabled = null,
+  onCollisionDebug = null,
+} = {}) => {
   const system = {
     worldEl,
     containerEl,
@@ -93,11 +333,186 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     spawnTimerMs: START_GRACE_MS,
     elapsedMs: 0,
     idCounter: 0,
+    stageId,
+    getEnemyType,
+    getEnemyPool,
+    getCurrentMode,
+    isDebugEnabled,
+    isEnemyDebugEnabled,
+    isCollisionTestModeEnabled,
+    isCollisionDebugEnabled,
+    onCollisionDebug,
+    lastCollisionTestLogKey: '',
+    enemyDebugCounters: {
+      defeatStartCount: 0,
+      hitShownCount: 0,
+      endShownCount: 0,
+      removeAfterEndCount: 0,
+      offscreenRemoveCount: 0,
+      unexpectedRemoveCount: 0,
+    },
+    enemyDebugById: new Map(),
+    lastEnemyDebugSummaryAtMs: -Infinity,
+  };
+
+  system.isEnemyDebugActive = () => system.isEnemyDebugEnabled?.() === true;
+
+  system.getEnemyDebugEntry = (enemyId) => {
+    if (!enemyId) {
+      return null;
+    }
+    const existing = system.enemyDebugById.get(enemyId);
+    if (existing) {
+      return existing;
+    }
+    const created = {
+      enemyId,
+      sawDefeat: false,
+      sawHit: false,
+      sawEnd: false,
+      removed: false,
+      removeReason: null,
+    };
+    system.enemyDebugById.set(enemyId, created);
+    return created;
+  };
+
+  system.logEnemyDebug = (label, payload) => {
+    if (!system.isEnemyDebugActive()) {
+      return;
+    }
+    console.log(`[dash-debug][ENEMY:${label}]`, payload);
+  };
+
+  system.trackEnemySpriteShown = (enemy, visualState, nowMs) => {
+    if (!system.isEnemyDebugActive()) {
+      return;
+    }
+    const entry = system.getEnemyDebugEntry(enemy?.id);
+    if (entry) {
+      if (visualState === 'hit' && !entry.sawHit) {
+        entry.sawHit = true;
+        system.enemyDebugCounters.hitShownCount += 1;
+      }
+      if (visualState === 'dead' && !entry.sawEnd) {
+        entry.sawEnd = true;
+        system.enemyDebugCounters.endShownCount += 1;
+      }
+    }
+    system.logEnemyDebug('sprite', {
+      enemyId: enemy?.id ?? null,
+      spriteName: visualState,
+      nowMs: Math.round(nowMs),
+      state: enemy?.state ?? null,
+      hitAtTs: enemy?.hitAtTs ?? null,
+      stateUntilMs: enemy?.stateUntilMs ?? null,
+    });
+  };
+
+  system.removeEnemy = (enemy, removeReason, nowMs) => {
+    enemy.isAlive = false;
+    enemy.el?.remove();
+    if (!system.isEnemyDebugActive()) {
+      return;
+    }
+    const entry = system.getEnemyDebugEntry(enemy?.id);
+    const removedInDefeatedState = isDefeatedState(enemy);
+    const isOffscreenRemove = removeReason === 'offscreen';
+    const isCollisionTimeoutRemove = removeReason === 'collision_resolved_timeout';
+    const hasStateInconsistency = Number.isFinite(enemy?.hitAtTs) && !isDefeatedState(enemy);
+    if (entry) {
+      entry.removed = true;
+      entry.removeReason = removeReason;
+      if (entry.sawEnd && removeReason === 'defeated_end_timeout') {
+        system.enemyDebugCounters.removeAfterEndCount += 1;
+      }
+      if (isOffscreenRemove) {
+        system.enemyDebugCounters.offscreenRemoveCount += 1;
+      }
+      const isUnexpected = (
+        isCollisionTimeoutRemove
+        || (removedInDefeatedState && removeReason !== 'defeated_end_timeout')
+        || hasStateInconsistency
+      );
+      if (isUnexpected) {
+        system.enemyDebugCounters.unexpectedRemoveCount += 1;
+      }
+    }
+    system.logEnemyDebug('remove', {
+      enemyId: enemy?.id ?? null,
+      removeReason,
+      nowMs: Math.round(nowMs),
+      state: enemy?.state ?? null,
+      x: Number.isFinite(enemy?.x) ? Number(enemy.x.toFixed(2)) : null,
+    });
+  };
+
+  system.logEnemyDebugSummary = (nowMs = window.performance.now()) => {
+    if (!system.isEnemyDebugActive()) {
+      return;
+    }
+    if (nowMs - system.lastEnemyDebugSummaryAtMs < 200) {
+      return;
+    }
+    system.lastEnemyDebugSummaryAtMs = nowMs;
+    const unresolved = [];
+    system.enemyDebugById.forEach((entry) => {
+      if (entry.removed && ((entry.sawHit && entry.sawEnd) || entry.removeReason === 'offscreen')) {
+        return;
+      }
+      unresolved.push({
+        enemyId: entry.enemyId,
+        hitReached: entry.sawHit,
+        endReached: entry.sawEnd,
+        removed: entry.removed,
+        removeReason: entry.removeReason,
+      });
+    });
+    system.logEnemyDebug('summary', {
+      counters: { ...system.enemyDebugCounters },
+      unresolved,
+    });
   };
 
   system.setWorld = (nextWorld, nextContainer) => {
     system.worldEl = nextWorld ?? system.worldEl;
     system.containerEl = ensureEnemyContainer(system.worldEl, nextContainer ?? system.containerEl);
+  };
+
+  system.setStageId = (nextStageId) => {
+    system.stageId = nextStageId;
+  };
+
+  system.setEnemyTypeResolver = (resolver) => {
+    system.getEnemyType = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setEnemyPoolResolver = (resolver) => {
+    system.getEnemyPool = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setCurrentModeResolver = (resolver) => {
+    system.getCurrentMode = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setCollisionDebugLogger = (logger) => {
+    system.onCollisionDebug = typeof logger === 'function' ? logger : null;
+  };
+
+  system.setDebugEnabledResolver = (resolver) => {
+    system.isDebugEnabled = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setEnemyDebugEnabledResolver = (resolver) => {
+    system.isEnemyDebugEnabled = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setCollisionTestModeEnabledResolver = (resolver) => {
+    system.isCollisionTestModeEnabled = typeof resolver === 'function' ? resolver : null;
+  };
+
+  system.setCollisionDebugEnabledResolver = (resolver) => {
+    system.isCollisionDebugEnabled = typeof resolver === 'function' ? resolver : null;
   };
 
   system.reset = () => {
@@ -107,6 +522,17 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     system.enemies = [];
     system.spawnTimerMs = START_GRACE_MS;
     system.elapsedMs = 0;
+    system.previousEnemyType = null;
+    system.enemyDebugCounters = {
+      defeatStartCount: 0,
+      hitShownCount: 0,
+      endShownCount: 0,
+      removeAfterEndCount: 0,
+      offscreenRemoveCount: 0,
+      unexpectedRemoveCount: 0,
+    };
+    system.enemyDebugById = new Map();
+    system.lastEnemyDebugSummaryAtMs = -Infinity;
   };
 
   system.destroy = () => {
@@ -120,7 +546,8 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
 
   system.spawnEnemy = ({
     nowMs,
-    groundY,
+    groundTopY,
+    cameraX = 0,
     speedPxPerSec,
     playerRect,
     minGapPx = MIN_SPAWN_GAP_PX,
@@ -136,13 +563,25 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     if (!worldWidth) {
       return null;
     }
-    const type = ENEMY_TYPE;
-    const state = 'walk';
+    const type = resolveEnemyTypeForStage({
+      stageId: system.stageId,
+      getEnemyType: system.getEnemyType,
+      getEnemyPool: system.getEnemyPool,
+    });
+    const state = 'approaching';
     const width = ENEMY_SIZE_PX;
     const height = ENEMY_SIZE_PX;
-    const baseOffset = width * 0.3;
-    const speedMagnitude = Math.abs(speedPxPerSec);
-    const spawnX = worldWidth + baseOffset + speedMagnitude * MIN_TIME_TO_COLLISION_SEC;
+    const collisionTestModeEnabled = system.isCollisionTestModeEnabled?.() === true;
+    const viewportW = worldWidth;
+    const safeCameraX = Number.isFinite(cameraX) ? cameraX : 0;
+    // Collision-test mode (debug only): spawn near player to force overlap without changing speed/timing.
+    const ratioSpawnX = safeCameraX + viewportW * ENEMY_SPAWN_SCREEN_X_RATIO;
+    const maxSpawnX = safeCameraX + viewportW - width - ENEMY_SPAWN_SAFE_MARGIN_PX;
+    const clampedRatioSpawnX = Math.min(ratioSpawnX, maxSpawnX);
+    const spawnX = collisionTestModeEnabled && playerRect
+      ? (playerRect.x + playerRect.w + 160)
+      : clampedRatioSpawnX;
+    const spawnClamped = !collisionTestModeEnabled && clampedRatioSpawnX < ratioSpawnX;
     const rightmostEnemyX = system.enemies.reduce((maxX, enemy) => (
       enemy?.isAlive ? Math.max(maxX, enemy.x + enemy.w) : maxX
     ), Number.NEGATIVE_INFINITY);
@@ -157,39 +596,79 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
         return null;
       }
     }
+    const maxHp = getEnemyMaxHp(type);
     const enemy = {
       id: `enemy-${system.idCounter += 1}`,
       type,
+      name: getEnemyDisplayName(type),
       state,
       x: spawnX,
-      y: Math.max(0, (groundY ?? 0) - height),
+      y: Math.max(0, ((groundTopY ?? 0) - height + (ENEMY_FOOT_OFFSETS[type] ?? 0))),
       w: width,
       h: height,
       vx: speedPxPerSec,
-      tStateUntil: null,
+      stateUntilMs: null,
       isAlive: true,
       hitAtTs: null,
-      visualState: state,
+      visualState: 'walk',
       pendingVisualState: null,
-      ignoreCollisionUntilMs: 0,
-      el: createEnemyElement(type, state),
+      collisionEnabled: true,
+      attackHandled: false,
+      collisionCooldownUntilMs: null,
+      hp: maxHp,
+      maxHp,
+      el: null,
+      spriteEl: null,
+      hpFillEl: null,
     };
+    const enemyElements = createEnemyElement(enemy);
+    enemy.el = enemyElements.wrap;
+    enemy.spriteEl = enemyElements.sprite;
+    enemy.hpFillEl = enemyElements.hpFill;
     enemy.el.style.width = `${width}px`;
     enemy.el.style.height = `${height}px`;
+    enemy.el.dataset.enemyId = enemy.id;
     enemy.el.style.transform = getEnemyTransform(enemy);
+    enemy.el.style.opacity = '1';
+    updateEnemyHud(enemy);
+    applyEnemyStateClasses(enemy);
     container.appendChild(enemy.el);
     system.enemies.push(enemy);
+    system.logEnemyDebug('spawn', {
+      enemyId: enemy.id,
+      spawnX: Number(enemy.x.toFixed(2)),
+      spawnY: Number(enemy.y.toFixed(2)),
+      cameraX: safeCameraX,
+      viewportW,
+      ratio: ENEMY_SPAWN_SCREEN_X_RATIO,
+      clamped: spawnClamped,
+      groundTopY: Number.isFinite(groundTopY) ? Number(groundTopY.toFixed(2)) : null,
+    });
     return enemy;
   };
 
-  system.defeatNearestEnemy = ({ playerRect, nowMs }) => {
+  system.damageEnemy = (enemy, amount = 1, nowMs = window.performance.now(), meta = null) => {
+    if (!enemy?.isAlive || enemy.state !== 'approaching') {
+      return { defeated: false, hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 0 };
+    }
+    const damage = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+    enemy.hp = Math.max(0, enemy.hp - damage);
+    updateEnemyHud(enemy);
+    if (enemy.hp <= 0) {
+      const defeated = system.requestDefeatEnemy(enemy, nowMs, meta);
+      return { defeated, hp: enemy.hp, maxHp: enemy.maxHp };
+    }
+    return { defeated: false, hp: enemy.hp, maxHp: enemy.maxHp };
+  };
+
+  system.defeatNearestEnemy = ({ playerRect, nowMs, callerTag = 'unknown' }) => {
     if (!playerRect) {
       return { defeated: false, target: null };
     }
     let nearestEnemy = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
     system.enemies.forEach((enemy) => {
-      if (!enemy?.isAlive || enemy.state === 'dead') {
+      if (!enemy?.isAlive || enemy.state !== 'approaching' || enemy.attackHandled) {
         return;
       }
       if (enemy.x + enemy.w < playerRect.x) {
@@ -204,7 +683,18 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     if (!nearestEnemy) {
       return { defeated: false, target: null };
     }
-    system.setEnemyState(nearestEnemy, 'hit', nowMs);
+    const damageResult = system.damageEnemy(nearestEnemy, 1, nowMs, { callerTag });
+    if (!damageResult.defeated) {
+      return {
+        defeated: false,
+        target: {
+          x: nearestEnemy.x,
+          y: nearestEnemy.y,
+          w: nearestEnemy.w,
+          h: nearestEnemy.h,
+        },
+      };
+    }
     return {
       defeated: true,
       target: {
@@ -216,42 +706,119 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     };
   };
 
-  system.setEnemyState = (enemy, nextState, nowMs) => {
+  system.requestDefeatEnemy = (enemy, nowMs, meta = null) => {
+    if (!enemy?.isAlive) {
+      return false;
+    }
+    if (isDefeatedState(enemy) || isInDefeatPipeline(enemy) || enemy.attackHandled) {
+      return false;
+    }
+    enemy.attackHandled = true;
+    system.setEnemyState(enemy, 'defeated_hit', nowMs, meta);
+    return true;
+  };
+
+  system.setEnemyState = (enemy, nextState, nowMs, meta = null) => {
+    const prevState = enemy.state;
     const state = clampState(nextState);
-    if (enemy.state === state) {
+    if (prevState === state) {
       return;
     }
     enemy.state = state;
-    if (state === 'hit') {
-      enemy.hitAtTs = nowMs + HIT_START_DELAY_MS;
-      enemy.tStateUntil = enemy.hitAtTs + HIT_DURATION_MS;
+    if (state === 'defeated_hit') {
+      enemy.collisionEnabled = false;
+      enemy.attackHandled = true;
+      enemy.hitAtTs = nowMs;
+      enemy.stateUntilMs = nowMs + HIT_DURATION_MS;
       enemy.pendingVisualState = 'hit';
-    } else if (state === 'dead') {
+      enemy.collisionCooldownUntilMs = null;
+    } else if (state === 'defeated_end') {
+      enemy.collisionEnabled = false;
+      enemy.attackHandled = true;
       enemy.hitAtTs = null;
       enemy.pendingVisualState = null;
-      enemy.tStateUntil = nowMs + DEAD_DURATION_MS;
-      setEnemySprite(enemy, state);
+      enemy.stateUntilMs = nowMs + DEAD_DURATION_MS;
+      enemy.collisionCooldownUntilMs = null;
+      if (setEnemySprite(enemy, 'dead')) {
+        system.trackEnemySpriteShown(enemy, 'dead', nowMs);
+      }
+    } else if (state === 'collision_resolved') {
+      enemy.collisionEnabled = false;
+      enemy.attackHandled = false;
+      enemy.hitAtTs = null;
+      enemy.pendingVisualState = null;
+      enemy.stateUntilMs = null;
+      enemy.collisionCooldownUntilMs = nowMs + COLLISION_RESOLVE_MS;
+      if (setEnemySprite(enemy, 'walk')) {
+        system.trackEnemySpriteShown(enemy, 'walk', nowMs);
+      }
     } else {
+      enemy.collisionEnabled = true;
+      enemy.attackHandled = false;
       enemy.hitAtTs = null;
       enemy.pendingVisualState = null;
-      enemy.tStateUntil = null;
-      setEnemySprite(enemy, state);
+      enemy.stateUntilMs = null;
+      enemy.collisionCooldownUntilMs = null;
+      if (setEnemySprite(enemy, 'walk')) {
+        system.trackEnemySpriteShown(enemy, 'walk', nowMs);
+      }
     }
+    if (state === 'defeated_hit') {
+      const entry = system.getEnemyDebugEntry(enemy.id);
+      if (entry && !entry.sawDefeat && system.isEnemyDebugActive()) {
+        entry.sawDefeat = true;
+        system.enemyDebugCounters.defeatStartCount += 1;
+      }
+    }
+    system.logEnemyDebug('state', {
+      enemyId: enemy.id,
+      transition: `${prevState}->${state}`,
+      nowMs: Math.round(nowMs),
+      callerTag: meta?.callerTag ?? 'unknown',
+      hitAtTs: enemy.hitAtTs,
+      stateUntilMs: enemy.stateUntilMs,
+      pendingVisualState: enemy.pendingVisualState,
+      collisionEnabled: enemy.collisionEnabled,
+      attackHandled: enemy.attackHandled,
+      x: Number.isFinite(enemy.x) ? Number(enemy.x.toFixed(2)) : null,
+      y: Number.isFinite(enemy.y) ? Number(enemy.y.toFixed(2)) : null,
+      w: enemy.w,
+      h: enemy.h,
+    });
+    applyEnemyStateClasses(enemy);
   };
 
   system.update = ({
     dtMs,
     nowMs,
     groundY,
+    worldGroundTopY = null,
+    cameraX = 0,
     playerRect,
     correctCount,
     attackActive,
+    defeatSequenceActive = false,
   }) => {
+    const resolvedGroundY = Number.isFinite(groundY) ? groundY : null;
     if (!Number.isFinite(dtMs) || dtMs <= 0) {
-      return { nearestDistancePx: null, collision: false, attackHandled: false };
+      return {
+        nearestDistancePx: null,
+        collision: false,
+        attackHandled: false,
+        events: [],
+        nearestEnemyRect: null,
+        resolvedGroundY,
+      };
     }
     if (!system.worldEl) {
-      return { nearestDistancePx: null, collision: false, attackHandled: false };
+      return {
+        nearestDistancePx: null,
+        collision: false,
+        attackHandled: false,
+        events: [],
+        nearestEnemyRect: null,
+        resolvedGroundY,
+      };
     }
     system.setWorld(system.worldEl, system.containerEl);
     const dtSec = dtMs / 1000;
@@ -275,7 +842,8 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
       }
       system.spawnEnemy({
         nowMs,
-        groundY,
+        groundTopY: worldGroundTopY,
+        cameraX,
         speedPxPerSec,
         playerRect,
       });
@@ -283,33 +851,49 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
     }
 
     let nearestDistancePx = Number.POSITIVE_INFINITY;
+    let nearestEnemyRect = null;
+    let nearestEnemyMetric = Number.POSITIVE_INFINITY;
     let collision = false;
     let attackHandled = false;
+    const events = [];
+    let firstEnemyRect = null;
+    let firstEnemyRectRaw = null;
+    let firstIntersectsRaw = false;
+    let firstIntersectsNorm = false;
+    let firstCollisionEnabled = false;
+    let firstPlayerRectRaw = null;
+    let firstEnemyRectNorm = null;
+    let firstPlayerRectNorm = null;
 
     system.enemies = system.enemies.filter((enemy) => {
       if (!enemy?.el) {
         return false;
       }
       enemy.vx = speedPxPerSec;
-      if (enemy.state === 'hit' && enemy.tStateUntil && nowMs >= enemy.tStateUntil) {
-        system.setEnemyState(enemy, 'dead', nowMs);
-      } else if (enemy.state === 'dead' && enemy.tStateUntil && nowMs >= enemy.tStateUntil) {
-        enemy.isAlive = false;
+      if (enemy.state === 'defeated_hit' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+        system.setEnemyState(enemy, 'defeated_end', nowMs, { callerTag: 'update:defeatedHitTimeout' });
+      } else if (enemy.state === 'defeated_end' && enemy.stateUntilMs && nowMs >= enemy.stateUntilMs) {
+        system.removeEnemy(enemy, 'defeated_end_timeout', nowMs);
+      } else if (enemy.state === 'collision_resolved'
+        && Number.isFinite(enemy.collisionCooldownUntilMs)
+        && nowMs >= enemy.collisionCooldownUntilMs) {
+        system.setEnemyState(enemy, 'approaching', nowMs, { callerTag: 'collision:cooldown_end' });
       }
 
       if (!enemy.isAlive) {
-        enemy.el.remove();
         return false;
       }
 
-      if (enemy.state === 'hit' && enemy.pendingVisualState && nowMs >= enemy.hitAtTs) {
-        setEnemySprite(enemy, enemy.pendingVisualState);
+      if (enemy.state === 'defeated_hit' && enemy.pendingVisualState && nowMs >= enemy.hitAtTs) {
+        if (setEnemySprite(enemy, enemy.pendingVisualState)) {
+          system.trackEnemySpriteShown(enemy, enemy.pendingVisualState, nowMs);
+        }
         enemy.pendingVisualState = null;
       }
 
       let hitPullPx = 0;
       let hitScale = 1;
-      if (enemy.state === 'hit' && Number.isFinite(enemy.hitAtTs)) {
+      if (enemy.state === 'defeated_hit' && Number.isFinite(enemy.hitAtTs)) {
         const hitElapsedMs = nowMs - enemy.hitAtTs;
         if (hitElapsedMs >= 0 && hitElapsedMs < HIT_PULL_DURATION_MS) {
           const progress = hitElapsedMs / HIT_PULL_DURATION_MS;
@@ -319,6 +903,16 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
           hitScale = HIT_FLASH_SCALE;
         }
       }
+
+      if (enemy.state === 'collision_resolved' && Number.isFinite(enemy.stateUntilMs)) {
+        const remainingMs = Math.max(0, enemy.stateUntilMs - nowMs);
+        const progress = 1 - (remainingMs / COLLISION_RESOLVE_MS);
+        const clamped = Math.max(0, Math.min(1, progress));
+        hitScale = 1 - 0.08 * clamped;
+        enemy.el.style.opacity = (1 - 0.55 * clamped).toFixed(3);
+      } else {
+        enemy.el.style.opacity = '1';
+      }
       enemy.el.style.setProperty('--enemy-hit-pull', `${hitPullPx.toFixed(2)}px`);
       enemy.el.style.setProperty('--enemy-hit-scale', hitScale.toFixed(3));
 
@@ -327,26 +921,130 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
       enemy.el.style.transform = getEnemyTransform(enemy);
 
       if (enemy.x + enemy.w < 0) {
-        enemy.el.remove();
+        system.removeEnemy(enemy, 'offscreen', nowMs);
         return false;
       }
 
-      if (playerRect && enemy.state === 'walk') {
+      if (enemy.isAlive && enemy.state === 'approaching') {
+        let metric = enemy.x;
+        if (playerRect) {
+          metric = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
+        }
+        if (metric < nearestEnemyMetric) {
+          nearestEnemyMetric = metric;
+          const collisionY = Number.isFinite(worldGroundTopY)
+            ? worldGroundTopY - enemy.h
+            : enemy.y;
+          nearestEnemyRect = {
+            x: enemy.x,
+            y: collisionY,
+            w: enemy.w,
+            h: enemy.h,
+          };
+        }
+      }
+
+      if (!firstEnemyRect && enemy.state === 'approaching') {
+        const collisionY = Number.isFinite(worldGroundTopY)
+          ? worldGroundTopY - enemy.h
+          : enemy.y;
+        firstEnemyRect = {
+          x: enemy.x,
+          y: collisionY,
+          w: enemy.w,
+          h: enemy.h,
+        };
+        firstEnemyRectRaw = {
+          x: enemy.x,
+          y: enemy.y,
+          w: enemy.w,
+          h: enemy.h,
+        };
+      }
+
+      if (playerRect && enemy.state === 'approaching' && enemy.collisionEnabled) {
         const distancePx = Math.max(0, enemy.x - (playerRect.x + playerRect.w));
         nearestDistancePx = Math.min(nearestDistancePx, distancePx);
-        if (!collision && nowMs >= enemy.ignoreCollisionUntilMs && intersects(playerRect, enemy)) {
-          collision = true;
-          enemy.ignoreCollisionUntilMs = nowMs + COLLISION_INVULN_MS;
-          const knockbackTargetX = Math.max(
-            enemy.x + COLLISION_KNOCKBACK_PX,
-            playerRect.x + playerRect.w + 1,
-          );
-          enemy.x = knockbackTargetX;
-          enemy.el.style.transform = getEnemyTransform(enemy);
-          if (attackActive) {
-            attackHandled = true;
-            system.setEnemyState(enemy, 'hit', nowMs);
+        const enemyRectRaw = {
+          x: enemy.x,
+          y: enemy.y,
+          w: enemy.w,
+          h: enemy.h,
+        };
+        const enemyRectForHit = {
+          x: enemy.x,
+          y: Number.isFinite(worldGroundTopY)
+            ? worldGroundTopY - enemy.h
+            : enemy.y,
+          w: enemy.w,
+          h: enemy.h,
+        };
+        const playerRectNorm = normalizeRect(playerRect);
+        const enemyRectNorm = normalizeRect(enemyRectForHit);
+        const isOverlapRaw = intersectsRawXYWH(playerRect, enemyRectForHit);
+        const isOverlap = intersectsNormalized(playerRect, enemyRectForHit);
+        if (!firstCollisionEnabled) {
+          firstCollisionEnabled = true;
+          firstIntersectsRaw = isOverlapRaw;
+          firstIntersectsNorm = isOverlap;
+          firstPlayerRectRaw = playerRect;
+          firstPlayerRectNorm = playerRectNorm;
+          firstEnemyRectNorm = enemyRectNorm;
+        }
+        if (system.isDebugEnabled?.()) {
+          const logKey = `${enemy.id}:${Math.round(nowMs)}`;
+          if (system.lastCollisionTestLogKey !== logKey) {
+            system.lastCollisionTestLogKey = logKey;
+            console.log('[dash-debug][COLLIDE:test]', {
+              enemyId: enemy.id,
+              playerRect,
+              playerRectNorm,
+              enemyRect: enemyRectRaw,
+              enemyRectForHit,
+              enemyRectNorm,
+              isOverlapRaw,
+              isOverlap,
+              state: enemy.state,
+              collisionEnabled: enemy.collisionEnabled,
+            });
           }
+        }
+        if (!collision && isOverlap) {
+          system.onCollisionDebug?.({
+            stage: 'overlap',
+            enemyId: enemy.id,
+            nowMs,
+            attackActive: Boolean(attackActive),
+            defeatSequenceActive: Boolean(defeatSequenceActive),
+          });
+          if (attackActive) {
+            const defeatedByOverlap = system.requestDefeatEnemy(enemy, nowMs, {
+              callerTag: 'update:attackActiveOverlap',
+            });
+            if (defeatedByOverlap) {
+              attackHandled = true;
+              events.push({ type: 'defeated', enemyId: enemy.id });
+            }
+          } else {
+            if (isDefeatedState(enemy) || isInDefeatPipeline(enemy) || enemy.attackHandled) {
+              return true;
+            }
+            collision = true;
+            system.setEnemyState(enemy, 'collision_resolved', nowMs, {
+              callerTag: 'update:collisionOverlap',
+              attackHandled: false,
+            });
+            events.push({ type: 'collision', enemyId: enemy.id });
+          }
+          system.logEnemyDebug('collisionFrame', {
+            enemyId: enemy.id,
+            nowMs: Math.round(nowMs),
+            groundY: Number.isFinite(groundY) ? Number(groundY.toFixed(2)) : null,
+            worldGroundTopY: Number.isFinite(worldGroundTopY) ? Number(worldGroundTopY.toFixed(2)) : null,
+            enemyY: Number.isFinite(enemy.y) ? Number(enemy.y.toFixed(2)) : null,
+            enemyRectY: Number.isFinite(enemyRectForHit.y) ? Number(enemyRectForHit.y.toFixed(2)) : null,
+            playerRectY: Number.isFinite(playerRect.y) ? Number(playerRect.y.toFixed(2)) : null,
+          });
         }
       }
 
@@ -357,10 +1055,27 @@ export const createDashEnemySystem = ({ worldEl, containerEl } = {}) => {
       nearestDistancePx = null;
     }
 
+    const collisionDebugEnabled = system.isCollisionDebugEnabled?.() === true;
+    system.logEnemyDebugSummary(nowMs);
     return {
       nearestDistancePx,
       collision,
       attackHandled,
+      events,
+      nearestEnemyRect,
+      resolvedGroundY,
+      debug: collisionDebugEnabled ? {
+        enemiesCount: system.enemies.length,
+        enemyRect: firstEnemyRect,
+        enemyRectRaw: firstEnemyRectRaw,
+        playerRectRaw: firstPlayerRectRaw,
+        playerRectNorm: firstPlayerRectNorm,
+        enemyRectNorm: firstEnemyRectNorm,
+        intersectsRaw: firstIntersectsRaw,
+        intersects: firstIntersectsNorm,
+        collisionEnabled: firstCollisionEnabled,
+        startGraceActive: system.elapsedMs < START_GRACE_MS,
+      } : undefined,
     };
   };
 

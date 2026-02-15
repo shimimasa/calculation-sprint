@@ -1,3 +1,6 @@
+import { isScreenBlocked, resolveSafeScreen } from './modeAvailability.js';
+import { perfLog } from './perf.js';
+
 let currentScreen = null;
 let currentName = null;
 const screens = {};
@@ -8,6 +11,15 @@ const getAppRoot = () => document.querySelector('.calc-sprint') ?? document;
 
 let prevHtmlOverflow = null;
 let prevBodyOverflow = null;
+const DASH_DEBUG_QUERY_KEY = 'dashDebug';
+const DASH_DEBUG_LEGACY_QUERY_KEY = 'dashDebugRunner';
+const DASH_DEBUG_STORAGE_KEY = 'dashDebugRunner';
+const isDashDebugRunnerEnabled = () => {
+  const searchParams = new URLSearchParams(window.location.search);
+  const queryValue = searchParams.get(DASH_DEBUG_QUERY_KEY) ?? searchParams.get(DASH_DEBUG_LEGACY_QUERY_KEY);
+  const storageValue = window.localStorage?.getItem(DASH_DEBUG_STORAGE_KEY);
+  return queryValue === '1' || storageValue === '1' || window.__DASH_DEBUG_RUNNER === true;
+};
 const setGlobalScrollLocked = (locked) => {
   const html = document.documentElement;
   const body = document.body;
@@ -56,17 +68,31 @@ const screenManager = {
     });
   },
   changeScreen(nextName, params = {}) {
-    if (isTransitioning || !screens[nextName]) {
+    const targetName = isScreenBlocked(nextName) ? resolveSafeScreen(screens) : nextName;
+    if (isTransitioning || !screens[targetName]) {
       return;
+    }
+    if (isDashDebugRunnerEnabled() && (String(targetName).startsWith('dash') || String(currentName).startsWith('dash'))) {
+      window.__DASH_DEBUG_LAST_SCREEN_CHANGE = {
+        at: window.performance.now(),
+        from: currentName,
+        to: targetName,
+      };
+      console.groupCollapsed('[dash-debug] changeScreen ->', targetName);
+      console.trace();
+      console.log('params', params);
+      console.log('from', currentName);
+      console.groupEnd();
     }
     isTransitioning = true;
     const prevName = currentName;
+    perfLog('screen.change.start', { from: prevName ?? 'none', to: targetName });
     if (currentScreen && typeof currentScreen.exit === 'function') {
-      currentScreen.exit(nextName);
+      currentScreen.exit(targetName);
     }
-    currentScreen = screens[nextName];
-    currentName = nextName;
-    setScreenVisibility(nextName);
+    currentScreen = screens[targetName];
+    currentName = targetName;
+    setScreenVisibility(targetName);
     if (currentScreen && typeof currentScreen.enter === 'function') {
       currentScreen.enter(prevName, params);
     }

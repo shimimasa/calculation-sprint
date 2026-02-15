@@ -37,32 +37,92 @@
 
       <section id="title-screen" class="screen screen-title" hidden>
         <header class="screen-header">
-          <p class="screen-kicker">STAGE 01</p>
+          <p class="screen-kicker">DASH RUN</p>
           <h1 class="screen__title">計算スプリント</h1>
-          <p class="screen__description">ミッションに挑戦してスピードを上げよう！</p>
+          <p class="screen__description">問題に正解して走れ！敵を倒しながらできるだけ遠くへ進もう！</p>
         </header>
         <div class="screen-main stage-card">
           <div class="mission-card">
             <p class="mission-label">MISSION</p>
-            <p class="mission-text">60秒でできるだけ多く正解しよう</p>
+            <p class="mission-text">
+              制限時間内により遠くまで走れ！<br>
+              正解でスピードアップ、敵を撃破！
+            </p>
           </div>
           <div class="title-actions">
-            <button id="title-start-button" class="primary-button primary-button--xl">ステージであそぶ</button>
-            <button id="title-free-button" class="secondary-button primary-button--xl">じゆうにあそぶ</button>
             <button id="title-dash-button" class="secondary-button primary-button--xl">ダッシュラン</button>
+            <button id="title-dash-settings-button" class="secondary-button primary-button--xl">ダッシュ設定</button>
+            <button id="title-dash-stats-button" class="secondary-button primary-button--xl">ダッシュ記録/統計</button>
           </div>
           <div class="how-to">
             <p class="how-to__title">遊び方</p>
             <ol class="how-to__list">
-              <li>問題に答える</li>
-              <li>正解でスピードアップ</li>
-              <li>60秒でゴールを目指そう</li>
+              <li>問題に正解するとスピードアップ</li>
+              <li>敵にぶつかるとタイム減少</li>
+              <li>できるだけ遠くまで走ろう</li>
             </ol>
           </div>
         </div>
         <footer class="screen-footer">
-          <p class="screen-hint">設定は次の画面で選べるよ</p>
+          <p class="screen-hint">ステージを選んでダッシュ開始！</p>
         </footer>
+      </section>
+
+      <section id="dash-stage-select-screen" class="screen screen-stage-select" hidden>
+        <header class="dash-stage-select-header">
+          <h2 class="dash-stage-select-header__title">ダッシュステージをえらぼう</h2>
+          <p id="dash-stage-select-mode-note" class="setting-note dash-stage-select-header__note">じかんをのばして どこまでいける？</p>
+          <div id="dash-selection-badges" class="dash-selection-badges" aria-live="polite">
+            <span id="dash-selection-badge-mode" class="badge dash-selection-badge">モード: Infinite</span>
+            <span id="dash-selection-badge-stage" class="badge dash-selection-badge">ステージ: たし算</span>
+            <span id="dash-selection-badge-level" class="badge dash-selection-badge" hidden>Lv: 1</span>
+          </div>
+          <div id="dash-mode-select-list" class="dash-mode-select-list" role="tablist" aria-label="ダッシュモード選択">
+            <button class="secondary-button" type="button" data-dash-mode-id="infinite">Infinite（とことん）</button>
+            <button class="secondary-button" type="button" data-dash-mode-id="goalRun">GoalRun（1000mチャレンジ）</button>
+            <button class="secondary-button" type="button" data-dash-mode-id="scoreAttack60">ScoreAttack60（60びょうスコア）</button>
+          </div>
+        </header>
+        <div id="dash-stage-select-list" class="stage-select-list" role="list" aria-label="ダッシュステージ一覧">
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="plus">
+            <button class="secondary-button" type="button" data-dash-stage-id="plus">
+              <span>たし算</span>
+              <small>たし算だけが出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="plus" hidden></div>
+          </div>
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="minus">
+            <button class="secondary-button" type="button" data-dash-stage-id="minus">
+              <span>ひき算</span>
+              <small>ひき算だけが出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="minus" hidden></div>
+          </div>
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="multi">
+            <button class="secondary-button" type="button" data-dash-stage-id="multi">
+              <span>かけ算</span>
+              <small>かけ算だけが出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="multi" hidden></div>
+          </div>
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="divide">
+            <button class="secondary-button" type="button" data-dash-stage-id="divide">
+              <span>わり算</span>
+              <small>わり算だけが出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="divide" hidden></div>
+          </div>
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="mix">
+            <button class="secondary-button" type="button" data-dash-stage-id="mix">
+              <span>ミックス</span>
+              <small>4つの演算がランダムで出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="mix" hidden></div>
+          </div>
+        </div>
+        <div class="stage-select-actions">
+          <button id="dash-stage-select-back-button" class="secondary-button" type="button">戻る（キャンセル）</button>
+        </div>
       </section>
 
       <section
@@ -221,6 +281,10 @@
           <div class="run-viewport" aria-hidden="true">
             <div class="run-host" aria-hidden="true"></div>
           </div>
+          <div id="dash-goal-overlay" class="dash-goal-overlay" aria-hidden="true">
+            <img id="dash-goal-overlay-image" class="dash-goal-overlay__image" alt="" />
+            <p id="dash-goal-overlay-text" class="dash-goal-overlay__text">GOAL!</p>
+          </div>
         </div>
         <div class="dash-bottom-hud" aria-label="ダッシュステータス">
           <div id="dash-game-time-wrap" class="dash-time dash-time-hud" aria-label="残り時間">
@@ -255,6 +319,9 @@
               <span class="dash-stat-unit">回</span>
               <span id="dash-game-streak-cue" class="dash-streak-cue" aria-live="polite"></span>
             </div>
+            <div class="dash-exit-card" aria-label="ステージ操作">
+              <button id="dash-game-back-button" class="secondary-button" type="button">⏏ 退出</button>
+            </div>
           </div>
         </div>
       </section>
@@ -268,6 +335,7 @@
         <div class="screen-main dash-result-main">
           <p id="dash-result-message" class="dash-result-message" hidden>記録が見つかりませんでした。</p>
           <div id="dash-result-record" class="dash-result-record">
+            <p id="dash-result-stage" class="dash-result-stage">ステージ：たし算</p>
             <p id="dash-result-reason" class="dash-result-reason" hidden>終了理由：不明</p>
             <div class="dash-result-grid" aria-label="ダッシュ記録">
               <div class="dash-stat-card">
@@ -284,6 +352,11 @@
                 <span class="dash-stat-label">不正解数</span>
                 <strong id="dash-result-wrong" class="dash-stat-value">0</strong>
                 <span class="dash-stat-unit">問</span>
+              </div>
+              <div class="dash-stat-card">
+                <span class="dash-stat-label">たおした敵の数</span>
+                <strong id="dash-result-defeated" class="dash-stat-value">0</strong>
+                <span class="dash-stat-unit">体</span>
               </div>
               <div class="dash-stat-card">
                 <span class="dash-stat-label">正答率</span>
@@ -311,8 +384,73 @@
         <footer class="screen-footer dash-result-footer">
           <div class="title-actions">
             <button id="dash-result-replay-button" class="primary-button primary-button--xl">もう一回はしる</button>
+            <button id="dash-result-settings-button" class="secondary-button primary-button--xl">設定</button>
+            <button id="dash-result-stats-button" class="secondary-button primary-button--xl">記録/統計</button>
             <button id="dash-result-back-button" class="secondary-button primary-button--xl">タイトルへ戻る</button>
           </div>
+        </footer>
+      </section>
+
+      <section id="dash-settings-screen" class="screen screen-dash" hidden>
+        <header class="screen-header">
+          <p class="screen-kicker">DASH SETTINGS</p>
+          <h2 class="screen__title">ダッシュ設定</h2>
+          <p class="screen__description">音量と難易度は localStorage に保存されます。</p>
+        </header>
+        <div class="screen-main stage-card dash-settings-card">
+          <label class="dash-setting-row" for="dash-settings-bgm-toggle">
+            <span>BGM</span>
+            <input id="dash-settings-bgm-toggle" type="checkbox" checked />
+          </label>
+          <label class="dash-setting-row" for="dash-settings-sfx-toggle">
+            <span>SFX</span>
+            <input id="dash-settings-sfx-toggle" type="checkbox" checked />
+          </label>
+          <label class="dash-setting-row dash-setting-row--select" for="dash-settings-difficulty">
+            <span>難易度</span>
+            <select id="dash-settings-difficulty">
+              <option value="easy">easy</option>
+              <option value="normal" selected>normal</option>
+              <option value="hard">hard</option>
+            </select>
+          </label>
+          <p class="setting-note">※音声ON/OFFは次回再生から反映される場合があります。</p>
+        </div>
+        <footer class="screen-footer">
+          <button id="dash-settings-back-button" class="secondary-button primary-button--xl">戻る</button>
+        </footer>
+      </section>
+
+      <section id="dash-stats-screen" class="screen screen-dash" hidden>
+        <header class="screen-header">
+          <p class="screen-kicker">DASH STATS</p>
+          <h2 class="screen__title">ダッシュ記録/統計</h2>
+          <p class="screen__description">総合スコアは「走行距離 (m)」を採用しています。</p>
+        </header>
+        <div class="screen-main stage-card dash-stats-card">
+          <p class="dash-stats-total">総合ベスト: <strong id="dash-stats-total-best">0.0</strong></p>
+          <div id="dash-stats-mode-filters" class="dash-stats-mode-filters" role="tablist" aria-label="モードフィルタ">
+            <button type="button" class="secondary-button" data-dash-stats-mode="infinite">Infinite</button>
+            <button type="button" class="secondary-button" data-dash-stats-mode="goalRun">GoalRun</button>
+            <button type="button" class="secondary-button" data-dash-stats-mode="scoreAttack60">ScoreAttack60</button>
+          </div>
+          <div class="dash-stats-table-wrap">
+            <h3>ステージ別ベスト</h3>
+            <table class="dash-stats-table">
+              <thead><tr><th>ステージ</th><th>ベスト</th><th>プレイ回数</th></tr></thead>
+              <tbody id="dash-stats-stage-best-body"></tbody>
+            </table>
+          </div>
+          <div class="dash-stats-table-wrap">
+            <h3>直近履歴（20件）</h3>
+            <table class="dash-stats-table">
+              <thead><tr><th>日時</th><th>ステージ</th><th>総合スコア</th><th>結果</th></tr></thead>
+              <tbody id="dash-stats-history-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <footer class="screen-footer">
+          <button id="dash-stats-back-button" class="secondary-button primary-button--xl">タイトルへ戻る</button>
         </footer>
       </section>
 
@@ -415,7 +553,6 @@
                 class="runner-bob"
                 src="assets/runner/runner.png"
                 alt="runner"
-                onerror="this.style.display='none'; document.documentElement.classList.add('runner-missing');"
               />
             </div>
           </div>

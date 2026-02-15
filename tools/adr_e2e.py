@@ -170,6 +170,29 @@ async def run(base_url):
     await page.wait_for_selector('#result-screen', state='visible', timeout=10000)
     results.append({'id': 'E5', 'pass': time_left_ready})
 
+
+    await page.goto(f'{base_url}?test=1&timeLimit=20', wait_until='domcontentloaded')
+    await page.click('[data-profile-id="E"]')
+    await page.click('#profile-select-continue')
+
+    await page.click('#title-dash-button')
+    dash_stage_select_visible = await page.locator('#dash-stage-select-screen').is_visible()
+    results.append({'id': 'D1', 'pass': dash_stage_select_visible})
+
+    await page.click('#dash-stage-select-back-button')
+    returned_to_title = await page.locator('#title-screen').is_visible()
+    results.append({'id': 'D2', 'pass': returned_to_title})
+
+    await page.click('#title-dash-button')
+    await page.click('[data-dash-stage-id="minus"]')
+    dash_game_visible = await page.locator('#dash-game-screen').is_visible()
+    results.append({'id': 'D3', 'pass': dash_game_visible})
+
+    await page.click('#dash-game-back-button')
+    await page.wait_for_selector('#dash-result-screen', state='visible', timeout=10000)
+    stage_line = (await page.text_content('#dash-result-stage') or '').strip()
+    results.append({'id': 'D4', 'pass': 'ひき算' in stage_line})
+
     await browser.close()
   return results
 

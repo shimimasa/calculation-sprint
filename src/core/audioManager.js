@@ -1,4 +1,5 @@
 import { diagnoseAssetResponse } from './assetDiagnostics.js';
+import dashSettingsStore from './dashSettingsStore.js';
 
 // ADR-004: Use relative asset paths so subpath hosting works (avoid absolute `/assets/...`).
 const BGM_URLS = {
@@ -6,11 +7,11 @@ const BGM_URLS = {
   bgm_free: 'assets/audio/bgm/free.mp3',
   bgm_result: 'assets/audio/bgm/result.mp3',
   bgm_clear: 'assets/audio/bgm/clear.mp3',
-  bgm_add: 'assets/audio/bgm/free.mp3',
-  bgm_sub: 'assets/audio/bgm/free.mp3',
-  bgm_mul: 'assets/audio/bgm/free.mp3',
-  bgm_div: 'assets/audio/bgm/free.mp3',
-  bgm_mix: 'assets/audio/bgm/free.mp3',
+  bgm_add: 'assets/audio/bgm/add.mp3',
+  bgm_sub: 'assets/audio/bgm/minus.mp3',
+  bgm_mul: 'assets/audio/bgm/multi.mp3',
+  bgm_div: 'assets/audio/bgm/divide.mp3',
+  bgm_mix: 'assets/audio/bgm/mix.mp3',
   bgm_dash: 'assets/audio/bgm/bgm-1.mp3',
 };
 
@@ -21,10 +22,14 @@ const SFX_URLS = {
   sfx_wrong: 'assets/audio/sfx/wrong.mp3',
   sfx_decide: 'assets/audio/sfx/click.mp3',
   sfx_cancel: 'assets/audio/sfx/click.mp3',
+  sfx_confirm: 'assets/audio/sfx/click.mp3',
   sfx_stage_clear: 'assets/audio/sfx/correct.mp3',
   sfx_stage_unlock: 'assets/audio/sfx/correct.mp3',
   sfx_levelup: 'assets/audio/sfx/correct.mp3',
   sfx_countdown: 'assets/audio/sfx/wrong.mp3',
+  sfx_attack: 'assets/audio/sfx/attack.mp3',
+  sfx_damage: 'assets/audio/sfx/damage.mp3',
+  sfx_goal: 'assets/audio/sfx/goal.mp3',
 };
 
 const SILENT_WAV_DATA_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
@@ -101,7 +106,8 @@ class AudioManager {
   constructor() {
     this.currentBgmId = null;
     this.currentBgm = null;
-    this.muted = false;
+    this.bgmEnabled = true;
+    this.sfxEnabled = true;
     this.bgmVolume = 1;
     this.fadeToken = 0;
     this.unlocked = false;
@@ -109,15 +115,49 @@ class AudioManager {
     this.pendingBgmId = null;
   }
 
-  setMuted(muted) {
-    this.muted = Boolean(muted);
+  syncSettings(profileId) {
+    const settings = dashSettingsStore.get(profileId);
+    this.bgmEnabled = settings.bgmEnabled !== false;
+    this.sfxEnabled = settings.sfxEnabled !== false;
     if (this.currentBgm) {
-      this.currentBgm.volume = this.muted ? 0 : this.bgmVolume;
+      this.currentBgm.volume = this.bgmEnabled ? this.bgmVolume : 0;
     }
+    return settings;
+  }
+
+  setMuted(muted, profileId) {
+    const enabled = !Boolean(muted);
+    return this.applySettings({ bgmEnabled: enabled, sfxEnabled: enabled }, profileId);
   }
 
   isMuted() {
-    return this.muted;
+    return !this.bgmEnabled && !this.sfxEnabled;
+  }
+
+  setBgmEnabled(enabled, profileId) {
+    return this.applySettings({ bgmEnabled: Boolean(enabled) }, profileId);
+  }
+
+  setSfxEnabled(enabled, profileId) {
+    return this.applySettings({ sfxEnabled: Boolean(enabled) }, profileId);
+  }
+
+  applySettings(nextSettings, profileId) {
+    const settings = dashSettingsStore.save(nextSettings, profileId);
+    this.bgmEnabled = settings.bgmEnabled;
+    this.sfxEnabled = settings.sfxEnabled;
+    if (this.currentBgm) {
+      this.currentBgm.volume = this.bgmEnabled ? this.bgmVolume : 0;
+    }
+    return settings;
+  }
+
+  isBgmEnabled() {
+    return this.bgmEnabled;
+  }
+
+  isSfxEnabled() {
+    return this.sfxEnabled;
   }
 
   isUnlocked() {
@@ -157,6 +197,9 @@ class AudioManager {
   }
 
   setBgm(id, opts = {}) {
+    if (!this.bgmEnabled) {
+      return;
+    }
     warnUnknownBgmId(id);
     const resolvedId = resolveBgmId(id);
     const force = Boolean(opts.force);
@@ -179,7 +222,7 @@ class AudioManager {
     const nextAudio = new Audio(url);
     nextAudio.loop = opts.loop ?? true;
     nextAudio.preload = 'auto';
-    nextAudio.volume = this.muted ? 0 : this.bgmVolume;
+    nextAudio.volume = this.bgmEnabled ? this.bgmVolume : 0;
     nextAudio.addEventListener('error', () => {
       diagnoseAssetResponse(url, `bgm:${resolvedId}`);
       console.warn(`BGM failed to load: ${resolvedId}`);
@@ -197,7 +240,7 @@ class AudioManager {
           console.warn(`BGM playback blocked: ${resolvedId}`);
         });
       }
-      if (fadeMs > 0 && !this.muted) {
+      if (fadeMs > 0 && this.bgmEnabled) {
         nextAudio.volume = 0;
         fadeAudio(nextAudio, 0, this.bgmVolume, fadeMs, null, fadeGuard);
       }
@@ -261,6 +304,9 @@ class AudioManager {
   }
 
   transitionBgm(nextId, opts = {}) {
+    if (!this.bgmEnabled) {
+      return;
+    }
     const fadeOutMs = opts.fadeOutMs ?? 0;
     const fadeInMs = opts.fadeInMs ?? 0;
 
@@ -289,7 +335,7 @@ class AudioManager {
       const nextAudio = new Audio(url);
       nextAudio.loop = true;
       nextAudio.preload = 'auto';
-      nextAudio.volume = this.muted ? 0 : this.bgmVolume;
+      nextAudio.volume = this.bgmEnabled ? this.bgmVolume : 0;
       nextAudio.addEventListener('error', () => {
         diagnoseAssetResponse(url, `bgm:${resolvedId}`);
         console.warn(`BGM failed to load: ${resolvedId}`);
@@ -303,7 +349,7 @@ class AudioManager {
           console.warn(`BGM playback blocked: ${resolvedId}`);
         });
       }
-      if (fadeInMs > 0 && !this.muted) {
+      if (fadeInMs > 0 && this.bgmEnabled) {
         nextAudio.volume = 0;
         fadeAudio(nextAudio, 0, this.bgmVolume, fadeInMs, null, fadeGuard);
       }
@@ -335,6 +381,12 @@ class AudioManager {
     if (!id) {
       return;
     }
+    if (!this.sfxEnabled) {
+      return;
+    }
+    if (!this.unlocked) {
+      return;
+    }
     const url = SFX_URLS[id];
     if (!url) {
       warnUnknownSfxId(id);
@@ -344,7 +396,7 @@ class AudioManager {
     audio.loop = false;
     audio.preload = 'auto';
     const volume = clamp(opts.volume ?? 1, 0, 1);
-    audio.volume = this.muted ? 0 : volume;
+    audio.volume = this.sfxEnabled ? volume : 0;
     audio.addEventListener('error', () => {
       diagnoseAssetResponse(url, `sfx:${id}`);
       console.warn(`SFX failed to load: ${id}`);
