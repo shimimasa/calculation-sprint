@@ -39,6 +39,62 @@ const MODE_BADGE_LABEL_MAP = Object.freeze({
 const SELECTED_CLASS_NAME = 'is-selected';
 const DASH_LEVEL_OPTIONS = Object.freeze([1, 2, 3, 4, 5]);
 
+const resolveDashStageClickAction = ({ worldLevelEnabled, hasLevelUi }) => {
+  if (worldLevelEnabled !== true) {
+    return {
+      action: 'start',
+      reason: 'worldLevelEnabled=false',
+    };
+  }
+
+  if (!hasLevelUi) {
+    return {
+      action: 'start',
+      reason: 'level-ui-missing-fallback-start',
+    };
+  }
+
+  return {
+    action: 'expand',
+    reason: 'worldLevelEnabled=true',
+  };
+};
+
+const isDashDebugEnabled = () => {
+  if (window.__DASH_DEBUG === true) {
+    return true;
+  }
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('dashDebug') === '1';
+  } catch (error) {
+    return false;
+  }
+};
+
+const logDashStageClickDecision = ({
+  worldLevelEnabled,
+  modeId,
+  clickedStageId,
+  selectedWorld,
+  selectedLevel,
+  decidedAction,
+  reason,
+}) => {
+  if (!isDashDebugEnabled()) {
+    return;
+  }
+  console.log('[dash-stage-select]', {
+    worldLevelEnabled,
+    modeId,
+    clickedStageId,
+    selectedWorld,
+    selectedLevel,
+    decidedAction,
+    reason,
+  });
+};
+
 const enhanceStageButton = (button) => {
   const stageId = toDashStageId(button.dataset.dashStageId);
   const visual = STAGE_VISUAL_MAP[stageId] ?? STAGE_VISUAL_MAP.mix;
@@ -217,7 +273,23 @@ const dashStageSelectScreen = {
       });
       updateSelectionBadges();
 
-      if (this.worldLevelEnabled) {
+      const clickAction = resolveDashStageClickAction({
+        worldLevelEnabled: this.worldLevelEnabled,
+        clickStageId: stage.id,
+        hasLevelUi: Boolean(this.getLevelHost(stage.id)),
+      });
+
+      logDashStageClickDecision({
+        worldLevelEnabled: this.worldLevelEnabled,
+        modeId: gameState.dash.modeId,
+        clickedStageId: stage.id,
+        selectedWorld: gameState.dash.stageId,
+        selectedLevel: gameState.dash.levelId ?? gameState.dash.level ?? null,
+        decidedAction: clickAction.action,
+        reason: clickAction.reason,
+      });
+
+      if (clickAction.action === 'expand') {
         audioManager.playSfx('sfx_click');
         this.expandWorld(stage.id);
         return;
