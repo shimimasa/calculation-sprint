@@ -2019,9 +2019,7 @@ const dashGameScreen = {
       };
     }
 
-    const timeLimitMs = modeId === DASH_MODE_TYPES.scoreAttack60
-      ? 60000
-      : Math.max(1, Number(this.initialTimeLimitMs) || DEFAULT_TIME_LIMIT_MS);
+    const timeLimitMs = Math.max(1, Number(this.initialTimeLimitMs) || DEFAULT_TIME_LIMIT_MS);
     const ratio = clamp01(safeTimeLeftMs / timeLimitMs);
     const isLowTime = safeTimeLeftMs <= LOW_TIME_THRESHOLD_MS;
     let state = 'safe';
