@@ -101,6 +101,28 @@ const logDashStageClickDecision = ({
   });
 };
 
+
+const describeClickNode = (node) => {
+  if (!(node instanceof Element)) {
+    return null;
+  }
+
+  return {
+    tagName: node.tagName.toLowerCase(),
+    role: node.getAttribute('data-role') ?? null,
+    dashStageId: node.getAttribute('data-dash-stage-id') ?? null,
+    levelId: node.getAttribute('data-level-id') ?? null,
+    className: node.className ?? '',
+  };
+};
+
+const logDashLevelAction = (payload) => {
+  if (!isDashDebugEnabled()) {
+    return;
+  }
+  console.log('[dash-stage-select.level-action]', payload);
+};
+
 const enhanceStageButton = (button) => {
   const stageId = toDashStageId(button.dataset.dashStageId);
   const visual = STAGE_VISUAL_MAP[stageId] ?? STAGE_VISUAL_MAP.mix;
@@ -256,7 +278,7 @@ const dashStageSelectScreen = {
     this.handleSelectStage = (event) => {
       const levelActionButton = event.target.closest(DASH_LEVEL_ACTION_SELECTOR);
       if (levelActionButton) {
-        this.handleLevelAction(levelActionButton);
+        this.handleLevelAction(levelActionButton, event);
         return;
       }
 
@@ -315,24 +337,51 @@ const dashStageSelectScreen = {
     this.events.on(domRefs.dashStageSelect.list, 'click', this.handleSelectStage);
     this.events.on(domRefs.dashStageSelect.backButton, 'click', this.handleBack);
   },
-  handleLevelAction(actionButton) {
+  handleLevelAction(actionButton, event) {
     const stageId = toDashStageId(
       actionButton.dataset.dashStageId
       ?? actionButton.closest('[data-dash-world-card]')?.dataset.dashWorldCard,
     );
+    const role = actionButton.dataset.role;
 
-    if (actionButton.dataset.role === 'dash-level') {
-      this.selectLevel(actionButton.dataset.levelId, stageId);
+    if (role === 'dash-level' || role === 'dash-start' || role === 'dash-close') {
+      event?.stopPropagation();
+    }
+
+    if (role === 'dash-level') {
+      const levelBefore = normalizeLevelId(gameState.dash?.levelId ?? gameState.dash?.level);
+      const levelAfter = normalizeLevelId(actionButton.dataset.levelId);
+      logDashLevelAction({
+        action: 'level',
+        stageId,
+        levelId: levelAfter,
+        selectedLevel: `${levelBefore}->${levelAfter}`,
+        target: describeClickNode(event?.target),
+        currentTarget: describeClickNode(event?.currentTarget),
+      });
+      this.selectLevel(levelAfter, stageId);
       audioManager.playSfx('sfx_click');
       return;
     }
 
-    if (actionButton.dataset.role === 'dash-start') {
+    if (role === 'dash-start') {
+      const levelId = normalizeLevelId(gameState.dash?.levelId ?? gameState.dash?.level);
+      logDashLevelAction({
+        action: 'start',
+        worldKey: stageId,
+        levelId,
+        modeId: normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE),
+      });
       this.startDashWithSelection(stageId);
       return;
     }
 
-    if (actionButton.dataset.role === 'dash-close') {
+    if (role === 'dash-close') {
+      logDashLevelAction({
+        action: 'close',
+        stageId,
+        collapse: true,
+      });
       this.closeExpandedWorld(stageId);
       audioManager.playSfx('sfx_cancel');
     }
