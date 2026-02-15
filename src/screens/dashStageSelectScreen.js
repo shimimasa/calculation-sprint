@@ -10,9 +10,11 @@ import {
   DASH_STAGE_IDS,
   findDashStageById,
   getDashStageLabelJa,
+  getDashStageLevels,
   getDashStageOrFallback,
   toDashStageId,
 } from '../features/dashStages.js';
+import { getDashDifficultyLabelShort } from '../features/dashDifficultyTable.js';
 import { DEFAULT_DASH_MODE, normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
 
 const STAGE_VISUAL_MAP = {
@@ -36,7 +38,6 @@ const MODE_BADGE_LABEL_MAP = Object.freeze({
 });
 
 const SELECTED_CLASS_NAME = 'is-selected';
-const DASH_LEVEL_OPTIONS = Object.freeze([1, 2, 3, 4, 5]);
 const DASH_LEVEL_ACTION_SELECTOR = [
   '[data-role="dash-level"]',
   '[data-role="dash-start"]',
@@ -169,15 +170,25 @@ const getSelectedLevelLabel = () => {
   return String(selectedLevel);
 };
 
-const normalizeLevelId = (levelId) => {
+const getNormalizedLevelSelection = (stageId, levelId) => {
+  const levels = getDashStageLevels(stageId);
   const numericLevel = Number(levelId);
-  if (!Number.isInteger(numericLevel)) {
-    return DASH_LEVEL_OPTIONS[0];
+  if (!Number.isInteger(numericLevel) || !levels.includes(numericLevel)) {
+    return {
+      levelId: levels[0],
+      levels,
+    };
   }
-  if (DASH_LEVEL_OPTIONS.includes(numericLevel)) {
-    return numericLevel;
-  }
-  return DASH_LEVEL_OPTIONS[0];
+
+  return {
+    levelId: numericLevel,
+    levels,
+  };
+};
+
+const normalizeLevelId = (stageId, levelId) => {
+  const { levelId: normalizedLevelId } = getNormalizedLevelSelection(stageId, levelId);
+  return normalizedLevelId;
 };
 
 const updateSelectionBadges = () => {
@@ -312,8 +323,8 @@ const dashStageSelectScreen = {
     }
 
     if (role === 'dash-level') {
-      const levelBefore = normalizeLevelId(gameState.dash?.levelId ?? gameState.dash?.level);
-      const levelAfter = normalizeLevelId(actionButton.dataset.levelId);
+      const levelBefore = normalizeLevelId(stageId, gameState.dash?.levelId ?? gameState.dash?.level);
+      const levelAfter = normalizeLevelId(stageId, actionButton.dataset.levelId);
       logDashLevelAction({
         action: 'level',
         stageId,
@@ -328,7 +339,7 @@ const dashStageSelectScreen = {
     }
 
     if (role === 'dash-start') {
-      const levelId = normalizeLevelId(gameState.dash?.levelId ?? gameState.dash?.level);
+      const levelId = normalizeLevelId(stageId, gameState.dash?.levelId ?? gameState.dash?.level);
       logDashLevelAction({
         action: 'start',
         worldKey: stageId,
@@ -364,13 +375,16 @@ const dashStageSelectScreen = {
       return;
     }
 
-    const selectedLevelId = normalizeLevelId(gameState.dash?.levelId ?? gameState.dash?.level);
+    const {
+      levelId: selectedLevelId,
+      levels: levelOptions,
+    } = getNormalizedLevelSelection(normalizedStageId, gameState.dash?.levelId ?? gameState.dash?.level);
     gameState.dash.levelId = selectedLevelId;
 
     host.innerHTML = `
       <p class="dash-level-select-title" data-role="dash-level-title">LEVELをえらんでスタート</p>
       <div class="dash-level-select-list" role="group" aria-label="LEVEL選択 (${getDashStageLabelJa(normalizedStageId)})">
-        ${DASH_LEVEL_OPTIONS
+        ${levelOptions
     .map((levelId) => `
           <button
             class="secondary-button dash-level-button${levelId === selectedLevelId ? ' is-selected' : ''}"
@@ -380,7 +394,8 @@ const dashStageSelectScreen = {
             data-level-id="${levelId}"
             aria-pressed="${levelId === selectedLevelId ? 'true' : 'false'}"
           >
-            LEVEL ${levelId}
+            <span class="dash-level-button__level">LEVEL ${levelId}</span>
+            <span class="dash-level-button__hint">${getDashDifficultyLabelShort(normalizedStageId, levelId)}</span>
           </button>
         `)
     .join('')}
@@ -404,7 +419,7 @@ const dashStageSelectScreen = {
       return;
     }
 
-    const selectedLevelId = normalizeLevelId(levelId);
+    const selectedLevelId = normalizeLevelId(normalizedStageId, levelId);
     gameState.dash.stageId = normalizedStageId;
     gameState.dash.levelId = selectedLevelId;
 
@@ -412,7 +427,7 @@ const dashStageSelectScreen = {
       if (!(button instanceof HTMLButtonElement)) {
         return;
       }
-      const buttonLevelId = normalizeLevelId(button.dataset.levelId);
+      const buttonLevelId = normalizeLevelId(normalizedStageId, button.dataset.levelId);
       updateButtonSelectionState(button, buttonLevelId === selectedLevelId);
     });
 
@@ -438,16 +453,18 @@ const dashStageSelectScreen = {
   },
   startDash(stageId) {
     const normalizedStageId = toDashStageId(stageId);
-    gameState.dash.stageId = normalizedStageId;
-    gameState.dash.modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
     gameState.dash.currentMode = null;
     preloadStageCoreImages(normalizedStageId, { mode: 'dash' });
     screenManager.changeScreen('dash-game');
   },
   startDashWithSelection(stageId = this.expandedStageId) {
     const normalizedStageId = toDashStageId(stageId);
-    const selectedLevelId = normalizeLevelId(gameState.dash?.levelId ?? DASH_LEVEL_OPTIONS[0]);
+    const selectedLevelId = normalizeLevelId(normalizedStageId, gameState.dash?.levelId ?? gameState.dash?.level);
+    const selectedModeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
+    gameState.dash.stageId = normalizedStageId;
+    gameState.dash.worldKey = normalizedStageId;
     gameState.dash.levelId = selectedLevelId;
+    gameState.dash.modeId = selectedModeId;
     audioManager.unlock();
     audioManager.playSfx('sfx_confirm');
     this.startDash(normalizedStageId);
