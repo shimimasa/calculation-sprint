@@ -58,6 +58,21 @@ const enhanceStageButton = (button) => {
     selected.setAttribute('aria-hidden', 'true');
     button.append(selected);
   }
+
+  if (!button.querySelector('.dash-world-expand')) {
+    const expand = document.createElement('div');
+    expand.className = 'dash-world-expand';
+    expand.hidden = true;
+    expand.innerHTML = `
+      <p class="dash-world-expand__title">レベルをえらぼう</p>
+      <div class="dash-world-expand__levels" role="list" aria-label="レベル一覧"></div>
+      <div class="dash-world-expand__actions">
+        <button class="secondary-button dash-world-expand__start" type="button" data-world-start="true">このレベルでスタート</button>
+        <button class="secondary-button dash-world-expand__cancel" type="button" data-world-expand-close="true">閉じる</button>
+      </div>
+    `;
+    button.append(expand);
+  }
 };
 
 const updateSelectionState = (button, isSelected) => {
@@ -77,14 +92,14 @@ const updateModeSelectionState = (button, isSelected) => {
 
 const dashStageSelectScreen = {
   renderLevelButtons() {
-    const levelList = domRefs.dashStageSelect.levelList;
-    if (!levelList) {
+    const worldButton = domRefs.dashStageSelect.list?.querySelector(
+      `[data-dash-stage-id="${this.selectedWorldKey}"]`,
+    );
+    const levelList = worldButton?.querySelector('.dash-world-expand__levels');
+    if (!worldButton || !levelList) {
       return;
     }
-    if (!this.worldLevelEnabled) {
-      levelList.innerHTML = '';
-      return;
-    }
+
     const levels = DASH_WORLD_LEVELS[this.selectedWorldKey] ?? [];
     levelList.innerHTML = levels
       .map((entry) => {
@@ -97,7 +112,12 @@ const dashStageSelectScreen = {
   syncWorldSelectionUi() {
     domRefs.dashStageSelect.buttons.forEach((button) => {
       const stageId = toDashStageId(button.dataset.dashStageId);
-      updateSelectionState(button, stageId === this.selectedWorldKey);
+      const isSelected = stageId === this.selectedWorldKey;
+      updateSelectionState(button, isSelected);
+      const expand = button.querySelector('.dash-world-expand');
+      if (expand) {
+        expand.hidden = !this.worldLevelEnabled || !isSelected;
+      }
     });
   },
   syncWorldLevelStateFromStore() {
@@ -118,10 +138,10 @@ const dashStageSelectScreen = {
       domRefs.dashStageSelect.worldLevelToggle.checked = this.worldLevelEnabled;
     }
     if (domRefs.dashStageSelect.levelPanel) {
-      domRefs.dashStageSelect.levelPanel.hidden = !this.worldLevelEnabled;
+      domRefs.dashStageSelect.levelPanel.hidden = true;
     }
     if (domRefs.dashStageSelect.startButton) {
-      domRefs.dashStageSelect.startButton.hidden = !this.worldLevelEnabled;
+      domRefs.dashStageSelect.startButton.hidden = true;
     }
     this.syncWorldLevelStateFromStore();
     this.syncWorldSelectionUi();
@@ -211,6 +231,10 @@ const dashStageSelectScreen = {
         return;
       }
 
+      if (event.target.closest('[data-level-id], [data-world-start], [data-world-expand-close]')) {
+        return;
+      }
+
       this.selectedWorldKey = stage.id;
       const resolved = getDashWorldLevel(this.selectedWorldKey, this.selectedLevelId ?? 1);
       this.selectedLevelId = resolved.levelId;
@@ -243,6 +267,25 @@ const dashStageSelectScreen = {
       this.startDashWithSelection();
     };
 
+    this.handleExpandAction = (event) => {
+      if (!this.worldLevelEnabled) {
+        return;
+      }
+      const startButton = event.target.closest('[data-world-start]');
+      if (startButton) {
+        this.handleStart();
+        return;
+      }
+      const closeButton = event.target.closest('[data-world-expand-close]');
+      if (!closeButton) {
+        return;
+      }
+      this.selectedWorldKey = null;
+      this.selectedLevelId = null;
+      this.syncWorldSelectionUi();
+      audioManager.playSfx('sfx_click');
+    };
+
     this.handleBack = () => {
       audioManager.unlock();
       audioManager.playSfx('sfx_cancel');
@@ -252,7 +295,8 @@ const dashStageSelectScreen = {
     this.events.on(domRefs.dashStageSelect.worldLevelToggle, 'change', this.handleToggleWorldLevel);
     this.events.on(domRefs.dashStageSelect.modeList, 'click', this.handleSelectMode);
     this.events.on(domRefs.dashStageSelect.list, 'click', this.handleSelectStage);
-    this.events.on(domRefs.dashStageSelect.levelList, 'click', this.handleSelectLevel);
+    this.events.on(domRefs.dashStageSelect.list, 'click', this.handleSelectLevel);
+    this.events.on(domRefs.dashStageSelect.list, 'click', this.handleExpandAction);
     this.events.on(domRefs.dashStageSelect.startButton, 'click', this.handleStart);
     this.events.on(domRefs.dashStageSelect.backButton, 'click', this.handleBack);
   },
