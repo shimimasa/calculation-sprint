@@ -690,8 +690,9 @@
 .calc-sprint #dash-stage-select-screen .setting-note {
   margin: 0;
   max-width: 40ch;
+  font-size: 14px;
   color: var(--dash-select-muted);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 .calc-sprint #dash-stage-select-screen .dash-selection-badges {
   display: flex;
@@ -700,8 +701,8 @@
   align-items: center;
 }
 .calc-sprint #dash-stage-select-screen .dash-selection-badge {
-  font-size: 12px;
-  line-height: 1.3;
+  font-size: 13px;
+  line-height: 1.35;
 }
 @media (max-width: 640px) {
   .calc-sprint #dash-stage-select-screen .dash-stage-select-header {
@@ -776,9 +777,9 @@
   color: var(--dash-select-text);
 }
 .calc-sprint #dash-stage-select-screen .dash-stage-card__description {
-  font-size: var(--font-caption);
+  font-size: 14px;
   color: var(--dash-select-muted);
-  line-height: 1.35;
+  line-height: 1.45;
 }
 .calc-sprint #dash-stage-select-screen .dash-stage-card__selected {
   position: absolute;
@@ -818,9 +819,44 @@
 }
 .calc-sprint #dash-stage-select-screen .stage-select-actions {
   width: 100%;
+  display: grid;
+  gap: 10px;
 }
-.calc-sprint #dash-stage-select-screen .stage-select-actions .secondary-button {
-  width: 100%;
+.calc-sprint #dash-stage-select-screen .stage-select-actions .secondary-button,
+.calc-sprint #dash-stage-select-screen .dash-mode-select-list .secondary-button,
+.calc-sprint #dash-stage-select-screen .dash-level-button,
+.calc-sprint #dash-stage-select-screen [data-role="dash-start"],
+.calc-sprint #dash-stage-select-screen [data-role="dash-close"] {
+  min-height: 44px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.calc-sprint #dash-stage-select-screen #dash-stage-select-close-button,
+.calc-sprint #dash-stage-select-screen [data-role="dash-close"],
+.calc-sprint #dash-stage-select-screen .dash-close-button {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-text) 78%, var(--color-text-sub));
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.calc-sprint #dash-stage-select-screen .dash-level-select-title,
+.calc-sprint #dash-stage-select-screen [data-role="dash-level-title"] {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.calc-sprint #dash-stage-select-screen .dash-stage-card__levels,
+.calc-sprint #dash-stage-select-screen .dash-level-select-list,
+.calc-sprint #dash-stage-select-screen .dash-stage-card__actions,
+.calc-sprint #dash-stage-select-screen .dash-stage-card__footer,
+.calc-sprint #dash-stage-select-screen [data-role="dash-level-actions"] {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
 }
 @media (max-width: 640px) {
   .calc-sprint #dash-stage-select-screen .dash-stage-card {
@@ -829,6 +865,15 @@
   }
   .calc-sprint #dash-stage-select-screen .dash-stage-card__title {
     font-size: 17px;
+  }
+  .calc-sprint #dash-stage-select-screen .setting-note {
+    font-size: 13px;
+  }
+  .calc-sprint #dash-stage-select-screen .dash-stage-card__description {
+    font-size: 13px;
+  }
+  .calc-sprint #dash-stage-select-screen .stage-select-actions {
+    gap: 8px;
   }
 }
 .calc-sprint .stage-select-icon {
