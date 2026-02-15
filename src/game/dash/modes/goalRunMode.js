@@ -1,5 +1,11 @@
 import { DASH_MODE_TYPES } from './modeTypes.js';
 import { toDashStageId } from '../../../features/dashStages.js';
+import {
+  timeBonusOnCorrect,
+  timeBonusOnDefeat,
+  timePenaltyOnWrong,
+  timePenaltyOnCollision,
+} from '../../../features/dashConstants.js';
 
 const GOAL_DISTANCE_M = 1000;
 
@@ -21,6 +27,12 @@ const computeRank = ({ cleared, accuracy, hits }) => {
 
 const goalRunModeStrategy = {
   id: DASH_MODE_TYPES.goalRun,
+  timePolicy: {
+    onCorrectMs: timeBonusOnCorrect,
+    onDefeatMs: timeBonusOnDefeat,
+    onWrongMs: -timePenaltyOnWrong,
+    onCollisionMs: -timePenaltyOnCollision,
+  },
   initRun() {
     return {
       goalDistanceM: GOAL_DISTANCE_M,

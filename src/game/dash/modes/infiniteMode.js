@@ -1,8 +1,20 @@
 import { DASH_MODE_TYPES } from './modeTypes.js';
 import { toDashStageId } from '../../../features/dashStages.js';
+import {
+  timeBonusOnCorrect,
+  timeBonusOnDefeat,
+  timePenaltyOnWrong,
+  timePenaltyOnCollision,
+} from '../../../features/dashConstants.js';
 
 const infiniteModeStrategy = {
   id: DASH_MODE_TYPES.infinite,
+  timePolicy: {
+    onCorrectMs: timeBonusOnCorrect,
+    onDefeatMs: timeBonusOnDefeat,
+    onWrongMs: -timePenaltyOnWrong,
+    onCollisionMs: -timePenaltyOnCollision,
+  },
   checkEnd({ timeLeftMs }) {
     if (Number.isFinite(timeLeftMs) && timeLeftMs <= 0) {
       return { ended: true, endReason: 'timeup' };
