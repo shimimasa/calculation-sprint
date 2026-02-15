@@ -1,5 +1,6 @@
 import { randomInt } from '../core/utils.js';
 import { normalizeDashStageId, toQuestionMode } from './dashStages.js';
+import { getDashDifficultyEntry } from './dashDifficultyTable.js';
 
 const operators = {
   add: { symbol: '+', calc: (a, b) => a + b },
@@ -17,6 +18,10 @@ const digitRange = (digit) => (digit === 1
 const buildNumberFromDigits = (tens, ones) => tens * 10 + ones;
 const maxAttempts = 50;
 const normalizeQuestionMode = (mode) => (modes.includes(mode) ? mode : null);
+const normalizeLevelId = (levelId) => {
+  const numericLevel = Number(levelId);
+  return Number.isInteger(numericLevel) && numericLevel > 0 ? numericLevel : 1;
+};
 
 const pickRandomMode = (candidates = modes) => {
   if (!Array.isArray(candidates) || candidates.length === 0) {
@@ -28,6 +33,9 @@ const pickRandomMode = (candidates = modes) => {
 
 const resolveMode = (settings) => {
   const stageId = normalizeDashStageId(settings.stageId);
+  const levelId = normalizeLevelId(settings.levelId);
+  const dashDifficulty = stageId ? getDashDifficultyEntry(stageId, levelId) : null;
+  const dashParams = dashDifficulty?.params ?? null;
   const reviewModes = Array.isArray(settings.reviewModes)
     ? settings.reviewModes.filter((mode) => modes.includes(mode))
     : [];
@@ -51,17 +59,26 @@ const resolveMode = (settings) => {
   if (stageId) {
     const stageMode = toQuestionMode(stageId);
     if (stageMode === 'mix') {
+      const dashMixModes = Array.isArray(dashParams?.operatorSet)
+        ? dashParams.operatorSet.filter((mode) => modes.includes(mode))
+        : [];
       return {
-        mode: pickRandomMode(modes),
+        mode: pickRandomMode(dashMixModes.length > 0 ? dashMixModes : modes),
         stageId,
+        levelId,
         useDashStagePolicy: true,
+        dashDifficulty,
+        dashParams,
       };
     }
 
     return {
       mode: normalizeQuestionMode(stageMode) ?? 'add',
       stageId,
+      levelId,
       useDashStagePolicy: true,
+      dashDifficulty,
+      dashParams,
     };
   }
 
@@ -184,9 +201,106 @@ const nextDashDivOperands = () => generateDivisionOperands({
   fallback: { a: 12, b: 3 },
 });
 
+const isCarryPair = (a, b) => ((a % 10) + (b % 10)) >= 10;
+const isBorrowPair = (a, b) => (a % 10) < (b % 10);
+
+const generateOperandsByRule = (mode, rule) => {
+  if (!rule || typeof rule !== 'object') {
+    return null;
+  }
+
+  if (mode === 'add') {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const a = randomInt(rule.aMin, rule.aMax);
+      const b = randomInt(rule.bMin, rule.bMax);
+      const carry = isCarryPair(a, b);
+      if (rule.carry === 'avoid' && carry) {
+        continue;
+      }
+      if (rule.carry === 'some' && carry && Math.random() >= 0.25) {
+        continue;
+      }
+      if (rule.carry === 'mixed' && carry && Math.random() >= 0.5) {
+        continue;
+      }
+      if (rule.carry === 'prefer' && !carry) {
+        continue;
+      }
+      return { a, b };
+    }
+    return { a: rule.aMin, b: rule.bMin };
+  }
+
+  if (mode === 'sub') {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      let a = randomInt(rule.aMin, rule.aMax);
+      let b = randomInt(rule.bMin, rule.bMax);
+      if (a < b) {
+        [a, b] = [b, a];
+      }
+      const borrow = isBorrowPair(a, b);
+      if (rule.borrow === 'avoid' && borrow) {
+        continue;
+      }
+      if (rule.borrow === 'some' && borrow && Math.random() >= 0.25) {
+        continue;
+      }
+      if (rule.borrow === 'mixed' && borrow && Math.random() >= 0.5) {
+        continue;
+      }
+      if (rule.borrow === 'prefer' && !borrow) {
+        continue;
+      }
+      if (a - b < 0 || (!rule.allowZero && a - b === 0)) {
+        continue;
+      }
+      return { a, b };
+    }
+    return { a: Math.max(rule.aMin, rule.bMin + 1), b: rule.bMin };
+  }
+
+  if (mode === 'mul') {
+    if (Array.isArray(rule.factorsA) && Array.isArray(rule.factorsB)) {
+      return {
+        a: rule.factorsA[randomInt(0, rule.factorsA.length - 1)],
+        b: rule.factorsB[randomInt(0, rule.factorsB.length - 1)],
+      };
+    }
+    return {
+      a: randomInt(rule.aMin, rule.aMax),
+      b: randomInt(rule.bMin, rule.bMax),
+    };
+  }
+
+  if (mode === 'div') {
+    const divisor = Array.isArray(rule.divisors) && rule.divisors.length > 0
+      ? rule.divisors[randomInt(0, rule.divisors.length - 1)]
+      : randomInt(rule.divisorMin, rule.divisorMax);
+    const quotient = randomInt(rule.quotientMin, rule.quotientMax);
+    const baseDividend = divisor * quotient;
+    const remainderRate = Number(rule.remainderRate) || 0;
+    if (remainderRate > 0 && Math.random() < remainderRate) {
+      const remainderMin = Number(rule.remainderMin) || 1;
+      const remainderMax = Number(rule.remainderMax) || 2;
+      const remainder = randomInt(remainderMin, Math.min(remainderMax, divisor - 1));
+      return { a: baseDividend + remainder, b: divisor };
+    }
+    return { a: baseDividend, b: divisor };
+  }
+
+  return null;
+};
+
 const questionGenerator = {
   next(settings) {
-    const { mode, stageId, useDashStagePolicy } = resolveMode(settings);
+    const {
+      mode,
+      stageId,
+      levelId,
+      useDashStagePolicy,
+      dashDifficulty,
+      dashParams,
+    } = resolveMode(settings);
     const operator = operators[mode];
     if (!operator) {
       return { text: '1 + 1', answer: 2, meta: { mode: 'add', a: 1, b: 1 } };
@@ -195,10 +309,18 @@ const questionGenerator = {
     let a = randomInt(min, max);
     let b = randomInt(min, max);
 
-    if (mode === 'add' && settings.carry === false) {
+    const dashRuleForMode = useDashStagePolicy
+      ? (dashParams?.[mode] ?? (dashParams?.mode === mode ? dashParams : null))
+      : null;
+    const stageLevelOperands = generateOperandsByRule(mode, dashRuleForMode);
+    if (stageLevelOperands) {
+      ({ a, b } = stageLevelOperands);
+    }
+
+    if (!stageLevelOperands && mode === 'add' && settings.carry === false) {
       ({ a, b } = nextAddNoCarry(settings.digit));
     }
-    if (mode === 'sub') {
+    if (!stageLevelOperands && mode === 'sub') {
       const isDashMinus = useDashStagePolicy && stageId === 'minus';
       if (isDashMinus) {
         ({ a, b } = nextDashSubOperands());
@@ -210,11 +332,11 @@ const questionGenerator = {
         [a, b] = [b, a];
       }
     }
-    if (mode === 'mul') {
+    if (!stageLevelOperands && mode === 'mul') {
       a = randomInt(1, 9);
       b = randomInt(1, 9);
     }
-    if (mode === 'div') {
+    if (!stageLevelOperands && mode === 'div') {
       const isDashDivide = useDashStagePolicy && stageId === 'divide';
       if (isDashDivide) {
         ({ a, b } = nextDashDivOperands());
@@ -245,7 +367,23 @@ const questionGenerator = {
     return {
       text: `${a} ${operator.symbol} ${b}`,
       answer,
-      meta: { mode, a, b },
+      meta: {
+        mode,
+        a,
+        b,
+        difficulty: useDashStagePolicy
+          ? {
+            stageId,
+            levelId,
+            operatorSet: stageId === 'mix'
+              ? (dashParams?.operatorSet ?? modes)
+              : [mode],
+            labelShort: dashDifficulty?.labelShort ?? null,
+            labelLong: dashDifficulty?.labelLong ?? null,
+            operandRule: dashRuleForMode ?? null,
+          }
+          : null,
+      },
     };
   },
 };

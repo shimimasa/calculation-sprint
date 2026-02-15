@@ -759,6 +759,7 @@
   --stage-color: var(--stage-mix);
 }
 .calc-sprint #dash-stage-select-screen .dash-stage-card__badge {
+  pointer-events: none;
   position: absolute;
   left: 20px;
   top: 50%;
@@ -786,6 +787,7 @@
   line-height: 1.45;
 }
 .calc-sprint #dash-stage-select-screen .dash-stage-card__selected {
+  pointer-events: none;
   position: absolute;
   right: 10px;
   top: 10px;
@@ -873,6 +875,7 @@
 .calc-sprint #dash-stage-select-screen .dash-stage-card__actions,
 .calc-sprint #dash-stage-select-screen .dash-stage-card__footer,
 .calc-sprint #dash-stage-select-screen [data-role="dash-level-actions"] {
+  pointer-events: auto;
   display: grid;
   gap: 10px;
   margin-top: 8px;
@@ -4635,6 +4638,20 @@ body > .dash-overlay-root .dash-runner-debug-outline {
 
 .calc-sprint .dash-level-button:active {
   transform: translateY(1px);
+}
+
+.calc-sprint .dash-level-button__level {
+  display: block;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.calc-sprint .dash-level-button__hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  white-space: normal;
 }
 
 .calc-sprint #dash-stage-select-start-button.is-cta,

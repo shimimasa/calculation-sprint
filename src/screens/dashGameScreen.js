@@ -243,6 +243,16 @@ const logKeypadDebug = (label, payload = {}) => {
   }
   console.log(`[keypad-debug:${label}]`, payload);
 };
+
+const isDashStartDebugLogEnabled = () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(DASH_DEBUG_QUERY_KEY) === '1';
+  } catch (error) {
+    return false;
+  }
+};
+
 const dashGameScreen = {
   answerBuffer: '',
   isSyncingAnswer: false,
@@ -2037,8 +2047,21 @@ const dashGameScreen = {
     this.currentQuestion = questionGenerator.next({
       ...gameState.settings,
       stageId: this.dashStageId,
+      levelId: this.dashLevelId,
       questionMode: gameState.dash.currentMode,
     });
+    if (isDashStartDebugLogEnabled() && !this.hasLoggedQuestionDifficultyDebug) {
+      this.hasLoggedQuestionDifficultyDebug = true;
+      const difficulty = this.currentQuestion?.meta?.difficulty ?? null;
+      console.log('[dash-game.question-difficulty]', {
+        stageId: this.dashStageId,
+        levelId: this.dashLevelId,
+        modeId: this.currentDashModeId,
+        labelShort: difficulty?.labelShort ?? null,
+        params: difficulty?.operandRule ?? null,
+        operatorSet: difficulty?.operatorSet ?? null,
+      });
+    }
     gameState.dash.currentMode = this.currentQuestion?.meta?.mode ?? null;
     if (domRefs.dashGame.question) {
       domRefs.dashGame.question.textContent = this.currentQuestion.text;
@@ -2574,8 +2597,21 @@ const dashGameScreen = {
     this.lastCollisionDebugMs = -Infinity;
     this.lastCollisionStageLogKey = '';
     this.runnerMutationObservers = [];
-    this.dashStageId = toDashStageId(gameState.dash?.stageId);
+    this.hasLoggedQuestionDifficultyDebug = false;
+    this.dashStageId = toDashStageId(gameState.dash?.stageId ?? gameState.dash?.worldKey);
+    const levelId = gameState.dash?.levelId ?? 1;
+    this.dashLevelId = levelId;
     gameState.dash.stageId = this.dashStageId;
+    gameState.dash.worldKey = this.dashStageId;
+    gameState.dash.levelId = this.dashLevelId;
+    if (isDashStartDebugLogEnabled()) {
+      console.log('[dash-game.start]', {
+        worldKey: this.dashStageId,
+        stageId: this.dashStageId,
+        levelId: this.dashLevelId,
+        modeId: this.currentDashModeId,
+      });
+    }
     this.applyDashTheme();
     gameState.dash.currentMode = null;
     this.enemySystem = createDashEnemySystem({
