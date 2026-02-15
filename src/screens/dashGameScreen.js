@@ -2050,6 +2050,15 @@ const dashGameScreen = {
       levelId: this.dashLevelId,
       questionMode: gameState.dash.currentMode,
     });
+    if (isDashStartDebugLogEnabled() && !this.hasLoggedQuestionDifficultyDebug) {
+      this.hasLoggedQuestionDifficultyDebug = true;
+      console.log('[dash-game.question-difficulty]', {
+        stageId: this.dashStageId,
+        levelId: this.dashLevelId,
+        modeId: this.currentDashModeId,
+        difficulty: this.currentQuestion?.meta?.difficulty ?? null,
+      });
+    }
     gameState.dash.currentMode = this.currentQuestion?.meta?.mode ?? null;
     if (domRefs.dashGame.question) {
       domRefs.dashGame.question.textContent = this.currentQuestion.text;
@@ -2585,6 +2594,7 @@ const dashGameScreen = {
     this.lastCollisionDebugMs = -Infinity;
     this.lastCollisionStageLogKey = '';
     this.runnerMutationObservers = [];
+    this.hasLoggedQuestionDifficultyDebug = false;
     this.dashStageId = toDashStageId(gameState.dash?.stageId ?? gameState.dash?.worldKey);
     const levelId = gameState.dash?.levelId ?? 1;
     this.dashLevelId = levelId;
