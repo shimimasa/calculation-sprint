@@ -6,7 +6,6 @@ import audioManager from '../core/audioManager.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 import { perfLog } from '../core/perf.js';
 import { preloadStageCoreImages } from '../core/stageAssetPreloader.js';
-import dashSettingsStore from '../core/dashSettingsStore.js';
 import {
   DASH_STAGE_IDS,
   findDashStageById,
@@ -45,26 +44,6 @@ const DASH_LEVEL_ACTION_SELECTOR = [
   '.dash-level-button',
 ].join(',');
 
-const resolveDashStageClickAction = ({ worldLevelEnabled, hasLevelUi }) => {
-  if (worldLevelEnabled !== true) {
-    return {
-      action: 'start',
-      reason: 'worldLevelEnabled=false',
-    };
-  }
-
-  if (!hasLevelUi) {
-    return {
-      action: 'start',
-      reason: 'level-ui-missing-fallback-start',
-    };
-  }
-
-  return {
-    action: 'expand',
-    reason: 'worldLevelEnabled=true',
-  };
-};
 
 const isDashDebugEnabled = () => {
   if (window.__DASH_DEBUG === true) {
@@ -182,8 +161,6 @@ const syncDashStartButtonState = () => {
   });
 };
 
-const getWorldLevelEnabled = () => dashSettingsStore.getWorldLevelEnabled();
-
 const getSelectedLevelLabel = () => {
   const selectedLevel = gameState.dash?.levelId ?? gameState.dash?.level;
   if (selectedLevel === undefined || selectedLevel === null || selectedLevel === '') {
@@ -206,7 +183,6 @@ const normalizeLevelId = (levelId) => {
 const updateSelectionBadges = () => {
   const modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
   const stageId = toDashStageId(gameState.dash?.stageId);
-  const showLevel = getWorldLevelEnabled();
   const levelLabel = getSelectedLevelLabel();
 
   if (domRefs.dashStageSelect.modeBadge) {
@@ -219,7 +195,7 @@ const updateSelectionBadges = () => {
   }
 
   if (domRefs.dashStageSelect.levelBadge) {
-    const shouldShowLevel = showLevel && Boolean(levelLabel);
+    const shouldShowLevel = Boolean(levelLabel);
     domRefs.dashStageSelect.levelBadge.hidden = !shouldShowLevel;
     if (shouldShowLevel) {
       domRefs.dashStageSelect.levelBadge.textContent = `Lv: ${levelLabel}`;
@@ -231,7 +207,6 @@ const dashStageSelectScreen = {
   enter() {
     uiRenderer.showScreen('dash-stage-select');
     this.events = createEventRegistry('dash-stage-select');
-    this.worldLevelEnabled = getWorldLevelEnabled();
     this.expandedStageId = null;
 
     const selectedStage = toDashStageId(gameState.dash?.stageId);
@@ -301,30 +276,18 @@ const dashStageSelectScreen = {
       });
       updateSelectionBadges();
 
-      const clickAction = resolveDashStageClickAction({
-        worldLevelEnabled: this.worldLevelEnabled,
-        clickStageId: stage.id,
-        hasLevelUi: Boolean(this.getLevelHost(stage.id)),
-      });
-
       logDashStageClickDecision({
-        worldLevelEnabled: this.worldLevelEnabled,
+        worldLevelEnabled: true,
         modeId: gameState.dash.modeId,
         clickedStageId: stage.id,
         selectedWorld: gameState.dash.stageId,
         selectedLevel: gameState.dash.levelId ?? gameState.dash.level ?? null,
-        decidedAction: clickAction.action,
-        reason: clickAction.reason,
+        decidedAction: 'expand',
+        reason: 'always-expand-level-selection',
       });
 
-      if (clickAction.action === 'expand') {
-        audioManager.playSfx('sfx_click');
-        this.expandWorld(stage.id);
-        return;
-      }
-
-      audioManager.playSfx('sfx_confirm');
-      this.startDash(stage.id);
+      audioManager.playSfx('sfx_click');
+      this.expandWorld(stage.id);
     };
 
     this.handleBack = () => {
@@ -391,10 +354,6 @@ const dashStageSelectScreen = {
   },
   expandWorld(stageId) {
     const normalizedStageId = toDashStageId(stageId);
-    if (!this.worldLevelEnabled) {
-      return;
-    }
-
     if (this.expandedStageId && this.expandedStageId !== normalizedStageId) {
       this.closeExpandedWorld(this.expandedStageId);
     }

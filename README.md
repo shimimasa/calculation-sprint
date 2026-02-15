@@ -41,15 +41,14 @@
 
 ## Dash World/Level 回帰チェック
 
-- OFF: Worldカード1クリックで即開始する。
-- ON: Worldカードクリックでは開始せず、展開のみ行う。
-- ON: Level選択後「このレベルでスタート」で開始する。
+- Worldカードクリックでは即開始せず、展開のみ行う。
+- 展開後に Level を選択し「このレベルでスタート」で開始する。
 - モード切替（Infinite/GoalRun/ScoreAttack60）後も上記挙動を維持する。
 - mixステージでも上記挙動を維持する。
 
 ## Dash World/Level デバッグログ
 
 - `?dashDebug=1`（または `window.__DASH_DEBUG === true`）時のみ、Dashステージ選択のクリック経路ログを `console.log` 出力する。
-- ON時は `Worldカード=expandのみ` の判断ログに加え、`LEVEL` / `このレベルでスタート` / `閉じる` の専用ログが出る。
+- `Worldカード=expandのみ` の判断ログに加え、`LEVEL` / `このレベルでスタート` / `閉じる` の専用ログが出る。
 - 通常URL（`?dashDebug` なし）ではこれらのログは出ない。
 
