@@ -7,6 +7,7 @@ import dashWorldLevelStore from '../core/dashWorldLevelStore.js';
 import gameState from '../core/gameState.js';
 import inputActions from '../core/inputActions.js';
 import questionGenerator from '../features/questionGenerator.js';
+import { getEnemyStageKeyForQuestion } from '../features/dashEnemyStageKey.js';
 import {
   baseSpeed,
   speedIncrementPerCorrect,
@@ -2040,6 +2041,9 @@ const dashGameScreen = {
       ...gameState.settings,
       stageId: worldLevelEnabled ? null : this.dashStageId,
       questionMode: gameState.dash.currentMode,
+      worldLevelEnabled,
+      worldKey: gameState.dash.worldKey,
+      levelId: gameState.dash.levelId,
     });
     gameState.dash.currentMode = this.currentQuestion?.meta?.mode ?? null;
     if (domRefs.dashGame.question) {
@@ -2578,7 +2582,10 @@ const dashGameScreen = {
     this.runnerMutationObservers = [];
     const worldLevelEnabled = dashSettingsStore.getWorldLevelEnabled();
     if (worldLevelEnabled) {
-      const worldLevel = dashWorldLevelStore.setFromStageId(gameState.dash?.stageId);
+      const worldLevel = dashWorldLevelStore.save({
+        worldKey: gameState.dash?.worldKey ?? gameState.dash?.stageId,
+        levelId: gameState.dash?.levelId ?? dashWorldLevelStore.getSelectedLevelId(),
+      });
       gameState.dash.worldKey = worldLevel.worldKey;
       gameState.dash.levelId = worldLevel.levelId;
       this.dashStageId = toDashStageId(worldLevel.worldKey);
@@ -2590,6 +2597,12 @@ const dashGameScreen = {
     gameState.dash.currentMode = null;
     this.enemySystem = createDashEnemySystem({
       stageId: this.dashStageId,
+      getEnemyType: () => {
+        if (!worldLevelEnabled) {
+          return null;
+        }
+        return getEnemyStageKeyForQuestion(this.currentQuestion, gameState.dash.worldKey);
+      },
       getCurrentMode: () => gameState.dash.currentMode,
       isDebugEnabled: () => this.isDashRunnerDebugEnabled(),
       isEnemyDebugEnabled: () => this.isDashEnemyDebugEnabled(),

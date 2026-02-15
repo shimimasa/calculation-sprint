@@ -1,4 +1,5 @@
 import { randomInt } from '../core/utils.js';
+import { getDashDifficultyRule } from '../data/dashDifficultySchema.js';
 import { normalizeDashStageId, toQuestionMode } from './dashStages.js';
 
 const operators = {
@@ -17,6 +18,9 @@ const digitRange = (digit) => (digit === 1
 const buildNumberFromDigits = (tens, ones) => tens * 10 + ones;
 const maxAttempts = 50;
 const normalizeQuestionMode = (mode) => (modes.includes(mode) ? mode : null);
+const isCarryCase = (a, b) => ((a % 10) + (b % 10)) >= 10;
+const isBorrowCase = (a, b) => (a % 10) < (b % 10);
+const pickOperandByDigits = (digits) => (digits === 1 ? randomInt(1, 9) : randomInt(10, 99));
 
 const pickRandomMode = (candidates = modes) => {
   if (!Array.isArray(candidates) || candidates.length === 0) {
@@ -184,8 +188,123 @@ const nextDashDivOperands = () => generateDivisionOperands({
   fallback: { a: 12, b: 3 },
 });
 
+const tryGenerateDashWorldLevelQuestion = (settings) => {
+  if (settings.worldLevelEnabled !== true) {
+    return null;
+  }
+  const worldKey = typeof settings.worldKey === 'string' ? settings.worldKey : null;
+  if (!worldKey) {
+    return null;
+  }
+  const resolved = getDashDifficultyRule(worldKey, settings.levelId);
+  const rule = resolved.rule;
+  if (!rule || rule.mode === 'mix') {
+    return null;
+  }
+
+  if (rule.mode === 'add') {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const a = pickOperandByDigits(rule.aDigits);
+      const b = pickOperandByDigits(rule.bDigits);
+      if ((rule.carry === true && !isCarryCase(a, b)) || (rule.carry === false && isCarryCase(a, b))) {
+        continue;
+      }
+      return {
+        text: `${a} + ${b}`,
+        answer: a + b,
+        meta: { mode: 'add', a, b, worldKey: resolved.worldKey, levelId: resolved.levelId, difficultyKey: resolved.difficultyKey },
+      };
+    }
+    return null;
+  }
+
+  if (rule.mode === 'sub') {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      let a = pickOperandByDigits(rule.aDigits);
+      let b = pickOperandByDigits(rule.bDigits);
+      if (rule.nonNegative && a < b) {
+        [a, b] = [b, a];
+      }
+      if ((rule.borrow === true && !isBorrowCase(a, b)) || (rule.borrow === false && isBorrowCase(a, b))) {
+        continue;
+      }
+      if (rule.nonNegative && a < b) {
+        continue;
+      }
+      return {
+        text: `${a} - ${b}`,
+        answer: a - b,
+        meta: { mode: 'sub', a, b, worldKey: resolved.worldKey, levelId: resolved.levelId, difficultyKey: resolved.difficultyKey },
+      };
+    }
+    return null;
+  }
+
+  if (rule.mode === 'mul') {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const a = pickOperandByDigits(rule.aDigits);
+      const b = pickOperandByDigits(rule.bDigits);
+      return {
+        text: `${a} × ${b}`,
+        answer: a * b,
+        meta: { mode: 'mul', a, b, worldKey: resolved.worldKey, levelId: resolved.levelId, difficultyKey: resolved.difficultyKey },
+      };
+    }
+    return null;
+  }
+
+  if (rule.mode === 'div') {
+    if (rule.divisible === true) {
+      const { a, b } = generateDivisionOperands({
+        minDividend: 2,
+        maxDividend: 99,
+        minDivisor: 2,
+        maxDivisor: 12,
+        minQuotient: 1,
+        maxQuotient: 12,
+        fallback: { a: 12, b: 3 },
+      });
+      return {
+        text: `${a} ÷ ${b}`,
+        answer: a / b,
+        meta: { mode: 'div', a, b, worldKey: resolved.worldKey, levelId: resolved.levelId, difficultyKey: resolved.difficultyKey },
+      };
+    }
+    if (rule.divisible === false && rule.integerAnswerOnly === true) {
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const b = randomInt(2, 9);
+        const quotient = randomInt(1, 9);
+        const remainder = randomInt(1, b - 1);
+        const a = b * quotient + remainder;
+        if (a <= 99) {
+          return {
+            text: `${a} ÷ ${b}（しょう）`,
+            answer: quotient,
+            meta: {
+              mode: 'div',
+              a,
+              b,
+              remainder,
+              worldKey: resolved.worldKey,
+              levelId: resolved.levelId,
+              difficultyKey: resolved.difficultyKey,
+            },
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
 const questionGenerator = {
   next(settings) {
+    const worldLevelQuestion = tryGenerateDashWorldLevelQuestion(settings);
+    if (worldLevelQuestion) {
+      return worldLevelQuestion;
+    }
+
     const { mode, stageId, useDashStagePolicy } = resolveMode(settings);
     const operator = operators[mode];
     if (!operator) {

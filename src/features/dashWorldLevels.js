@@ -2,24 +2,28 @@ import { toDashStageId } from './dashStages.js';
 
 const DASH_WORLD_LEVEL_DEFINITIONS = Object.freeze({
   plus: Object.freeze([
-    Object.freeze({ levelId: 1, difficultyKey: 'plus-basic' }),
-    Object.freeze({ levelId: 2, difficultyKey: 'plus-standard' }),
+    Object.freeze({ levelId: 1, difficultyKey: 'plus-l1' }),
+    Object.freeze({ levelId: 2, difficultyKey: 'plus-l2' }),
+    Object.freeze({ levelId: 3, difficultyKey: 'plus-l3' }),
+    Object.freeze({ levelId: 4, difficultyKey: 'plus-l4' }),
   ]),
   minus: Object.freeze([
-    Object.freeze({ levelId: 1, difficultyKey: 'minus-basic' }),
-    Object.freeze({ levelId: 2, difficultyKey: 'minus-standard' }),
+    Object.freeze({ levelId: 1, difficultyKey: 'minus-l1' }),
+    Object.freeze({ levelId: 2, difficultyKey: 'minus-l2' }),
+    Object.freeze({ levelId: 3, difficultyKey: 'minus-l3' }),
+    Object.freeze({ levelId: 4, difficultyKey: 'minus-l4' }),
   ]),
   multi: Object.freeze([
-    Object.freeze({ levelId: 1, difficultyKey: 'multi-basic' }),
-    Object.freeze({ levelId: 2, difficultyKey: 'multi-standard' }),
+    Object.freeze({ levelId: 1, difficultyKey: 'multi-l1' }),
+    Object.freeze({ levelId: 2, difficultyKey: 'multi-l2' }),
   ]),
   divide: Object.freeze([
-    Object.freeze({ levelId: 1, difficultyKey: 'divide-basic' }),
-    Object.freeze({ levelId: 2, difficultyKey: 'divide-standard' }),
+    Object.freeze({ levelId: 1, difficultyKey: 'divide-l1' }),
+    Object.freeze({ levelId: 2, difficultyKey: 'divide-l2' }),
   ]),
   mix: Object.freeze([
-    Object.freeze({ levelId: 1, difficultyKey: 'mix-basic' }),
-    Object.freeze({ levelId: 2, difficultyKey: 'mix-standard' }),
+    Object.freeze({ levelId: 1, difficultyKey: 'mix-l1' }),
+    Object.freeze({ levelId: 2, difficultyKey: 'mix-l2' }),
   ]),
 });
 

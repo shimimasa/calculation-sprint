@@ -98,6 +98,9 @@ const dashSettingsStore = {
   getWorldLevelEnabled(profileId) {
     return this.get(profileId).worldLevelEnabled === true;
   },
+  setWorldLevelEnabled(enabled, profileId) {
+    return this.save({ worldLevelEnabled: Boolean(enabled) }, profileId);
+  },
 };
 
 export default dashSettingsStore;
