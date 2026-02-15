@@ -84,26 +84,41 @@
           </div>
         </header>
         <div id="dash-stage-select-list" class="stage-select-list" role="list" aria-label="ダッシュステージ一覧">
-          <button class="secondary-button" type="button" data-dash-stage-id="plus">
-            <span>たし算</span>
-            <small>たし算だけが出るステージ</small>
-          </button>
-          <button class="secondary-button" type="button" data-dash-stage-id="minus">
-            <span>ひき算</span>
-            <small>ひき算だけが出るステージ</small>
-          </button>
-          <button class="secondary-button" type="button" data-dash-stage-id="multi">
-            <span>かけ算</span>
-            <small>かけ算だけが出るステージ</small>
-          </button>
-          <button class="secondary-button" type="button" data-dash-stage-id="divide">
-            <span>わり算</span>
-            <small>わり算だけが出るステージ</small>
-          </button>
-          <button class="secondary-button" type="button" data-dash-stage-id="mix">
-            <span>ミックス</span>
-            <small>4つの演算がランダムで出るステージ</small>
-          </button>
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="plus">
+            <button class="secondary-button" type="button" data-dash-stage-id="plus">
+              <span>たし算</span>
+              <small>たし算だけが出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="plus" hidden></div>
+          </div>
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="minus">
+            <button class="secondary-button" type="button" data-dash-stage-id="minus">
+              <span>ひき算</span>
+              <small>ひき算だけが出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="minus" hidden></div>
+          </div>
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="multi">
+            <button class="secondary-button" type="button" data-dash-stage-id="multi">
+              <span>かけ算</span>
+              <small>かけ算だけが出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="multi" hidden></div>
+          </div>
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="divide">
+            <button class="secondary-button" type="button" data-dash-stage-id="divide">
+              <span>わり算</span>
+              <small>わり算だけが出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="divide" hidden></div>
+          </div>
+          <div class="dash-stage-card-wrap" role="listitem" data-dash-world-card="mix">
+            <button class="secondary-button" type="button" data-dash-stage-id="mix">
+              <span>ミックス</span>
+              <small>4つの演算がランダムで出るステージ</small>
+            </button>
+            <div class="dash-stage-card__levels" data-dash-levels-for="mix" hidden></div>
+          </div>
         </div>
         <div class="stage-select-actions">
           <button id="dash-stage-select-back-button" class="secondary-button" type="button">戻る（キャンセル）</button>

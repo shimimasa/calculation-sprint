@@ -717,6 +717,10 @@
 .calc-sprint #dash-stage-select-screen .stage-select-list {
   gap: 10px;
 }
+.calc-sprint #dash-stage-select-screen .dash-stage-card-wrap {
+  display: grid;
+  gap: 8px;
+}
 .calc-sprint #dash-stage-select-screen .dash-stage-card {
   position: relative;
   width: 100%;
@@ -847,6 +851,21 @@
   font-size: 14px;
   line-height: 1.5;
   font-weight: 700;
+}
+
+
+.calc-sprint #dash-stage-select-screen .dash-stage-card__levels[hidden] {
+  display: none;
+}
+
+.calc-sprint #dash-stage-select-screen .dash-level-select-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .calc-sprint #dash-stage-select-screen .dash-level-select-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .calc-sprint #dash-stage-select-screen .dash-stage-card__levels,
