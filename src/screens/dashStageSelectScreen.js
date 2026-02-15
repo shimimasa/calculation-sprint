@@ -6,9 +6,11 @@ import audioManager from '../core/audioManager.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
 import { perfLog } from '../core/perf.js';
 import { preloadStageCoreImages } from '../core/stageAssetPreloader.js';
+import dashSettingsStore from '../core/dashSettingsStore.js';
 import {
   DASH_STAGE_IDS,
   findDashStageById,
+  getDashStageLabelJa,
   getDashStageOrFallback,
   toDashStageId,
 } from '../features/dashStages.js';
@@ -26,6 +28,12 @@ const MODE_NOTE_MAP = Object.freeze({
   infinite: 'じかんをのばして どこまでいける？',
   goalRun: '1000mまで いっきにダッシュ！',
   scoreAttack60: '60びょうで スコアをかせげ！',
+});
+
+const MODE_BADGE_LABEL_MAP = Object.freeze({
+  infinite: 'Infinite',
+  goalRun: 'GoalRun',
+  scoreAttack60: 'ScoreAttack60',
 });
 
 const SELECTED_CLASS_NAME = 'is-selected';
@@ -88,6 +96,45 @@ const syncDashStartButtonState = () => {
   });
 };
 
+const getWorldLevelEnabled = () => {
+  if (typeof dashSettingsStore.getWorldLevelEnabled === 'function') {
+    return dashSettingsStore.getWorldLevelEnabled();
+  }
+  return dashSettingsStore.get()?.worldLevelEnabled === true;
+};
+
+const getSelectedLevelLabel = () => {
+  const selectedLevel = gameState.dash?.levelId ?? gameState.dash?.level;
+  if (selectedLevel === undefined || selectedLevel === null || selectedLevel === '') {
+    return null;
+  }
+  return String(selectedLevel);
+};
+
+const updateSelectionBadges = () => {
+  const modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
+  const stageId = toDashStageId(gameState.dash?.stageId);
+  const showLevel = getWorldLevelEnabled();
+  const levelLabel = getSelectedLevelLabel();
+
+  if (domRefs.dashStageSelect.modeBadge) {
+    const modeLabel = MODE_BADGE_LABEL_MAP[modeId] ?? MODE_BADGE_LABEL_MAP.infinite;
+    domRefs.dashStageSelect.modeBadge.textContent = `モード: ${modeLabel}`;
+  }
+
+  if (domRefs.dashStageSelect.stageBadge) {
+    domRefs.dashStageSelect.stageBadge.textContent = `ステージ: ${getDashStageLabelJa(stageId)}`;
+  }
+
+  if (domRefs.dashStageSelect.levelBadge) {
+    const shouldShowLevel = showLevel && Boolean(levelLabel);
+    domRefs.dashStageSelect.levelBadge.hidden = !shouldShowLevel;
+    if (shouldShowLevel) {
+      domRefs.dashStageSelect.levelBadge.textContent = `Lv: ${levelLabel}`;
+    }
+  }
+};
+
 const dashStageSelectScreen = {
   enter() {
     uiRenderer.showScreen('dash-stage-select');
@@ -109,6 +156,7 @@ const dashStageSelectScreen = {
       updateModeSelectionState(button, modeId === selectedModeId);
     });
     syncDashStartButtonState();
+    updateSelectionBadges();
     if (domRefs.dashStageSelect.modeNote) {
       domRefs.dashStageSelect.modeNote.textContent = MODE_NOTE_MAP[selectedModeId] ?? MODE_NOTE_MAP.infinite;
     }
@@ -125,6 +173,7 @@ const dashStageSelectScreen = {
         updateModeSelectionState(candidate, candidateMode === modeId);
       });
       syncDashStartButtonState();
+      updateSelectionBadges();
       if (domRefs.dashStageSelect.modeNote) {
         domRefs.dashStageSelect.modeNote.textContent = MODE_NOTE_MAP[modeId] ?? MODE_NOTE_MAP.infinite;
       }
@@ -149,6 +198,7 @@ const dashStageSelectScreen = {
         const candidateStageId = toDashStageId(candidate.dataset.dashStageId);
         updateSelectionState(candidate, candidateStageId === stage.id);
       });
+      updateSelectionBadges();
       gameState.dash.modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
       gameState.dash.currentMode = null;
       preloadStageCoreImages(stage.id, { mode: 'dash' });

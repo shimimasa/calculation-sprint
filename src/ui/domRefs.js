@@ -36,6 +36,10 @@ const domRefs = {
     modeList: byId('dash-mode-select-list'),
     modeButtons: qsa('#dash-mode-select-list [data-dash-mode-id]'),
     modeNote: byId('dash-stage-select-mode-note'),
+    selectionBadges: byId('dash-selection-badges'),
+    modeBadge: byId('dash-selection-badge-mode'),
+    stageBadge: byId('dash-selection-badge-stage'),
+    levelBadge: byId('dash-selection-badge-level'),
     backButton: byId('dash-stage-select-back-button'),
   },
   dashGame: {

@@ -693,6 +693,16 @@
   color: var(--dash-select-muted);
   line-height: 1.55;
 }
+.calc-sprint #dash-stage-select-screen .dash-selection-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.calc-sprint #dash-stage-select-screen .dash-selection-badge {
+  font-size: 12px;
+  line-height: 1.3;
+}
 @media (max-width: 640px) {
   .calc-sprint #dash-stage-select-screen .dash-stage-select-header {
     margin-bottom: 12px;

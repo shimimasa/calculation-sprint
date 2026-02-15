@@ -72,6 +72,11 @@
         <header class="dash-stage-select-header">
           <h2 class="dash-stage-select-header__title">ダッシュステージをえらぼう</h2>
           <p id="dash-stage-select-mode-note" class="setting-note dash-stage-select-header__note">じかんをのばして どこまでいける？</p>
+          <div id="dash-selection-badges" class="dash-selection-badges" aria-live="polite">
+            <span id="dash-selection-badge-mode" class="badge dash-selection-badge">モード: Infinite</span>
+            <span id="dash-selection-badge-stage" class="badge dash-selection-badge">ステージ: たし算</span>
+            <span id="dash-selection-badge-level" class="badge dash-selection-badge" hidden>Lv: 1</span>
+          </div>
           <div id="dash-mode-select-list" class="dash-mode-select-list" role="tablist" aria-label="ダッシュモード選択">
             <button class="secondary-button" type="button" data-dash-mode-id="infinite">Infinite（とことん）</button>
             <button class="secondary-button" type="button" data-dash-mode-id="goalRun">GoalRun（1000mチャレンジ）</button>
