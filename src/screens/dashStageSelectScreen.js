@@ -28,6 +28,8 @@ const MODE_NOTE_MAP = Object.freeze({
   scoreAttack60: '60びょうで スコアをかせげ！',
 });
 
+const SELECTED_CLASS_NAME = 'is-selected';
+
 const enhanceStageButton = (button) => {
   const stageId = toDashStageId(button.dataset.dashStageId);
   const visual = STAGE_VISUAL_MAP[stageId] ?? STAGE_VISUAL_MAP.mix;
@@ -57,9 +59,14 @@ const enhanceStageButton = (button) => {
   }
 };
 
-const updateSelectionState = (button, isSelected) => {
+const updateButtonSelectionState = (button, isSelected) => {
   button.classList.toggle('is-current', isSelected);
+  button.classList.toggle(SELECTED_CLASS_NAME, isSelected);
   button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+};
+
+const updateSelectionState = (button, isSelected) => {
+  updateButtonSelectionState(button, isSelected);
   if (isSelected) {
     button.setAttribute('aria-current', 'true');
   } else {
@@ -68,8 +75,17 @@ const updateSelectionState = (button, isSelected) => {
 };
 
 const updateModeSelectionState = (button, isSelected) => {
-  button.classList.toggle('is-current', isSelected);
-  button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+  updateButtonSelectionState(button, isSelected);
+};
+
+const syncDashStartButtonState = () => {
+  const startButtons = document.querySelectorAll('[data-role="dash-start"]');
+  startButtons.forEach((button) => {
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+    button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
+  });
 };
 
 const dashStageSelectScreen = {
@@ -92,6 +108,7 @@ const dashStageSelectScreen = {
       const modeId = normalizeDashModeId(button.dataset.dashModeId);
       updateModeSelectionState(button, modeId === selectedModeId);
     });
+    syncDashStartButtonState();
     if (domRefs.dashStageSelect.modeNote) {
       domRefs.dashStageSelect.modeNote.textContent = MODE_NOTE_MAP[selectedModeId] ?? MODE_NOTE_MAP.infinite;
     }
@@ -107,6 +124,7 @@ const dashStageSelectScreen = {
         const candidateMode = normalizeDashModeId(candidate.dataset.dashModeId);
         updateModeSelectionState(candidate, candidateMode === modeId);
       });
+      syncDashStartButtonState();
       if (domRefs.dashStageSelect.modeNote) {
         domRefs.dashStageSelect.modeNote.textContent = MODE_NOTE_MAP[modeId] ?? MODE_NOTE_MAP.infinite;
       }
@@ -127,6 +145,10 @@ const dashStageSelectScreen = {
       audioManager.unlock();
       audioManager.playSfx('sfx_confirm');
       gameState.dash.stageId = stage.id;
+      domRefs.dashStageSelect.buttons.forEach((candidate) => {
+        const candidateStageId = toDashStageId(candidate.dataset.dashStageId);
+        updateSelectionState(candidate, candidateStageId === stage.id);
+      });
       gameState.dash.modeId = normalizeDashModeId(gameState.dash?.modeId ?? DEFAULT_DASH_MODE);
       gameState.dash.currentMode = null;
       preloadStageCoreImages(stage.id, { mode: 'dash' });
