@@ -175,7 +175,7 @@ const dashResultScreen = {
           const score = Number(result.score ?? result.totalScore ?? 0);
           const newBadge = recordState.isNewRecord ? '<span class="badge dash-badge-new">NEW RECORD</span>' : '';
           modeSummary.hidden = false;
-          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Score Attack 60</p><p class="dash-result-mode-summary__status" data-cleared="1">Total Score: ${score}${newBadge}</p><p class="dash-result-mode-summary__detail">Max Combo: ${Number(result.maxCombo) || 0} / Correct: ${Number(result.correctCount) || 0} / Wrong: ${Number(result.wrongCount) || 0}</p><p class="dash-result-mode-summary__detail">Hits: ${Number(result.hits) || 0}</p>`;
+          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Score Attack 60</p><p class="dash-result-mode-summary__status" data-cleared="1">Total Score: ${score}${newBadge}</p><p class="dash-result-mode-summary__detail">Max Combo: ${Number(result.maxCombo) || 0} / Correct: ${Number(result.correctCount) || 0} / Wrong: ${Number(result.wrongCount) || 0}</p><p class="dash-result-mode-summary__detail">Hits: ${Number(result.hits) || 0}</p><p class="dash-result-mode-summary__detail">ミスやぶつかりで じかんがへるよ。60びょうで どれだけスコアをかせげるか！</p>`;
         } else {
           modeSummary.hidden = true;
           modeSummary.textContent = '';
