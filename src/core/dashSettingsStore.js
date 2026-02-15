@@ -7,11 +7,13 @@ import {
 } from './storageKeys.js';
 
 const VALID_DIFFICULTIES = new Set(['easy', 'normal', 'hard']);
+const WORLD_LEVEL_ENABLED_KEY = 'dash.worldLevel.enabled';
 
 export const DEFAULT_DASH_SETTINGS = Object.freeze({
   bgmEnabled: true,
   sfxEnabled: true,
   difficulty: 'normal',
+  worldLevelEnabled: false,
   schemaVersion: DEFAULT_SCHEMA_VERSION,
 });
 
@@ -25,8 +27,25 @@ const normalizeSettings = (raw) => {
     bgmEnabled: settings.bgmEnabled !== false,
     sfxEnabled: settings.sfxEnabled !== false,
     difficulty: normalizeDifficulty(settings.difficulty),
+    worldLevelEnabled: settings.worldLevelEnabled === true,
     schemaVersion: DEFAULT_SCHEMA_VERSION,
   };
+};
+
+const readWorldLevelEnabled = () => {
+  try {
+    return window.localStorage.getItem(WORLD_LEVEL_ENABLED_KEY) === '1';
+  } catch (error) {
+    return false;
+  }
+};
+
+const writeWorldLevelEnabled = (enabled) => {
+  try {
+    window.localStorage.setItem(WORLD_LEVEL_ENABLED_KEY, enabled ? '1' : '0');
+  } catch (error) {
+    return null;
+  }
 };
 
 const readStorage = (key) => {
@@ -80,7 +99,10 @@ const dashSettingsStore = {
   get(profileId) {
     const resolvedProfileId = resolveProfileId(profileId);
     const key = makeStoreKey(resolvedProfileId, STORE_NAMES.dashSettings);
-    const normalized = normalizeSettings(readStorage(key));
+    const normalized = normalizeSettings({
+      ...readStorage(key),
+      worldLevelEnabled: readWorldLevelEnabled(),
+    });
     return migrateLegacyMuted(resolvedProfileId, normalized);
   },
   save(nextSettings, profileId) {
@@ -91,7 +113,14 @@ const dashSettingsStore = {
       ...nextSettings,
     });
     writeStorage(key, merged);
+    writeWorldLevelEnabled(merged.worldLevelEnabled);
     return merged;
+  },
+  getWorldLevelEnabled() {
+    return this.get().worldLevelEnabled === true;
+  },
+  setWorldLevelEnabled(enabled, profileId) {
+    return this.save({ worldLevelEnabled: enabled === true }, profileId).worldLevelEnabled === true;
   },
 };
 
