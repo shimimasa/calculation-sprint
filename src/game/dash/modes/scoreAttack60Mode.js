@@ -1,5 +1,9 @@
 import { DASH_MODE_TYPES } from './modeTypes.js';
 import { toDashStageId } from '../../../features/dashStages.js';
+import {
+  timePenaltyOnWrong,
+  timePenaltyOnCollision,
+} from '../../../features/dashConstants.js';
 
 const SCORE_ATTACK_TIME_LIMIT_MS = 60000;
 const BASE_SCORE_PER_CORRECT = 100;
@@ -13,6 +17,12 @@ const toScoreMultiplier = (combo) => {
 
 const scoreAttack60ModeStrategy = {
   id: DASH_MODE_TYPES.scoreAttack60,
+  timePolicy: {
+    onCorrectMs: 0,
+    onDefeatMs: 0,
+    onWrongMs: -timePenaltyOnWrong,
+    onCollisionMs: -timePenaltyOnCollision,
+  },
   initRun() {
     return {
       combo: 0,
