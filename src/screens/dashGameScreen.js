@@ -12,10 +12,6 @@ import {
   enemyBaseSpeed,
   enemySpeedIncrementPerStreak,
   collisionThreshold,
-  timeBonusOnCorrect,
-  timePenaltyOnCollision,
-  timePenaltyOnWrong,
-  timeBonusOnDefeat,
   streakAttack,
   streakDefeat,
 } from '../features/dashConstants.js';
@@ -31,7 +27,7 @@ import { waitForImageDecode } from '../core/imageDecode.js';
 import { getStageCorePreloadPromise } from '../core/stageAssetPreloader.js';
 import { isStageFrameWaitEnabled, perfLog } from '../core/perf.js';
 import { resolveAssetUrl } from '../core/assetUrl.js';
-import { getDashModeStrategy } from '../game/dash/modes/dashModes.js';
+import { getDashModeStrategy, getDashModeTimePolicy } from '../game/dash/modes/dashModes.js';
 import { DASH_MODE_TYPES, normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
@@ -270,6 +266,7 @@ const dashGameScreen = {
     const modeId = this.resolveRunModeId();
     this.currentDashModeId = modeId;
     this.modeStrategy = getDashModeStrategy(modeId);
+    this.timePolicy = getDashModeTimePolicy(modeId, this.modeStrategy);
   },
   tryEndByMode() {
     const modeContext = this.getModeContext();
@@ -2019,9 +2016,7 @@ const dashGameScreen = {
       };
     }
 
-    const timeLimitMs = modeId === DASH_MODE_TYPES.scoreAttack60
-      ? 60000
-      : Math.max(1, Number(this.initialTimeLimitMs) || DEFAULT_TIME_LIMIT_MS);
+    const timeLimitMs = Math.max(1, Number(this.initialTimeLimitMs) || DEFAULT_TIME_LIMIT_MS);
     const ratio = clamp01(safeTimeLeftMs / timeLimitMs);
     const isLowTime = safeTimeLeftMs <= LOW_TIME_THRESHOLD_MS;
     let state = 'safe';
@@ -2183,15 +2178,10 @@ const dashGameScreen = {
       this.maxStreak = Math.max(this.maxStreak, gameState.dash.streak);
       this.playerSpeed += speedIncrementPerCorrect;
       this.enemySpeed = enemyBaseSpeed + enemySpeedIncrementPerStreak * gameState.dash.streak;
-      const isScoreAttack60 = this.currentDashModeId === DASH_MODE_TYPES.scoreAttack60;
-      if (!isScoreAttack60) {
-        this.timeLeftMs += timeBonusOnCorrect;
-      }
+      this.timeLeftMs += Number(this.timePolicy?.onCorrectMs) || 0;
       if (defeatResult?.defeated) {
         gameState.dash.defeatedCount += 1;
-        if (!isScoreAttack60) {
-          this.timeLeftMs += timeBonusOnDefeat;
-        }
+        this.timeLeftMs += Number(this.timePolicy?.onDefeatMs) || 0;
       }
       if (gameState.dash.streak === streakAttack) {
         this.enemyGapM += collisionThreshold;
@@ -2212,7 +2202,7 @@ const dashGameScreen = {
       gameState.dash.wrongCount += 1;
       gameState.dash.streak = 0;
       this.enemySpeed = enemyBaseSpeed;
-      this.timeLeftMs -= timePenaltyOnWrong;
+      this.timeLeftMs += Number(this.timePolicy?.onWrongMs) || 0;
       this.modeStrategy?.onAnswer?.({ isCorrect: false, modeRuntime: this.modeRuntime });
       this.setFeedback('×', 'wrong');
     }
@@ -2337,7 +2327,8 @@ const dashGameScreen = {
           // NOTE: playSfx is ignored until audio is unlocked; keep this here so
           // damage SFX only attempts on confirmed penalty (not cooldown skips).
           audioManager.playSfx('sfx_damage');
-          this.timeLeftMs = Math.max(0, this.timeLeftMs - timePenaltyOnCollision);
+          const collisionDeltaMs = Number(this.timePolicy?.onCollisionMs) || 0;
+          this.timeLeftMs = Math.max(0, this.timeLeftMs + collisionDeltaMs);
           this.collisionHits += 1;
           this.modeStrategy?.onCollision?.({ modeRuntime: this.modeRuntime });
           this.logCollisionRunnerDebugDump({
