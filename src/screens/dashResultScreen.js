@@ -205,7 +205,11 @@ const dashResultScreen = {
         domRefs.dashResult.wrongCount.textContent = String(result.wrongCount || 0);
       }
       if (domRefs.dashResult.defeatedCount) {
-        domRefs.dashResult.defeatedCount.textContent = String(result.defeatedCount || 0);
+        const bossCount = Number(result.bossDefeatedCount) || 0;
+        const totalDefeated = String(result.defeatedCount || 0);
+        domRefs.dashResult.defeatedCount.textContent = bossCount > 0
+          ? `${totalDefeated}（ボス ${bossCount}）`
+          : totalDefeated;
       }
       if (domRefs.dashResult.accuracy) {
         domRefs.dashResult.accuracy.textContent = accuracy.toFixed(1);

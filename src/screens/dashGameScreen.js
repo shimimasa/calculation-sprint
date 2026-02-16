@@ -18,6 +18,7 @@ import {
 import {
   ATTACK_WINDOW_MS,
   PX_PER_METER,
+  BOSS_DEFEAT_TIME_BONUS_MS,
   createDashEnemySystem,
 } from '../features/dashEnemySystem.js';
 import { createEventRegistry } from '../core/eventRegistry.js';
@@ -34,6 +35,8 @@ const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
 const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
+const BOSS_APPEAR_CUE_TEXT = 'ボス出現！';
+const BOSS_DEFEAT_CUE_TEXT = 'ボス撃破！';
 const LOW_TIME_THRESHOLD_MS = 8000;
 const GOAL_RUN_FALLBACK_DISTANCE_M = 1000;
 const DAMAGE_INVINCIBLE_MS = 800;
@@ -68,7 +71,7 @@ const CLOUD_GAP_MIN_PX = 80;
 const CLOUD_GAP_MAX_PX = 260;
 const DEFAULT_CLOUD_WIDTH = 220;
 const RUNNER_BASE_LEFT_PX = 64;
-const RUNNER_FOOT_OFFSET_PX = 62;
+const RUNNER_FOOT_OFFSET_PX = 78;
 const DEFAULT_GROUND_SURFACE_INSET_PX = 160;
 const DASH_DEBUG_QUERY_KEY = 'dashDebug';
 const DASH_DEBUG_LEGACY_QUERY_KEY = 'dashDebugRunner';
@@ -90,6 +93,11 @@ const DEBUG_KEYPAD = false;
 const RUNNER_DEFAULT_SPRITE_PATH = 'assets/runner/runner.png';
 const HIT_SHAKE_CLASS = 'is-shake';
 const HIT_FLASH_CLASS = 'is-hitflash';
+const DEFEAT_SHAKE_CLASS = 'is-defeat-shake';
+const DEFEAT_SHAKE_MS = 120;
+const DEFEAT_FLASH_CLASS = 'is-defeat-flash';
+const DEFEAT_FLASH_MS = 200;
+const HITSTOP_MS = 50;
 const GOAL_OVERLAY_IMAGE_PATH = 'assets/bg-goal.png';
 const GOAL_CLEAR_FX_CLASS = 'is-goal-clear-active';
 const GOAL_CLEAR_SHAKE_CLASS = 'is-goal-shake';
@@ -1731,6 +1739,10 @@ const dashGameScreen = {
     this.addClassWithRestart(domRefs.game.runWorld, HIT_SHAKE_CLASS, HIT_SHAKE_MS);
     this.addClassWithRestart(domRefs.game.runnerWrap, HIT_FLASH_CLASS, HIT_FLASH_MS);
   },
+  triggerDefeatEffects() {
+    this.addClassWithRestart(domRefs.game.runWorld, DEFEAT_SHAKE_CLASS, DEFEAT_SHAKE_MS);
+    this.addClassWithRestart(domRefs.game.runWorld, DEFEAT_FLASH_CLASS, DEFEAT_FLASH_MS);
+  },
   updateRunnerDamageState(nowMs) {
     const runnerWrap = domRefs.game.runnerWrap;
     if (!runnerWrap) {
@@ -2166,8 +2178,18 @@ const dashGameScreen = {
           this.kickLungePx = 0;
         }
         this.kickUntilMs = nowMs + KICK_MS;
-        console.log('[SFX] attack fired', nowMs, defeatResult);
+        this.triggerDefeatEffects();
+        this.hitstopUntilMs = nowMs + HITSTOP_MS;
+        if (defeatResult.isBoss) {
+          audioManager.playSfx('sfx_boss_defeat');
+          this.showStreakCue(BOSS_DEFEAT_CUE_TEXT);
+        } else {
+          audioManager.playSfx('sfx_attack');
+        }
+      } else if (defeatResult?.damaged) {
         audioManager.playSfx('sfx_attack');
+        this.kickUntilMs = nowMs + KICK_MS * 0.5;
+        this.kickLungePx = 0;
       } else {
         this.kickUntilMs = 0;
         this.kickLungePx = 0;
@@ -2181,7 +2203,12 @@ const dashGameScreen = {
       this.timeLeftMs += Number(this.timePolicy?.onCorrectMs) || 0;
       if (defeatResult?.defeated) {
         gameState.dash.defeatedCount += 1;
-        this.timeLeftMs += Number(this.timePolicy?.onDefeatMs) || 0;
+        if (defeatResult.isBoss) {
+          gameState.dash.bossDefeatedCount = (gameState.dash.bossDefeatedCount ?? 0) + 1;
+          this.timeLeftMs += BOSS_DEFEAT_TIME_BONUS_MS;
+        } else {
+          this.timeLeftMs += Number(this.timePolicy?.onDefeatMs) || 0;
+        }
       }
       if (gameState.dash.streak === streakAttack) {
         this.enemyGapM += collisionThreshold;
@@ -2216,6 +2243,9 @@ const dashGameScreen = {
       return;
     }
     const nowMs = window.performance.now();
+    if (nowMs < (this.hitstopUntilMs ?? 0)) {
+      return;
+    }
     const dtSeconds = dtMs / 1000;
     const isSlowed = nowMs < (this.slowUntilMs ?? 0);
     const defeatSequenceActive = nowMs < (this.kickUntilMs ?? 0);
@@ -2271,16 +2301,24 @@ const dashGameScreen = {
       nowMs,
       groundY,
       worldGroundTopY,
-      // Dash enemy coordinates are run-world local; left edge cameraX is 0 in current pipeline.
       cameraX: 0,
       playerRect,
       correctCount: gameState.dash.correctCount,
       attackActive: nowMs <= (this.attackUntilMs ?? 0),
       defeatSequenceActive,
+      distanceM: gameState.dash.distanceM ?? 0,
     });
     const isRunnerInvincible = nowMs < (this.runnerInvincibleUntilMs ?? 0);
     this.enemyUpdateCount += 1;
     if (enemyUpdate) {
+      if (enemyUpdate.events) {
+        for (const evt of enemyUpdate.events) {
+          if (evt.type === 'boss_appear') {
+            audioManager.playSfx('sfx_boss_appear');
+            this.showStreakCue(BOSS_APPEAR_CUE_TEXT);
+          }
+        }
+      }
       if (this.isDashRunnerDebugEnabled() && !this.hasLoggedCollisionResultDebug) {
         this.hasLoggedCollisionResultDebug = true;
         console.log('[dash-debug][COLLIDE:result]', enemyUpdate);
@@ -2544,6 +2582,7 @@ const dashGameScreen = {
       correctCount: gameState.dash.correctCount,
       wrongCount: gameState.dash.wrongCount,
       defeatedCount: gameState.dash.defeatedCount,
+      bossDefeatedCount: gameState.dash.bossDefeatedCount ?? 0,
       maxStreak: this.maxStreak,
       timeLeftMs: this.timeLeftMs,
       stageId: gameState.dash?.stageId,
@@ -2581,6 +2620,7 @@ const dashGameScreen = {
     this.enemyGapM = collisionThreshold * 2;
     this.attackUntilMs = 0;
     this.kickUntilMs = 0;
+    this.hitstopUntilMs = 0;
     this.lastCollisionPenaltyAtMs = -Infinity;
     this.slowUntilMs = 0;
     this.runnerHitUntilMs = 0;
@@ -2608,6 +2648,7 @@ const dashGameScreen = {
     gameState.dash.correctCount = 0;
     gameState.dash.wrongCount = 0;
     gameState.dash.defeatedCount = 0;
+    gameState.dash.bossDefeatedCount = 0;
     gameState.dash.streak = 0;
     gameState.dash.result = null;
     gameState.dash.modeId = this.currentDashModeId;
@@ -3062,7 +3103,7 @@ const dashGameScreen = {
     if (this.hitEffectTimeouts) {
       this.hitEffectTimeouts = new WeakMap();
     }
-    domRefs.game.runWorld?.classList.remove(HIT_SHAKE_CLASS);
+    domRefs.game.runWorld?.classList.remove(HIT_SHAKE_CLASS, DEFEAT_SHAKE_CLASS, DEFEAT_FLASH_CLASS);
     domRefs.game.runnerWrap?.classList.remove(HIT_FLASH_CLASS);
     if (this.goalProgressWrapEl) {
       this.goalProgressWrapEl.remove();
