@@ -10,10 +10,16 @@ const DASH_STAGE_TO_ENEMY_TYPE = Object.freeze({
 const ENEMY_TYPES = Object.freeze(['plus', 'minus', 'multi', 'divide']);
 const ENEMY_DEFAULT_MAX_HP = 1;
 const ENEMY_LABEL_BY_TYPE = Object.freeze({
-  plus: 'プラス',
-  minus: 'マイナス',
-  multi: 'かけ算',
-  divide: 'わり算',
+  plus: 'プラスライム',
+  minus: 'マイナスライム',
+  multi: 'かけザン',
+  divide: 'ワリザン',
+});
+const BOSS_LABEL_BY_TYPE = Object.freeze({
+  plus: 'プラスキング',
+  minus: 'マイナスキング',
+  multi: 'かけザンボス',
+  divide: 'ワリザンボス',
 });
 const ENEMY_MAX_HP_BY_TYPE = Object.freeze({
   plus: 1,
@@ -21,6 +27,10 @@ const ENEMY_MAX_HP_BY_TYPE = Object.freeze({
   multi: 1,
   divide: 1,
 });
+const BOSS_HP = 3;
+const BOSS_SIZE_PX = 120;
+const BOSS_SPAWN_DISTANCE_M = 150;
+const BOSS_SPAWN_INTERVAL_M = 200;
 const ENEMY_FOOT_OFFSETS = Object.freeze({
   plus: 0,
   minus: 0,
@@ -33,17 +43,17 @@ const ENEMY_STATES = Object.freeze([
   'defeated_hit',
   'defeated_end',
 ]);
-const ENEMY_SIZE_PX = 72;
-const MIN_SPAWN_GAP_PX = 96;
-const MIN_REACTION_DISTANCE_PX = 180;
+const ENEMY_SIZE_PX = 88;
+const MIN_SPAWN_GAP_PX = 110;
+const MIN_REACTION_DISTANCE_PX = 200;
 const ENEMY_SPAWN_SCREEN_X_RATIO = 0.99;
 const ENEMY_SPAWN_SAFE_MARGIN_PX = 16;
-const HIT_DURATION_MS = 120;
-const DEAD_DURATION_MS = 300;
-const HIT_PULL_DURATION_MS = 80;
-const HIT_PULL_PX = 16;
-const HIT_FLASH_MS = 40;
-const HIT_FLASH_SCALE = 1.03;
+const HIT_DURATION_MS = 180;
+const DEAD_DURATION_MS = 360;
+const HIT_PULL_DURATION_MS = 100;
+const HIT_PULL_PX = 28;
+const HIT_FLASH_MS = 60;
+const HIT_FLASH_SCALE = 1.12;
 const MAX_ENEMIES = 2;
 const START_GRACE_MS = 2500;
 const COLLISION_RESOLVE_MS = 160;
@@ -56,6 +66,7 @@ const SPAWN_INTERVAL_DECAY_MS_PER_SEC = 18;
 
 export const ATTACK_WINDOW_MS = 250;
 export const PX_PER_METER = 100;
+export const BOSS_DEFEAT_TIME_BONUS_MS = 8000;
 
 const clampState = (state) => (ENEMY_STATES.includes(state) ? state : 'approaching');
 
@@ -227,7 +238,12 @@ const ensureEnemyContainer = (worldEl, containerEl) => {
   return created;
 };
 
-const getEnemyDisplayName = (type) => ENEMY_LABEL_BY_TYPE[type] ?? 'モンスター';
+const getEnemyDisplayName = (type, isBoss = false) => {
+  if (isBoss) {
+    return BOSS_LABEL_BY_TYPE[type] ?? 'ボス';
+  }
+  return ENEMY_LABEL_BY_TYPE[type] ?? 'モンスター';
+};
 const getEnemyMaxHp = (type) => {
   const configuredMaxHp = ENEMY_MAX_HP_BY_TYPE[type];
   if (Number.isFinite(configuredMaxHp) && configuredMaxHp > 0) {
@@ -255,9 +271,45 @@ const buildEnemyLabel = (enemy) => {
   return { labelEl, hpFillEl };
 };
 
+const SLASH_EFFECT_DURATION_MS = 400;
+
+const spawnSlashEffect = (enemy, container) => {
+  if (!enemy || !container) {
+    return;
+  }
+  const fx = document.createElement('div');
+  fx.className = 'slash-effect';
+  fx.setAttribute('aria-hidden', 'true');
+  fx.style.transform = `translate3d(${Math.round(enemy.x)}px, ${Math.round(enemy.y)}px, 0)`;
+  fx.style.width = `${enemy.w}px`;
+  fx.style.height = `${enemy.h}px`;
+
+  const slash = document.createElement('div');
+  slash.className = 'slash-effect__slash';
+  fx.appendChild(slash);
+
+  for (let i = 0; i < 6; i += 1) {
+    const particle = document.createElement('div');
+    particle.className = 'slash-effect__particle';
+    const angle = (i / 6) * Math.PI * 2;
+    const dist = 20 + Math.random() * 30;
+    const tx = Math.cos(angle) * dist;
+    const ty = Math.sin(angle) * dist;
+    particle.style.setProperty('--p-tx', `${tx.toFixed(1)}px`);
+    particle.style.setProperty('--p-ty', `${ty.toFixed(1)}px`);
+    particle.style.setProperty('--p-delay', `${i * 20}ms`);
+    fx.appendChild(particle);
+  }
+
+  container.appendChild(fx);
+  window.setTimeout(() => {
+    fx.remove();
+  }, SLASH_EFFECT_DURATION_MS);
+};
+
 const createEnemyElement = (enemy) => {
   const wrap = document.createElement('div');
-  wrap.className = 'enemy-wrap';
+  wrap.className = enemy.isBoss ? 'enemy-wrap is-boss' : 'enemy-wrap';
   wrap.dataset.enemyName = enemy.name;
   wrap.dataset.hp = String(enemy.hp);
   wrap.dataset.hpMax = String(enemy.maxHp);
@@ -411,6 +463,9 @@ export const createDashEnemySystem = ({
 
   system.removeEnemy = (enemy, removeReason, nowMs) => {
     enemy.isAlive = false;
+    if (enemy.isBoss) {
+      system.bossAlive = false;
+    }
     enemy.el?.remove();
     if (!system.isEnemyDebugActive()) {
       return;
@@ -523,6 +578,9 @@ export const createDashEnemySystem = ({
     system.spawnTimerMs = START_GRACE_MS;
     system.elapsedMs = 0;
     system.previousEnemyType = null;
+    system.lastBossSpawnDistanceM = 0;
+    system.bossDefeatedCount = 0;
+    system.bossAlive = false;
     system.enemyDebugCounters = {
       defeatStartCount: 0,
       hitShownCount: 0,
@@ -544,6 +602,10 @@ export const createDashEnemySystem = ({
     system.worldEl = null;
   };
 
+  system.lastBossSpawnDistanceM = 0;
+  system.bossDefeatedCount = 0;
+  system.bossAlive = false;
+
   system.spawnEnemy = ({
     nowMs,
     groundTopY,
@@ -552,6 +614,7 @@ export const createDashEnemySystem = ({
     playerRect,
     minGapPx = MIN_SPAWN_GAP_PX,
     minReactionDistancePx = MIN_REACTION_DISTANCE_PX,
+    isBoss = false,
   }) => {
     const worldEl = system.worldEl;
     const container = ensureEnemyContainer(worldEl, system.containerEl);
@@ -569,8 +632,8 @@ export const createDashEnemySystem = ({
       getEnemyPool: system.getEnemyPool,
     });
     const state = 'approaching';
-    const width = ENEMY_SIZE_PX;
-    const height = ENEMY_SIZE_PX;
+    const width = isBoss ? BOSS_SIZE_PX : ENEMY_SIZE_PX;
+    const height = isBoss ? BOSS_SIZE_PX : ENEMY_SIZE_PX;
     const collisionTestModeEnabled = system.isCollisionTestModeEnabled?.() === true;
     const viewportW = worldWidth;
     const safeCameraX = Number.isFinite(cameraX) ? cameraX : 0;
@@ -596,11 +659,12 @@ export const createDashEnemySystem = ({
         return null;
       }
     }
-    const maxHp = getEnemyMaxHp(type);
+    const maxHp = isBoss ? BOSS_HP : getEnemyMaxHp(type);
     const enemy = {
       id: `enemy-${system.idCounter += 1}`,
       type,
-      name: getEnemyDisplayName(type),
+      isBoss,
+      name: getEnemyDisplayName(type, isBoss),
       state,
       x: spawnX,
       y: Math.max(0, ((groundTopY ?? 0) - height + (ENEMY_FOOT_OFFSETS[type] ?? 0))),
@@ -634,6 +698,9 @@ export const createDashEnemySystem = ({
     applyEnemyStateClasses(enemy);
     container.appendChild(enemy.el);
     system.enemies.push(enemy);
+    if (isBoss) {
+      system.bossAlive = true;
+    }
     system.logEnemyDebug('spawn', {
       enemyId: enemy.id,
       spawnX: Number(enemy.x.toFixed(2)),
@@ -649,21 +716,31 @@ export const createDashEnemySystem = ({
 
   system.damageEnemy = (enemy, amount = 1, nowMs = window.performance.now(), meta = null) => {
     if (!enemy?.isAlive || enemy.state !== 'approaching') {
-      return { defeated: false, hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 0 };
+      return { defeated: false, hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 0, isBoss: enemy?.isBoss ?? false };
     }
     const damage = Number.isFinite(amount) ? Math.max(0, amount) : 0;
     enemy.hp = Math.max(0, enemy.hp - damage);
     updateEnemyHud(enemy);
+    if (enemy.hp > 0 && enemy.isBoss) {
+      enemy.el?.classList.add('is-boss-hit');
+      window.setTimeout(() => {
+        enemy.el?.classList.remove('is-boss-hit');
+      }, 200);
+    }
     if (enemy.hp <= 0) {
       const defeated = system.requestDefeatEnemy(enemy, nowMs, meta);
-      return { defeated, hp: enemy.hp, maxHp: enemy.maxHp };
+      if (defeated && enemy.isBoss) {
+        system.bossDefeatedCount += 1;
+        system.bossAlive = false;
+      }
+      return { defeated, hp: enemy.hp, maxHp: enemy.maxHp, isBoss: enemy.isBoss };
     }
-    return { defeated: false, hp: enemy.hp, maxHp: enemy.maxHp };
+    return { defeated: false, hp: enemy.hp, maxHp: enemy.maxHp, isBoss: enemy.isBoss };
   };
 
   system.defeatNearestEnemy = ({ playerRect, nowMs, callerTag = 'unknown' }) => {
     if (!playerRect) {
-      return { defeated: false, target: null };
+      return { defeated: false, target: null, isBoss: false };
     }
     let nearestEnemy = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
@@ -681,28 +758,22 @@ export const createDashEnemySystem = ({
       }
     });
     if (!nearestEnemy) {
-      return { defeated: false, target: null };
+      return { defeated: false, target: null, isBoss: false };
     }
     const damageResult = system.damageEnemy(nearestEnemy, 1, nowMs, { callerTag });
-    if (!damageResult.defeated) {
-      return {
-        defeated: false,
-        target: {
-          x: nearestEnemy.x,
-          y: nearestEnemy.y,
-          w: nearestEnemy.w,
-          h: nearestEnemy.h,
-        },
-      };
-    }
+    const targetRect = {
+      x: nearestEnemy.x,
+      y: nearestEnemy.y,
+      w: nearestEnemy.w,
+      h: nearestEnemy.h,
+    };
     return {
-      defeated: true,
-      target: {
-        x: nearestEnemy.x,
-        y: nearestEnemy.y,
-        w: nearestEnemy.w,
-        h: nearestEnemy.h,
-      },
+      defeated: damageResult.defeated,
+      damaged: !damageResult.defeated && damageResult.hp < damageResult.maxHp,
+      target: targetRect,
+      isBoss: nearestEnemy.isBoss ?? false,
+      hpRemaining: damageResult.hp,
+      hpMax: damageResult.maxHp,
     };
   };
 
@@ -764,6 +835,7 @@ export const createDashEnemySystem = ({
       }
     }
     if (state === 'defeated_hit') {
+      spawnSlashEffect(enemy, system.containerEl);
       const entry = system.getEnemyDebugEntry(enemy.id);
       if (entry && !entry.sawDefeat && system.isEnemyDebugActive()) {
         entry.sawDefeat = true;
@@ -798,6 +870,7 @@ export const createDashEnemySystem = ({
     correctCount,
     attackActive,
     defeatSequenceActive = false,
+    distanceM = 0,
   }) => {
     const resolvedGroundY = Number.isFinite(groundY) ? groundY : null;
     if (!Number.isFinite(dtMs) || dtMs <= 0) {
@@ -856,6 +929,27 @@ export const createDashEnemySystem = ({
     let collision = false;
     let attackHandled = false;
     const events = [];
+
+    const nextBossThreshold = system.lastBossSpawnDistanceM === 0
+      ? BOSS_SPAWN_DISTANCE_M
+      : system.lastBossSpawnDistanceM + BOSS_SPAWN_INTERVAL_M;
+    if (
+      distanceM >= nextBossThreshold
+      && !system.bossAlive
+    ) {
+      const bossEnemy = system.spawnEnemy({
+        nowMs,
+        groundTopY: worldGroundTopY,
+        cameraX,
+        speedPxPerSec: speedPxPerSec * 0.7,
+        playerRect,
+        isBoss: true,
+      });
+      if (bossEnemy) {
+        system.lastBossSpawnDistanceM = distanceM;
+        events.push({ type: 'boss_appear', enemyId: bossEnemy.id });
+      }
+    }
     let firstEnemyRect = null;
     let firstEnemyRectRaw = null;
     let firstIntersectsRaw = false;

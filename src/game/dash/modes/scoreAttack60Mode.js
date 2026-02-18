@@ -1,5 +1,9 @@
 import { DASH_MODE_TYPES } from './modeTypes.js';
 import { toDashStageId } from '../../../features/dashStages.js';
+import {
+  timePenaltyOnWrong,
+  timePenaltyOnCollision,
+} from '../../../features/dashConstants.js';
 
 const SCORE_ATTACK_TIME_LIMIT_MS = 60000;
 const BASE_SCORE_PER_CORRECT = 100;
@@ -13,6 +17,12 @@ const toScoreMultiplier = (combo) => {
 
 const scoreAttack60ModeStrategy = {
   id: DASH_MODE_TYPES.scoreAttack60,
+  timePolicy: {
+    onCorrectMs: 0,
+    onDefeatMs: 0,
+    onWrongMs: -timePenaltyOnWrong,
+    onCollisionMs: -timePenaltyOnCollision,
+  },
   initRun() {
     return {
       combo: 0,
@@ -46,7 +56,7 @@ const scoreAttack60ModeStrategy = {
   },
   checkEnd({ timeLeftMs }) {
     if (Number.isFinite(timeLeftMs) && timeLeftMs <= 0) {
-      return { ended: true, endReason: 'timeup' };
+      return { ended: true, endReason: 'timeout' };
     }
     return { ended: false, endReason: null };
   },
@@ -93,7 +103,7 @@ const scoreAttack60ModeStrategy = {
       timeLeftMs: Math.max(0, Number(timeLeftMs) || 0),
       stageId: toDashStageId(stageId),
       endReason,
-      retired: false,
+      retired: endReason === 'retired',
     };
   },
 };

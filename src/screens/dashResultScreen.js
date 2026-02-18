@@ -112,17 +112,35 @@ const getScoreAttackRecordState = (result, stats) => {
     previousBest,
   };
 };
+
+const normalizeDashResultEndReason = (result) => {
+  const reason = typeof result?.endReason === 'string' ? result.endReason : null;
+  if (reason === 'retired' || reason === 'goal' || reason === 'timeout') {
+    return reason;
+  }
+  if (reason === 'manual') {
+    return 'retired';
+  }
+  if (reason === 'timeup' || reason === 'collision') {
+    return 'timeout';
+  }
+  if (result?.cleared === true) {
+    return 'goal';
+  }
+  if (result?.retired === true) {
+    return 'retired';
+  }
+  return 'timeout';
+};
 const dashResultScreen = {
   enter() {
     uiRenderer.showScreen('dash-result');
     this.events = createEventRegistry('dash-result');
     const renderResult = (result, options = {}) => {
       const endReasonTextMap = {
-        collision: 'モンスターにぶつかりました',
-        timeup: '時間が0になりました',
-        goal: 'ゴールに到達しました',
-        manual: 'ここでいったん終了',
-        unknown: '終了理由：不明',
+        retired: 'ちゅうだん',
+        goal: 'ゴール！',
+        timeout: 'じかんぎれ',
       };
       const totalAnswered = (result.correctCount || 0) + (result.wrongCount || 0);
       const accuracy = totalAnswered > 0
@@ -150,9 +168,9 @@ const dashResultScreen = {
         const stageLabel = getDashStageLabelJa(normalizedStageId);
         domRefs.dashResult.stage.textContent = `ステージ：${stageLabel}`;
       }
+      const normalizedReason = normalizeDashResultEndReason(result);
       if (domRefs.dashResult.reason) {
-        const normalizedReason = typeof result.endReason === 'string' ? result.endReason : 'unknown';
-        domRefs.dashResult.reason.textContent = `終了メモ：${endReasonTextMap[normalizedReason] ?? endReasonTextMap.unknown}`;
+        domRefs.dashResult.reason.textContent = `終了メモ：${endReasonTextMap[normalizedReason]}`;
         domRefs.dashResult.reason.hidden = false;
       }
 
@@ -161,7 +179,7 @@ const dashResultScreen = {
       const isScoreAttack60 = result.mode === 'scoreAttack60';
       if (modeSummary) {
         if (isGoalRun) {
-          const cleared = result.cleared === true;
+          const cleared = normalizedReason === 'goal';
           const clearOrFail = cleared ? 'CLEAR' : 'FAILED';
           const rank = String(result.rank || 'C');
           const reachedDistance = Number.isFinite(result.distanceM) ? result.distanceM.toFixed(1) : '0.0';
@@ -169,13 +187,13 @@ const dashResultScreen = {
             ? `クリアタイム: ${formatGoalRunClearTime(result.clearTimeMs)}`
             : `到達距離: ${reachedDistance}m`;
           modeSummary.hidden = false;
-          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Goal Run</p><p class="dash-result-mode-summary__status" data-cleared="${cleared ? '1' : '0'}">${clearOrFail}</p><p class="dash-result-mode-summary__detail">${clearTimeLabel}</p><p class="dash-result-mode-summary__detail">被弾: ${Number(result.hits) || 0} / 最大コンボ: ${Number(result.maxStreak) || 0} / ランク: ${rank}</p>`;
+          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Goal Run</p><p class="dash-result-mode-summary__status" data-cleared="${cleared ? '1' : '0'}">${clearOrFail}</p><p class="dash-result-mode-summary__detail">${clearTimeLabel}</p><p class="dash-result-mode-summary__detail">せいかい: ${Number(result.correctCount) || 0} / ミス: ${Number(result.wrongCount) || 0} / ぶつかった: ${Number(result.hits) || 0}</p><p class="dash-result-mode-summary__detail">せいかいりつ: ${accuracy.toFixed(1)}% / ランク: ${rank}</p>`;
         } else if (isScoreAttack60) {
           const recordState = getScoreAttackRecordState(result, options.previousStats);
           const score = Number(result.score ?? result.totalScore ?? 0);
           const newBadge = recordState.isNewRecord ? '<span class="badge dash-badge-new">NEW RECORD</span>' : '';
           modeSummary.hidden = false;
-          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Score Attack 60</p><p class="dash-result-mode-summary__status" data-cleared="1">Total Score: ${score}${newBadge}</p><p class="dash-result-mode-summary__detail">Max Combo: ${Number(result.maxCombo) || 0} / Correct: ${Number(result.correctCount) || 0} / Wrong: ${Number(result.wrongCount) || 0}</p><p class="dash-result-mode-summary__detail">Hits: ${Number(result.hits) || 0}</p>`;
+          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Score Attack 60</p><p class="dash-result-mode-summary__status" data-cleared="1">スコア: ${score}${newBadge}</p><p class="dash-result-mode-summary__detail">せいかい: ${Number(result.correctCount) || 0} / ミス: ${Number(result.wrongCount) || 0} / ぶつかった: ${Number(result.hits) || 0}</p><p class="dash-result-mode-summary__detail">せいかいりつ: ${accuracy.toFixed(1)}% / さいだいコンボ: ${Number(result.maxCombo) || 0}</p><p class="dash-result-mode-summary__detail">ミスやぶつかりで じかんがへるよ。60びょうで どれだけスコアをかせげるか！</p>`;
         } else {
           modeSummary.hidden = true;
           modeSummary.textContent = '';
@@ -205,7 +223,11 @@ const dashResultScreen = {
         domRefs.dashResult.wrongCount.textContent = String(result.wrongCount || 0);
       }
       if (domRefs.dashResult.defeatedCount) {
-        domRefs.dashResult.defeatedCount.textContent = String(result.defeatedCount || 0);
+        const bossCount = Number(result.bossDefeatedCount) || 0;
+        const totalDefeated = String(result.defeatedCount || 0);
+        domRefs.dashResult.defeatedCount.textContent = bossCount > 0
+          ? `${totalDefeated}（ボス ${bossCount}）`
+          : totalDefeated;
       }
       if (domRefs.dashResult.accuracy) {
         domRefs.dashResult.accuracy.textContent = accuracy.toFixed(1);

@@ -26,9 +26,9 @@ const STAGE_VISUAL_MAP = {
 };
 
 const MODE_NOTE_MAP = Object.freeze({
-  infinite: 'じかんをのばして どこまでいける？',
-  goalRun: '1000mまで いっきにダッシュ！',
-  scoreAttack60: '60びょうで スコアをかせげ！',
+  infinite: 'せいかい/げきはで じかんアップ。ミス/ぶつかりで へる。',
+  goalRun: '1000mをめざせ！せいかい/げきはで じかんアップ。ミス/ぶつかりで へる。',
+  scoreAttack60: '60びょうスコアアタック：じかんは ふえない。ミス/ぶつかると へる。0でおわり。',
 });
 
 const MODE_BADGE_LABEL_MAP = Object.freeze({

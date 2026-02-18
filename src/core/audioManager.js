@@ -29,6 +29,8 @@ const SFX_URLS = {
   sfx_countdown: 'assets/audio/sfx/wrong.mp3',
   sfx_attack: 'assets/audio/sfx/attack.mp3',
   sfx_damage: 'assets/audio/sfx/damage.mp3',
+  sfx_boss_appear: 'assets/audio/sfx/power-up.mp3',
+  sfx_boss_defeat: 'assets/audio/sfx/goal.mp3',
   sfx_goal: 'assets/audio/sfx/goal.mp3',
 };
 
