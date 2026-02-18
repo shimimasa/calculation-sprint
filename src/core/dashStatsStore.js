@@ -9,7 +9,7 @@ import { DEFAULT_DASH_MODE, normalizeDashModeId } from '../game/dash/modes/modeT
 
 const DASH_STATS_SCHEMA_VERSION = 'v2';
 const MAX_HISTORY = 20;
-const VALID_END_REASONS = new Set(['collision', 'timeup', 'goal', 'manual']);
+const VALID_END_REASONS = new Set(['retired', 'goal', 'timeout']);
 
 const readFromStorage = (storageKey) => {
   try {
@@ -32,36 +32,66 @@ const writeToStorage = (storageKey, data) => {
   }
 };
 
-const normalizeEndReason = (endReason) => (
-  typeof endReason === 'string' && VALID_END_REASONS.has(endReason) ? endReason : 'unknown'
-);
+const normalizeEndReason = (endReason) => {
+  if (typeof endReason !== 'string') {
+    return null;
+  }
+  if (VALID_END_REASONS.has(endReason)) {
+    return endReason;
+  }
+  if (endReason === 'manual') {
+    return 'retired';
+  }
+  if (endReason === 'timeup' || endReason === 'collision') {
+    return 'timeout';
+  }
+  return null;
+};
 
-const normalizeSession = (session) => ({
-  runId: typeof session?.runId === 'string' ? session.runId : null,
-  mode: normalizeDashModeId(session?.mode ?? DEFAULT_DASH_MODE),
-  distanceM: Number.isFinite(session?.distanceM) ? session.distanceM : 0,
-  score: Number.isFinite(session?.score) ? session.score : (Number.isFinite(session?.distanceM) ? session.distanceM : 0),
-  correctCount: Number.isFinite(session?.correctCount) ? session.correctCount : 0,
-  wrongCount: Number.isFinite(session?.wrongCount) ? session.wrongCount : 0,
-  defeatedCount: Number.isFinite(session?.defeatedCount) ? session.defeatedCount : 0,
-  maxStreak: Number.isFinite(session?.maxStreak) ? session.maxStreak : 0,
-  timeLeftMs: Number.isFinite(session?.timeLeftMs) ? session.timeLeftMs : 0,
-  stageId: toDashStageId(session?.stageId),
-  endReason: normalizeEndReason(session?.endReason),
-  retired: Boolean(session?.retired ?? session?.endReason !== 'timeup'),
-  endedAt: typeof session?.endedAt === 'string' ? session.endedAt : new Date().toISOString(),
-  cleared: Boolean(session?.cleared),
-  goalDistanceM: normalizeDashModeId(session?.mode ?? DEFAULT_DASH_MODE) === 'goalRun'
-    ? (Number.isFinite(session?.goalDistanceM) ? session.goalDistanceM : 1000)
-    : (Number.isFinite(session?.goalDistanceM) ? session.goalDistanceM : null),
-  clearTimeMs: Number.isFinite(session?.clearTimeMs) ? session.clearTimeMs : null,
-  rank: typeof session?.rank === 'string' ? session.rank : null,
-  hits: Number.isFinite(session?.hits) ? session.hits : 0,
-  totalScore: Number.isFinite(session?.totalScore) ? session.totalScore : (Number.isFinite(session?.score) ? session.score : 0),
-  combo: Number.isFinite(session?.combo) ? session.combo : 0,
-  maxCombo: Number.isFinite(session?.maxCombo) ? session.maxCombo : 0,
-  schemaVersion: DASH_STATS_SCHEMA_VERSION,
-});
+const resolveSessionEndReason = (session) => {
+  const normalizedFromReason = normalizeEndReason(session?.endReason);
+  if (normalizedFromReason) {
+    return normalizedFromReason;
+  }
+  if (session?.cleared === true) {
+    return 'goal';
+  }
+  if (session?.retired === true) {
+    return 'retired';
+  }
+  return 'timeout';
+};
+
+const normalizeSession = (session) => {
+  const mode = normalizeDashModeId(session?.mode ?? DEFAULT_DASH_MODE);
+  const endReason = resolveSessionEndReason(session);
+  return {
+    runId: typeof session?.runId === 'string' ? session.runId : null,
+    mode,
+    distanceM: Number.isFinite(session?.distanceM) ? session.distanceM : 0,
+    score: Number.isFinite(session?.score) ? session.score : (Number.isFinite(session?.distanceM) ? session.distanceM : 0),
+    correctCount: Number.isFinite(session?.correctCount) ? session.correctCount : 0,
+    wrongCount: Number.isFinite(session?.wrongCount) ? session.wrongCount : 0,
+    defeatedCount: Number.isFinite(session?.defeatedCount) ? session.defeatedCount : 0,
+    maxStreak: Number.isFinite(session?.maxStreak) ? session.maxStreak : 0,
+    timeLeftMs: Number.isFinite(session?.timeLeftMs) ? session.timeLeftMs : 0,
+    stageId: toDashStageId(session?.stageId),
+    endReason,
+    retired: endReason === 'retired',
+    endedAt: typeof session?.endedAt === 'string' ? session.endedAt : new Date().toISOString(),
+    cleared: Boolean(session?.cleared),
+    goalDistanceM: mode === 'goalRun'
+      ? (Number.isFinite(session?.goalDistanceM) ? session.goalDistanceM : 1000)
+      : (Number.isFinite(session?.goalDistanceM) ? session.goalDistanceM : null),
+    clearTimeMs: Number.isFinite(session?.clearTimeMs) ? session.clearTimeMs : null,
+    rank: typeof session?.rank === 'string' ? session.rank : null,
+    hits: Number.isFinite(session?.hits) ? session.hits : 0,
+    totalScore: Number.isFinite(session?.totalScore) ? session.totalScore : (Number.isFinite(session?.score) ? session.score : 0),
+    combo: Number.isFinite(session?.combo) ? session.combo : 0,
+    maxCombo: Number.isFinite(session?.maxCombo) ? session.maxCombo : 0,
+    schemaVersion: DASH_STATS_SCHEMA_VERSION,
+  };
+};
 
 const createEmptyAggregate = () => {
   const stageBest = {};

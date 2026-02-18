@@ -22,6 +22,34 @@ const formatDateTime = (isoValue) => {
 
 const DASH_STATS_MODES = Object.freeze(['infinite', 'goalRun', 'scoreAttack60']);
 
+const normalizeHistoryEndReason = (entry) => {
+  const reason = typeof entry?.endReason === 'string' ? entry.endReason : null;
+  if (reason === 'retired' || reason === 'goal' || reason === 'timeout') {
+    return reason;
+  }
+  if (reason === 'manual') {
+    return 'retired';
+  }
+  if (reason === 'timeup' || reason === 'collision') {
+    return 'timeout';
+  }
+  if (entry?.cleared === true) {
+    return 'goal';
+  }
+  if (entry?.retired === true) {
+    return 'retired';
+  }
+  return 'timeout';
+};
+
+const toStatusLabel = (entry) => {
+  const endReason = normalizeHistoryEndReason(entry);
+  if (entry.mode === 'goalRun') {
+    return endReason === 'goal' ? 'CLEAR' : 'FAILED';
+  }
+  return endReason === 'retired' ? 'リタイア' : 'タイムアップ';
+};
+
 const dashStatsScreen = {
   enter() {
     uiRenderer.showScreen('dash-stats');
@@ -109,9 +137,7 @@ const dashStatsScreen = {
         const tr = document.createElement('tr');
         const stageId = String(entry.stageId || 'mix');
         tr.className = `dash-stats-row ${getStageClassName(stageId)}`;
-        const statusLabel = entry.mode === 'goalRun'
-          ? (entry.cleared ? 'CLEAR' : 'FAILED')
-          : (entry.retired ? 'リタイア' : '完走');
+        const statusLabel = toStatusLabel(entry);
         const score = Number.isFinite(entry.score) ? entry.score : entry.distanceM;
         const valueText = entry.mode === 'scoreAttack60' ? `${score.toFixed(0)} pt` : `${score.toFixed(1)} m`;
         const modeLabel = entry.mode === 'goalRun'

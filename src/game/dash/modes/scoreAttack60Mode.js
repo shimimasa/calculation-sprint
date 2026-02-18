@@ -56,7 +56,7 @@ const scoreAttack60ModeStrategy = {
   },
   checkEnd({ timeLeftMs }) {
     if (Number.isFinite(timeLeftMs) && timeLeftMs <= 0) {
-      return { ended: true, endReason: 'timeup' };
+      return { ended: true, endReason: 'timeout' };
     }
     return { ended: false, endReason: null };
   },
@@ -103,7 +103,7 @@ const scoreAttack60ModeStrategy = {
       timeLeftMs: Math.max(0, Number(timeLeftMs) || 0),
       stageId: toDashStageId(stageId),
       endReason,
-      retired: false,
+      retired: endReason === 'retired',
     };
   },
 };
