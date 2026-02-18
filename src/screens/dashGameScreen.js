@@ -87,6 +87,7 @@ const DASH_TEST_COLLISION_QUERY_KEY = 'dashTestCollision';
 const DASH_TEST_COLLISION_STORAGE_KEY = 'dash.test.collision';
 const EFFECT_MAX_SPEED_MPS = 8;
 const DASH_BUILD_TAG = 'damagefix-20260212-01';
+const DEBUG_MODE = false;
 const DASH_DEBUG_ALWAYS_ON = false;
 const DEBUG_INPUT = false;
 const DEBUG_KEYPAD = false;
@@ -830,6 +831,9 @@ const dashGameScreen = {
     return this.overlayRootEl;
   },
   showBuildBadge() {
+    if (!DEBUG_MODE) {
+      return;
+    }
     const overlayRoot = this.ensureDashOverlayRoot();
     if (!overlayRoot) {
       return;
@@ -853,6 +857,9 @@ const dashGameScreen = {
     }, 2000);
   },
   ensureLoopMonitorBadge() {
+    if (!DEBUG_MODE) {
+      return null;
+    }
     const overlayRoot = this.ensureDashOverlayRoot();
     if (!overlayRoot) {
       return null;
@@ -879,6 +886,9 @@ const dashGameScreen = {
     return lastFrameAgoMs === null || lastFrameAgoMs >= LOOP_STOPPED_THRESHOLD_MS;
   },
   updateLoopMonitorBadge(nowMs = window.performance.now()) {
+    if (!DEBUG_MODE) {
+      return;
+    }
     const badge = this.ensureLoopMonitorBadge();
     if (!badge) {
       return;
@@ -2977,9 +2987,11 @@ const dashGameScreen = {
     this.startBgm();
     this.startLoop();
     this.startLoopWatchdog();
-    this.showBuildBadge();
-    this.ensureLoopMonitorBadge();
-    this.updateLoopMonitorBadge();
+    if (DEBUG_MODE) {
+      this.showBuildBadge();
+      this.ensureLoopMonitorBadge();
+      this.updateLoopMonitorBadge();
+    }
     this.updateRunnerDebugOutline();
   },
   render() {},
