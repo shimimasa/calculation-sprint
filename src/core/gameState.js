@@ -46,6 +46,7 @@ const gameState = {
   },
   dash: {
     stageId: null,
+    levelId: null,
     modeId: null,
     currentRunId: null,
     currentMode: null,
@@ -53,7 +54,16 @@ const gameState = {
     correctCount: 0,
     wrongCount: 0,
     defeatedCount: 0,
+    bossDefeatedCount: 0,
     streak: 0,
+    revengeSuccessCount: 0,
+    wrongByMode: {
+      add: 0,
+      sub: 0,
+      mul: 0,
+      div: 0,
+    },
+    result: null,
   },
   run: {
     groundSurfaceY: 0,

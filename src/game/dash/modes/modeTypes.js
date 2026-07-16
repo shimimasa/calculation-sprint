@@ -2,6 +2,7 @@ export const DASH_MODE_TYPES = Object.freeze({
   infinite: 'infinite',
   goalRun: 'goalRun',
   scoreAttack60: 'scoreAttack60',
+  practice: 'practice',
 });
 
 export const DEFAULT_DASH_MODE = DASH_MODE_TYPES.infinite;

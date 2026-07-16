@@ -29,12 +29,14 @@ const MODE_NOTE_MAP = Object.freeze({
   infinite: 'せいかい/げきはで じかんアップ。ミス/ぶつかりで へる。',
   goalRun: '1000mをめざせ！せいかい/げきはで じかんアップ。ミス/ぶつかりで へる。',
   scoreAttack60: '60びょうスコアアタック：じかんは ふえない。ミス/ぶつかると へる。0でおわり。',
+  practice: 'じっくりモード：じかんせいげんなし。じぶんのペースで 10もんせいかい をめざそう！',
 });
 
 const MODE_BADGE_LABEL_MAP = Object.freeze({
   infinite: 'Infinite',
   goalRun: 'GoalRun',
   scoreAttack60: 'ScoreAttack60',
+  practice: 'じっくり',
 });
 
 const SELECTED_CLASS_NAME = 'is-selected';

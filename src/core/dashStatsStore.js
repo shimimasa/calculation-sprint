@@ -6,6 +6,7 @@ import {
 } from './storageKeys.js';
 import { DASH_STAGE_IDS, toDashStageId } from '../features/dashStages.js';
 import { DEFAULT_DASH_MODE, normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
+import { normalizeWrongByMode } from '../features/dashReflection.js';
 
 const DASH_STATS_SCHEMA_VERSION = 'v2';
 const MAX_HISTORY = 20;
@@ -89,6 +90,11 @@ const normalizeSession = (session) => {
     totalScore: Number.isFinite(session?.totalScore) ? session.totalScore : (Number.isFinite(session?.score) ? session.score : 0),
     combo: Number.isFinite(session?.combo) ? session.combo : 0,
     maxCombo: Number.isFinite(session?.maxCombo) ? session.maxCombo : 0,
+    levelId: Number.isInteger(session?.levelId) && session.levelId > 0 ? session.levelId : null,
+    wrongByMode: normalizeWrongByMode(session?.wrongByMode),
+    revengeSuccessCount: Number.isFinite(session?.revengeSuccessCount) && session.revengeSuccessCount > 0
+      ? Math.floor(session.revengeSuccessCount)
+      : 0,
     schemaVersion: DASH_STATS_SCHEMA_VERSION,
   };
 };

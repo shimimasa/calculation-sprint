@@ -30,6 +30,7 @@ import { isStageFrameWaitEnabled, perfLog } from '../core/perf.js';
 import { resolveAssetUrl } from '../core/assetUrl.js';
 import { getDashModeStrategy, getDashModeTimePolicy } from '../game/dash/modes/dashModes.js';
 import { DASH_MODE_TYPES, normalizeDashModeId } from '../game/dash/modes/modeTypes.js';
+import { createEmptyWrongByMode, normalizeWrongByMode } from '../features/dashReflection.js';
 
 const DEFAULT_TIME_LIMIT_MS = 30000;
 const STREAK_CUE_DURATION_MS = 800;
@@ -37,6 +38,10 @@ const STREAK_ATTACK_CUE_TEXT = 'おした！';
 const STREAK_DEFEAT_CUE_TEXT = 'はなれた！';
 const BOSS_APPEAR_CUE_TEXT = 'ボス出現！';
 const BOSS_DEFEAT_CUE_TEXT = 'ボス撃破！';
+const WRONG_ANSWER_REVIEW_MS = 1400;
+const REVENGE_REAPPEAR_AFTER_QUESTIONS = 2;
+const REVENGE_CHANCE_CUE_TEXT = 'リベンジ チャンス！';
+const REVENGE_SUCCESS_CUE_TEXT = 'リベンジ せいこう！';
 const LOW_TIME_THRESHOLD_MS = 8000;
 const GOAL_RUN_FALLBACK_DISTANCE_M = 1000;
 const DAMAGE_INVINCIBLE_MS = 800;
@@ -1794,8 +1799,11 @@ const dashGameScreen = {
   isScreenActive() {
     return Boolean(domRefs.screens['dash-game']?.classList.contains('is-active'));
   },
+  isAnswerReviewActive() {
+    return window.performance.now() < (this.answerReviewUntilMs ?? 0);
+  },
   canAcceptInput() {
-    return this.isScreenActive() && this.timeLeftMs > 0;
+    return this.isScreenActive() && this.timeLeftMs > 0 && !this.isAnswerReviewActive();
   },
   canSubmit() {
     return this.canAcceptInput() && Boolean(this.currentQuestion);
@@ -2035,6 +2043,19 @@ const dashGameScreen = {
       };
     }
 
+    if (modeId === DASH_MODE_TYPES.practice) {
+      const goalCorrect = Math.max(1, Number(modeContext?.modeRuntime?.goalCorrect) || 10);
+      const correctTotal = Math.max(0, Math.min(Number(modeContext?.modeRuntime?.correctTotal) || 0, goalCorrect));
+      return {
+        modeId,
+        ratio: clamp01(correctTotal / goalCorrect),
+        valueText: String(Math.max(0, goalCorrect - correctTotal)),
+        unitText: 'もん',
+        noteText: `せいかい ${correctTotal} / ${goalCorrect}`,
+        state: 'safe',
+      };
+    }
+
     const timeLimitMs = Math.max(1, Number(this.initialTimeLimitMs) || DEFAULT_TIME_LIMIT_MS);
     const ratio = clamp01(safeTimeLeftMs / timeLimitMs);
     const isLowTime = safeTimeLeftMs <= LOW_TIME_THRESHOLD_MS;
@@ -2120,13 +2141,55 @@ const dashGameScreen = {
     this.lastNextAreaHidden = false;
     this.lastNextAreaText = nextText;
   },
-  loadNextQuestion() {
-    this.currentQuestion = questionGenerator.next({
-      ...gameState.settings,
-      stageId: this.dashStageId,
-      levelId: this.dashLevelId,
-      questionMode: gameState.dash.currentMode,
+  formatAnswerText(question) {
+    if (!question) {
+      return '';
+    }
+    const remainder = Number(question.meta?.remainder);
+    if (Number.isFinite(remainder) && remainder > 0) {
+      return `${question.answer} あまり ${remainder}`;
+    }
+    return `${question.answer}`;
+  },
+  queueRevengeQuestion(question) {
+    if (!question?.text || !Array.isArray(this.revengeQueue)) {
+      return;
+    }
+    if (this.revengeQueue.some((entry) => entry.question.text === question.text)) {
+      return;
+    }
+    const { isRevenge, ...plainQuestion } = question;
+    this.revengeQueue.push({
+      question: plainQuestion,
+      // 減算はロードごとに先へ走るため +1(間に REVENGE_REAPPEAR_AFTER_QUESTIONS 問はさむ)。
+      remainingLoads: REVENGE_REAPPEAR_AFTER_QUESTIONS + 1,
     });
+  },
+  takeDueRevengeQuestion() {
+    if (!Array.isArray(this.revengeQueue) || this.revengeQueue.length === 0) {
+      return null;
+    }
+    for (const entry of this.revengeQueue) {
+      entry.remainingLoads -= 1;
+    }
+    if (this.revengeQueue[0].remainingLoads <= 0) {
+      return this.revengeQueue.shift().question;
+    }
+    return null;
+  },
+  loadNextQuestion() {
+    const revengeQuestion = this.takeDueRevengeQuestion();
+    if (revengeQuestion) {
+      this.currentQuestion = { ...revengeQuestion, isRevenge: true };
+      this.showStreakCue(REVENGE_CHANCE_CUE_TEXT);
+    } else {
+      this.currentQuestion = questionGenerator.next({
+        ...gameState.settings,
+        stageId: this.dashStageId,
+        levelId: this.dashLevelId,
+        questionMode: gameState.dash.currentMode,
+      });
+    }
     if (isDashStartDebugLogEnabled() && !this.hasLoggedQuestionDifficultyDebug) {
       this.hasLoggedQuestionDifficultyDebug = true;
       const difficulty = this.currentQuestion?.meta?.difficulty ?? null;
@@ -2228,17 +2291,34 @@ const dashGameScreen = {
         this.enemySpeed = enemyBaseSpeed;
         gameState.dash.streak = 0;
       }
+      if (this.currentQuestion?.isRevenge) {
+        gameState.dash.revengeSuccessCount = (gameState.dash.revengeSuccessCount ?? 0) + 1;
+        this.showStreakCue(REVENGE_SUCCESS_CUE_TEXT);
+        audioManager.playSfx('sfx_levelup', { volume: 0.6 });
+      }
       this.attackUntilMs = window.performance.now() + ATTACK_WINDOW_MS;
       this.modeStrategy?.onAnswer?.({ isCorrect: true, modeRuntime: this.modeRuntime });
       this.setFeedback('○', 'correct');
     } else {
       audioManager.playSfx('sfx_wrong');
       gameState.dash.wrongCount += 1;
+      const wrongMode = this.currentQuestion?.meta?.mode;
+      if (wrongMode && gameState.dash.wrongByMode && wrongMode in gameState.dash.wrongByMode) {
+        gameState.dash.wrongByMode[wrongMode] += 1;
+      }
       gameState.dash.streak = 0;
       this.enemySpeed = enemyBaseSpeed;
       this.timeLeftMs += Number(this.timePolicy?.onWrongMs) || 0;
       this.modeStrategy?.onAnswer?.({ isCorrect: false, modeRuntime: this.modeRuntime });
-      this.setFeedback('×', 'wrong');
+      this.setFeedback(`× こたえ: ${this.formatAnswerText(this.currentQuestion)}`, 'wrong');
+      this.queueRevengeQuestion(this.currentQuestion);
+      if (this.tryEndByMode()) {
+        return;
+      }
+      // 正答を読む時間。updateFrame がこの期限まで全停止し、次の問題はポーズ明けに出る。
+      this.answerReviewUntilMs = window.performance.now() + WRONG_ANSWER_REVIEW_MS;
+      this.pendingQuestionAfterReview = true;
+      return;
     }
     if (this.tryEndByMode()) {
       return;
@@ -2252,6 +2332,13 @@ const dashGameScreen = {
     const nowMs = window.performance.now();
     if (nowMs < (this.hitstopUntilMs ?? 0)) {
       return;
+    }
+    if (nowMs < (this.answerReviewUntilMs ?? 0)) {
+      return;
+    }
+    if (this.pendingQuestionAfterReview) {
+      this.pendingQuestionAfterReview = false;
+      this.loadNextQuestion();
     }
     const dtSeconds = dtMs / 1000;
     const isSlowed = nowMs < (this.slowUntilMs ?? 0);
@@ -2599,12 +2686,18 @@ const dashGameScreen = {
       modeRuntime: this.modeRuntime,
       hits: this.collisionHits,
     };
-    gameState.dash.result = this.modeStrategy?.buildResult?.(buildContext) ?? {
+    const modeResult = this.modeStrategy?.buildResult?.(buildContext) ?? {
       ...buildContext,
       mode: this.currentDashModeId,
       timeLeftMs: Math.max(0, this.timeLeftMs),
       stageId: toDashStageId(gameState.dash?.stageId),
       retired: normalizedEndReason === 'retired',
+    };
+    gameState.dash.result = {
+      ...modeResult,
+      revengeSuccessCount: gameState.dash.revengeSuccessCount ?? 0,
+      wrongByMode: normalizeWrongByMode(gameState.dash.wrongByMode),
+      levelId: this.dashLevelId ?? null,
     };
     const delayMs = Math.max(0, Number(endFx?.delayMs) || 0);
     if (delayMs > 0) {
@@ -2629,6 +2722,9 @@ const dashGameScreen = {
     this.attackUntilMs = 0;
     this.kickUntilMs = 0;
     this.hitstopUntilMs = 0;
+    this.answerReviewUntilMs = 0;
+    this.pendingQuestionAfterReview = false;
+    this.revengeQueue = [];
     this.lastCollisionPenaltyAtMs = -Infinity;
     this.slowUntilMs = 0;
     this.runnerHitUntilMs = 0;
@@ -2658,6 +2754,8 @@ const dashGameScreen = {
     gameState.dash.defeatedCount = 0;
     gameState.dash.bossDefeatedCount = 0;
     gameState.dash.streak = 0;
+    gameState.dash.revengeSuccessCount = 0;
+    gameState.dash.wrongByMode = createEmptyWrongByMode();
     gameState.dash.result = null;
     gameState.dash.modeId = this.currentDashModeId;
     gameState.dash.currentRunId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

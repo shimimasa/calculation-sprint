@@ -1,6 +1,7 @@
 import infiniteModeStrategy from './infiniteMode.js';
 import goalRunModeStrategy from './goalRunMode.js';
 import scoreAttack60ModeStrategy from './scoreAttack60Mode.js';
+import practiceModeStrategy from './practiceMode.js';
 import {
   timeBonusOnCorrect,
   timeBonusOnDefeat,
@@ -13,6 +14,7 @@ const STRATEGIES = Object.freeze({
   [infiniteModeStrategy.id]: infiniteModeStrategy,
   [goalRunModeStrategy.id]: goalRunModeStrategy,
   [scoreAttack60ModeStrategy.id]: scoreAttack60ModeStrategy,
+  [practiceModeStrategy.id]: practiceModeStrategy,
 });
 
 export const getDashModeStrategy = (modeId) => {

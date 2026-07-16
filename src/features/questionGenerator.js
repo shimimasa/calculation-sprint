@@ -291,8 +291,18 @@ const generateOperandsByRule = (mode, rule) => {
   return null;
 };
 
-const questionGenerator = {
-  next(settings) {
+const RECENT_QUESTION_MEMORY = 5;
+const DUPLICATE_RETRY_LIMIT = 8;
+const recentQuestionKeys = [];
+
+const rememberQuestion = (key) => {
+  recentQuestionKeys.push(key);
+  if (recentQuestionKeys.length > RECENT_QUESTION_MEMORY) {
+    recentQuestionKeys.shift();
+  }
+};
+
+const generateQuestion = (settings) => {
     const {
       mode,
       stageId,
@@ -363,7 +373,12 @@ const questionGenerator = {
       }
     }
 
-    const answer = operator.calc(a, b);
+    let answer = operator.calc(a, b);
+    let remainder = null;
+    if (mode === 'div' && !Number.isInteger(answer)) {
+      remainder = a % b;
+      answer = (a - remainder) / b;
+    }
     return {
       text: `${a} ${operator.symbol} ${b}`,
       answer,
@@ -371,6 +386,7 @@ const questionGenerator = {
         mode,
         a,
         b,
+        remainder,
         difficulty: useDashStagePolicy
           ? {
             stageId,
@@ -385,6 +401,20 @@ const questionGenerator = {
           : null,
       },
     };
+};
+
+const questionGenerator = {
+  next(settings) {
+    let question = generateQuestion(settings);
+    for (
+      let attempt = 0;
+      attempt < DUPLICATE_RETRY_LIMIT && recentQuestionKeys.includes(question.text);
+      attempt += 1
+    ) {
+      question = generateQuestion(settings);
+    }
+    rememberQuestion(question.text);
+    return question;
   },
 };
 

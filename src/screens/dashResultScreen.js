@@ -6,6 +6,11 @@ import { createEventRegistry } from '../core/eventRegistry.js';
 import gameState from '../core/gameState.js';
 import dashStatsStore from '../core/dashStatsStore.js';
 import { getDashStageLabelJa, normalizeDashStageId, toDashStageId } from '../features/dashStages.js';
+import {
+  buildDashReflectionLines,
+  buildNextLevelRecommendation,
+  sumWrongByMode,
+} from '../features/dashReflection.js';
 
 const calculateRewardTitle = ({ distanceM = 0, accuracy = 0, maxStreak = 0, missRate = 0, correctCount = 0 }) => {
   if (distanceM >= 120 && missRate <= 5) {
@@ -100,6 +105,82 @@ const ensureModeSummaryArea = () => {
 };
 
 
+const isSameLocalDay = (isoString, now = new Date()) => {
+  const date = new Date(isoString ?? '');
+  return !Number.isNaN(date.getTime()) && date.toDateString() === now.toDateString();
+};
+
+const renderReflection = (result, stats, { accuracy, totalAnswered }) => {
+  const record = domRefs.dashResult.record;
+  if (!record) {
+    return;
+  }
+  let card = record.querySelector('.dash-result-reflection');
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'dash-result-reflection';
+    record.append(card);
+  }
+  // 「きょう」の集計 = 履歴のうち今日のぶん(同一runは除外) + 今回のラン
+  const todayEntries = (stats?.history ?? []).filter(
+    (entry) => entry.runId !== result.runId && isSameLocalDay(entry.endedAt),
+  );
+  const todayWrongByMode = sumWrongByMode([
+    ...todayEntries.map((entry) => entry.wrongByMode),
+    result.wrongByMode,
+  ]);
+  const todayAnswered = todayEntries.reduce(
+    (sum, entry) => sum + (entry.correctCount || 0) + (entry.wrongCount || 0),
+    totalAnswered,
+  );
+  const todayRevenge = todayEntries.reduce(
+    (sum, entry) => sum + (entry.revengeSuccessCount || 0),
+    Number(result.revengeSuccessCount) || 0,
+  );
+  const lines = buildDashReflectionLines({
+    todayWrongByMode,
+    totalAnswered: todayAnswered,
+    revengeSuccessCount: todayRevenge,
+  });
+  const recommendation = buildNextLevelRecommendation({
+    stageId: result.stageId,
+    levelId: result.levelId,
+    accuracy,
+    hits: Number(result.hits) || 0,
+    totalAnswered,
+  });
+  if (lines.length === 0 && !recommendation) {
+    card.hidden = true;
+    card.textContent = '';
+    return;
+  }
+  card.hidden = false;
+  card.textContent = '';
+  const kicker = document.createElement('p');
+  kicker.className = 'dash-result-reflection__kicker';
+  kicker.textContent = 'きょうのふりかえり';
+  card.append(kicker);
+  if (lines.length > 0) {
+    const list = document.createElement('ul');
+    list.className = 'dash-result-reflection__list';
+    lines.forEach((line) => {
+      const item = document.createElement('li');
+      item.textContent = line;
+      list.append(item);
+    });
+    card.append(list);
+  }
+  if (recommendation) {
+    const next = document.createElement('p');
+    next.className = 'dash-result-reflection__next';
+    const label = document.createElement('span');
+    label.className = 'dash-result-reflection__next-label';
+    label.textContent = 'つぎのおすすめ';
+    next.append(label, document.createTextNode(` ${recommendation}`));
+    card.append(next);
+  }
+};
+
 const getScoreAttackRecordState = (result, stats) => {
   if (result?.mode !== 'scoreAttack60' || !stats) {
     return { isNewRecord: false, previousBest: 0 };
@@ -177,6 +258,7 @@ const dashResultScreen = {
       const modeSummary = ensureModeSummaryArea();
       const isGoalRun = result.mode === 'goalRun';
       const isScoreAttack60 = result.mode === 'scoreAttack60';
+      const isPractice = result.mode === 'practice';
       if (modeSummary) {
         if (isGoalRun) {
           const cleared = normalizedReason === 'goal';
@@ -194,6 +276,10 @@ const dashResultScreen = {
           const newBadge = recordState.isNewRecord ? '<span class="badge dash-badge-new">NEW RECORD</span>' : '';
           modeSummary.hidden = false;
           modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">Score Attack 60</p><p class="dash-result-mode-summary__status" data-cleared="1">スコア: ${score}${newBadge}</p><p class="dash-result-mode-summary__detail">せいかい: ${Number(result.correctCount) || 0} / ミス: ${Number(result.wrongCount) || 0} / ぶつかった: ${Number(result.hits) || 0}</p><p class="dash-result-mode-summary__detail">せいかいりつ: ${accuracy.toFixed(1)}% / さいだいコンボ: ${Number(result.maxCombo) || 0}</p><p class="dash-result-mode-summary__detail">ミスやぶつかりで じかんがへるよ。60びょうで どれだけスコアをかせげるか！</p>`;
+        } else if (isPractice) {
+          const cleared = normalizedReason === 'goal';
+          modeSummary.hidden = false;
+          modeSummary.innerHTML = `<p class="dash-result-mode-summary__title">じっくりモード</p><p class="dash-result-mode-summary__status" data-cleared="${cleared ? '1' : '0'}">${cleared ? '10もん せいかい たっせい！' : 'とちゅうで おわり'}</p><p class="dash-result-mode-summary__detail">せいかい: ${Number(result.correctCount) || 0} / ミス: ${Number(result.wrongCount) || 0}</p><p class="dash-result-mode-summary__detail">じかんせいげんなし。じぶんのペースで だいじょうぶ。</p>`;
         } else {
           modeSummary.hidden = true;
           modeSummary.textContent = '';
@@ -239,13 +325,16 @@ const dashResultScreen = {
         domRefs.dashResult.maxStreak.textContent = String(result.maxStreak || 0);
       }
       if (domRefs.dashResult.timeRemaining) {
-        domRefs.dashResult.timeRemaining.textContent = String(timeSeconds);
+        domRefs.dashResult.timeRemaining.textContent = isPractice ? 'ー' : String(timeSeconds);
       }
 
       const grid = domRefs.dashResult.record?.querySelector('.dash-result-grid');
       if (grid && domRefs.dashResult.reason) {
         domRefs.dashResult.record.append(domRefs.dashResult.reason);
       }
+
+      const statsForReflection = options.previousStats ?? dashStatsStore.getStats(gameState.profileId);
+      renderReflection(result, statsForReflection, { accuracy, totalAnswered });
 
       domRefs.dashResult.replayButton?.classList.add('dash-result-replay-main');
       playCelebrationEffect();
